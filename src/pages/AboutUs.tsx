@@ -60,10 +60,7 @@ const AboutUs = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation 
-          isAuthenticated={false}
-          onAuthClick={() => window.location.href = '/'}
-        />
+        <Navigation />
         
         <div className="container mx-auto px-4 py-20">
           <Card className="glass-card max-w-md mx-auto text-center">
@@ -95,10 +92,7 @@ const AboutUs = () => {
   if (!hasFinancialAccess) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation 
-          isAuthenticated={true}
-          onAuthClick={() => {}}
-        />
+        <Navigation />
         
         <div className="container mx-auto px-4 py-20">
           <Card className="glass-card max-w-md mx-auto text-center">
@@ -128,10 +122,7 @@ const AboutUs = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation 
-        isAuthenticated={true}
-        onAuthClick={() => {}}
-      />
+      <Navigation />
       
       <FinancialDashboard />
       

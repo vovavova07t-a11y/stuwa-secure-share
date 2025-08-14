@@ -23,10 +23,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation 
-        isAuthenticated={isAuthenticated}
-        onAuthClick={() => setIsAuthModalOpen(true)}
-      />
+      <Navigation />
       
       <main>
         <HeroSection onGetStarted={() => setIsAuthModalOpen(true)} />
