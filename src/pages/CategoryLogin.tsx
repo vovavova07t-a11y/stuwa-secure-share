@@ -87,25 +87,34 @@ const CategoryLogin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!selectedCategory) {
       setError('Выберите категорию');
+      return;
+    }
+
+    if (!credentials.username || !credentials.password) {
+      setError('Введите логин и пароль');
       return;
     }
 
     setLoading(true);
     setError('');
 
-    const category = categories.find(cat => cat.id === selectedCategory);
-    
-    if (category && 
-        credentials.username === category.username && 
-        credentials.password === category.password) {
-      navigate(category.route);
-    } else {
-      setError('Неверные учетные данные для выбранной категории');
-    }
-
-    setLoading(false);
+    // Simulate a small delay for better UX
+    setTimeout(() => {
+      const category = categories.find(cat => cat.id === selectedCategory);
+      
+      if (category && 
+          credentials.username === category.username && 
+          credentials.password === category.password) {
+        // Successful login - redirect immediately
+        navigate(category.route);
+      } else {
+        setError('Неверные учетные данные для выбранной категории');
+        setLoading(false);
+      }
+    }, 500);
   };
 
   const selectedCat = categories.find(cat => cat.id === selectedCategory);
@@ -140,7 +149,10 @@ const CategoryLogin = () => {
                 return (
                   <div
                     key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setError(''); // Clear error when selecting category
+                    }}
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedCategory === category.id
                         ? 'border-blue-500 bg-blue-500/10'
@@ -185,10 +197,13 @@ const CategoryLogin = () => {
                       type="text"
                       placeholder="Введите логин"
                       value={credentials.username}
-                      onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+                      onChange={(e) => {
+                        setCredentials({...credentials, username: e.target.value});
+                        setError(''); // Clear error when typing
+                      }}
                       className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                       required
-                      disabled={!selectedCategory}
+                      disabled={!selectedCategory || loading}
                     />
                   </div>
                 </div>
@@ -204,10 +219,13 @@ const CategoryLogin = () => {
                       type="password"
                       placeholder="Введите пароль"
                       value={credentials.password}
-                      onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                      onChange={(e) => {
+                        setCredentials({...credentials, password: e.target.value});
+                        setError(''); // Clear error when typing
+                      }}
                       className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                       required
-                      disabled={!selectedCategory}
+                      disabled={!selectedCategory || loading}
                     />
                   </div>
                 </div>
@@ -224,7 +242,7 @@ const CategoryLogin = () => {
                   className="w-full bg-blue-600 hover:bg-blue-700"
                   disabled={loading || !selectedCategory}
                 >
-                  {loading ? 'Проверка...' : 'Войти в систему'}
+                  {loading ? 'Вход...' : 'Войти в систему'}
                 </Button>
               </form>
 
