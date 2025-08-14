@@ -11,6 +11,8 @@ import { SalesReport } from '@/components/logistics/SalesReport';
 import { ContractsProgress } from '@/components/logistics/ContractsProgress';
 import { ProcurementOpportunities } from '@/components/logistics/ProcurementOpportunities';
 import { ContractsManagement } from '@/components/logistics/ContractsManagement';
+import { InterdepartmentSection } from '@/components/interdepartment/InterdepartmentSection';
+import { Separator } from '@/components/ui/separator';
 
 const LogisticsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -126,6 +128,9 @@ const LogisticsDashboard: React.FC = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          <Separator className="my-8" />
+          <InterdepartmentSection currentDepartment="logistics" />
         </div>
       </div>
     </div>

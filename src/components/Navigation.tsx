@@ -1,190 +1,171 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { 
-  Building2, 
-  Package, 
-  Truck, 
-  TrendingUp, 
-  Contact, 
-  Shield,
-  BarChart3,
-  Settings,
-  Menu,
-  X
-} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { AuthModal } from './AuthModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { User, LogOut, Menu, X, ArrowRightLeft } from 'lucide-react';
 
 const Navigation = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
   const location = useLocation();
 
+  const isActive = (path: string) => location.pathname === path;
+
   const navigationItems = [
-    {
-      title: 'О нас',
-      description: 'Финансовая дирекция',
-      icon: Building2,
-      path: '/about-us',
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Продукция',
-      description: 'Техническая дирекция',
-      icon: Package,
-      path: '/technical-dashboard',
-      color: 'text-green-600'
-    },
-    {
-      title: 'Клиенты',
-      description: 'Управление логистики',
-      icon: Truck,
-      path: '/logistics-dashboard',
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Развитие',
-      description: 'Коммерческая дирекция',
-      icon: TrendingUp,
-      path: '/commercial-dashboard',
-      color: 'text-orange-600'
-    },
-    {
-      title: 'Контакты',
-      description: 'Офис-менеджер',
-      icon: Contact,
-      path: '/contacts-management',
-      color: 'text-red-600'
-    }
+    { path: '/', label: 'Главная' },
+    { path: '/about', label: 'О нас' },
+    { path: '/executive', label: 'Руководство' },
+    { path: '/financial', label: 'Финансы' },
+    { path: '/technical', label: 'Продукция' },
+    { path: '/logistics', label: 'Клиенты' },
+    { path: '/commercial', label: 'Развитие' },
+    { path: '/contacts', label: 'Контакты' },
+    { path: '/interdepartment', label: 'Взаимодействие', icon: ArrowRightLeft },
   ];
 
-  const adminItems = [
-    {
-      title: 'Админ-панель',
-      description: 'Управление системой',
-      icon: Shield,
-      path: '/admin-dashboard',
-      color: 'text-red-500'
-    },
-    {
-      title: 'Исполнительная панель',
-      description: 'Аналитика и отчеты',
-      icon: BarChart3,
-      path: '/executive-dashboard',
-      color: 'text-indigo-500'
-    },
-    {
-      title: 'Организатор',
-      description: 'Полный контроль',
-      icon: Settings,
-      path: '/organizer-login',
-      color: 'text-yellow-500'
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
-  ];
-
-  const isActivePath = (path: string) => location.pathname === path;
+  };
 
   return (
-    <nav className="bg-white shadow-lg border-b">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
+    <>
+      <nav className="bg-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Link to="/" className="flex-shrink-0 flex items-center">
+                <span className="text-2xl font-bold text-blue-600">STUWA</span>
+              </Link>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">STUWA Portal</h1>
-              <p className="text-sm text-gray-600">Корпоративная система управления</p>
-            </div>
-          </Link>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-
-          {/* Desktop navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.path} to={item.path}>
-                  <Button 
-                    variant={isActivePath(item.path) ? "default" : "ghost"} 
-                    className="flex items-center space-x-2 h-auto p-3"
-                  >
-                    <Icon className={`w-5 h-5 ${isActivePath(item.path) ? 'text-white' : item.color}`} />
-                    <div className="text-left">
-                      <div className={`font-medium text-sm ${isActivePath(item.path) ? 'text-white' : 'text-gray-900'}`}>
-                        {item.title}
-                      </div>
-                      <div className={`text-xs ${isActivePath(item.path) ? 'text-blue-100' : 'text-gray-500'}`}>
-                        {item.description}
-                      </div>
-                    </div>
-                  </Button>
-                </Link>
-              );
-            })}
-
-            <div className="w-px h-8 bg-gray-200 mx-2" />
-
-            {adminItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.path} to={item.path}>
-                  <Button 
-                    variant={isActivePath(item.path) ? "default" : "ghost"} 
-                    className="flex items-center space-x-2 h-auto p-3"
-                  >
-                    <Icon className={`w-5 h-5 ${isActivePath(item.path) ? 'text-white' : item.color}`} />
-                    <div className="text-left">
-                      <div className={`font-medium text-sm ${isActivePath(item.path) ? 'text-white' : 'text-gray-900'}`}>
-                        {item.title}
-                      </div>
-                      <div className={`text-xs ${isActivePath(item.path) ? 'text-blue-100' : 'text-gray-500'}`}>
-                        {item.description}
-                      </div>
-                    </div>
-                  </Button>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Mobile navigation */}
-        {isOpen && (
-          <div className="md:hidden py-4 border-t">
-            <div className="space-y-2">
-              {[...navigationItems, ...adminItems].map((item) => {
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
+              {navigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={item.path} to={item.path} onClick={() => setIsOpen(false)}>
-                    <Button 
-                      variant={isActivePath(item.path) ? "default" : "ghost"} 
-                      className="w-full flex items-center space-x-3 h-auto p-4 justify-start"
-                    >
-                      <Icon className={`w-5 h-5 ${isActivePath(item.path) ? 'text-white' : item.color}`} />
-                      <div className="text-left">
-                        <div className={`font-medium ${isActivePath(item.path) ? 'text-white' : 'text-gray-900'}`}>
-                          {item.title}
-                        </div>
-                        <div className={`text-sm ${isActivePath(item.path) ? 'text-blue-100' : 'text-gray-500'}`}>
-                          {item.description}
-                        </div>
-                      </div>
-                    </Button>
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                      isActive(item.path)
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {Icon && <Icon className="w-4 h-4" />}
+                    {item.label}
                   </Link>
                 );
               })}
             </div>
+
+            {/* User Menu */}
+            <div className="hidden md:flex items-center space-x-4">
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span className="text-sm text-gray-700">{user.email}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSignOut}
+                    className="flex items-center space-x-1"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Выйти</span>
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={() => setShowAuthModal(true)}>
+                  Войти
+                </Button>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center gap-2 ${
+                      isActive(item.path)
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-700 hover:text-blue-600 hover:bg-white'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {Icon && <Icon className="w-4 h-4" />}
+                    {item.label}
+                  </Link>
+                );
+              })}
+              
+              <div className="border-t border-gray-200 pt-2">
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center px-3 py-2">
+                      <User className="w-4 h-4 mr-2" />
+                      <span className="text-sm text-gray-700">{user.email}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        handleSignOut();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="mx-3 flex items-center space-x-1"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Выйти</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setShowAuthModal(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="mx-3"
+                  >
+                    Войти
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         )}
-      </div>
-    </nav>
+      </nav>
+
+      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+    </>
   );
 };
 
