@@ -10,7 +10,7 @@ import Navigation from "./components/Navigation";
 import Index from "./pages/Index";
 import AboutUs from "./pages/AboutUs";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
-import FinancialDashboard from "./components/FinancialDashboard";
+import { FinancialDashboard } from "./components/FinancialDashboard";
 import TechnicalDashboard from "./pages/TechnicalDashboard";
 import LogisticsDashboard from "./pages/LogisticsDashboard";
 import CommercialDashboard from "./pages/CommercialDashboard";

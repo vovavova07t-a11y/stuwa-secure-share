@@ -67,14 +67,14 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('interdepartment_comments')
         .select('*')
         .eq('document_id', document.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setComments(data || []);
+      setComments((data || []) as Comment[]);
     } catch (error) {
       console.error('Error fetching comments:', error);
     }
@@ -92,7 +92,7 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Пользователь не аутентифицирован');
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('interdepartment_comments')
         .insert([{
           document_id: document.id,

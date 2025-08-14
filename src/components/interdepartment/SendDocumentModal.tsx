@@ -153,7 +153,7 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
         due_date: formData.due_date || null
       };
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('interdepartment_documents')
         .insert([documentData]);
 

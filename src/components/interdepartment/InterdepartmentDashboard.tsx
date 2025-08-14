@@ -81,13 +81,13 @@ export const InterdepartmentDashboard: React.FC = () => {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('interdepartment_documents')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+      setDocuments((data || []) as InterdepartmentDocument[]);
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({
@@ -121,7 +121,7 @@ export const InterdepartmentDashboard: React.FC = () => {
 
   const updateDocumentStatus = async (documentId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('interdepartment_documents')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', documentId);
