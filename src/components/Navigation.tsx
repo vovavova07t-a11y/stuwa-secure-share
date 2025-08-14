@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Menu, X, Shield, User, LogOut } from 'lucide-react';
+import { Menu, X, Shield, User, LogOut, ChevronDown, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface NavigationProps {
@@ -13,9 +13,17 @@ export const Navigation: React.FC<NavigationProps> = ({
   onAuthClick 
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAboutDropdown, setShowAboutDropdown] = useState(false);
 
   const navItems = [
-    { label: 'О нас', href: '#about' },
+    { 
+      label: 'О нас', 
+      href: '#about',
+      hasDropdown: true,
+      dropdownItems: [
+        { label: 'Финансовая дирекция', href: '/about-us' }
+      ]
+    },
     { label: 'Продукция', href: '#products' },
     { label: 'Клиенты', href: '#clients' },
     { label: 'Развитие', href: '#development' },
@@ -40,13 +48,39 @@ export const Navigation: React.FC<NavigationProps> = ({
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="nav-link"
-              >
-                {item.label}
-              </a>
+              <div key={item.label} className="relative">
+                {item.hasDropdown ? (
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setShowAboutDropdown(true)}
+                    onMouseLeave={() => setShowAboutDropdown(false)}
+                  >
+                    <button className="nav-link flex items-center">
+                      {item.label}
+                      <ChevronDown className="w-4 h-4 ml-1" />
+                    </button>
+                    
+                    {showAboutDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-56 glass-card rounded-lg shadow-lg py-2 animate-fade-in">
+                        {item.dropdownItems?.map((dropdownItem) => (
+                          <a
+                            key={dropdownItem.label}
+                            href={dropdownItem.href}
+                            className="block px-4 py-2 text-sm hover:bg-primary/10 transition-colors flex items-center"
+                          >
+                            <Building className="w-4 h-4 mr-2 text-primary" />
+                            {dropdownItem.label}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <a href={item.href} className="nav-link">
+                    {item.label}
+                  </a>
+                )}
+              </div>
             ))}
           </div>
 
@@ -113,14 +147,34 @@ export const Navigation: React.FC<NavigationProps> = ({
             <div className="flex-1 px-4 py-6">
               <div className="space-y-4">
                 {navItems.map((item, index) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className={`block text-lg font-medium text-foreground hover:text-primary transition-colors animate-slide-in-right animate-stagger-${index + 1}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </a>
+                  <div key={item.label}>
+                    {item.hasDropdown ? (
+                      <div className="space-y-2">
+                        <div className={`text-lg font-medium text-foreground hover:text-primary transition-colors animate-slide-in-right animate-stagger-${index + 1}`}>
+                          {item.label}
+                        </div>
+                        {item.dropdownItems?.map((dropdownItem) => (
+                          <a
+                            key={dropdownItem.label}
+                            href={dropdownItem.href}
+                            className="block pl-4 text-md text-muted-foreground hover:text-primary transition-colors flex items-center"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <Building className="w-4 h-4 mr-2" />
+                            {dropdownItem.label}
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <a
+                        href={item.href}
+                        className={`block text-lg font-medium text-foreground hover:text-primary transition-colors animate-slide-in-right animate-stagger-${index + 1}`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {item.label}
+                      </a>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
