@@ -3,25 +3,13 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Eye, Calendar, User } from 'lucide-react';
-
-interface Document {
-  id: string;
-  title: string;
-  description?: string;
-  file_name: string;
-  file_type: string;
-  file_size: number;
-  version: number;
-  download_count: number;
-  created_at: string;
-  updated_at: string;
-}
+import type { FinancialDocument } from '@/types/financial';
 
 interface DocumentTableProps {
-  documents: Document[];
+  documents: FinancialDocument[];
   isLoading: boolean;
-  onView: (document: Document) => void;
-  onDownload: (document: Document) => void;
+  onView: (document: FinancialDocument) => void;
+  onDownload: (document: FinancialDocument) => void;
 }
 
 export const DocumentTable: React.FC<DocumentTableProps> = ({

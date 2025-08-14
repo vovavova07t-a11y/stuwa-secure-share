@@ -3,23 +3,10 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Download, FileText, Calendar, User, Eye } from 'lucide-react';
-
-interface Document {
-  id: string;
-  title: string;
-  description?: string;
-  file_name: string;
-  file_url: string;
-  file_type: string;
-  file_size: number;
-  version: number;
-  download_count: number;
-  created_at: string;
-  updated_at: string;
-}
+import type { FinancialDocument } from '@/types/financial';
 
 interface DocumentViewerProps {
-  document: Document;
+  document: FinancialDocument;
   onClose: () => void;
 }
 
@@ -46,10 +33,12 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   };
 
   const handleDownload = () => {
-    const link = document.createElement('a');
+    const link = window.document.createElement('a');
     link.href = document.file_url;
     link.download = document.file_name;
+    window.document.body.appendChild(link);
     link.click();
+    window.document.body.removeChild(link);
   };
 
   const isPDF = document.file_type === 'application/pdf';

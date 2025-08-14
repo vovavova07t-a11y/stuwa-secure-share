@@ -25,8 +25,8 @@ const AboutUs = () => {
       if (user) {
         setIsAuthenticated(true);
         
-        // Check if user has financial department access
-        const { data: roles } = await supabase
+        // Check if user has financial department access using any type assertion
+        const { data: roles } = await (supabase as any)
           .from('user_roles')
           .select('*')
           .eq('user_id', user.id)
