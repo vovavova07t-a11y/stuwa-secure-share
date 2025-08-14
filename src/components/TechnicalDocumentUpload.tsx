@@ -36,9 +36,6 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      if (!formData.title) {
-        setFormData(prev => ({ ...prev, title: file.name.split('.')[0] }));
-      }
     }
   };
 
@@ -56,39 +53,26 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
     setIsUploading(true);
 
     try {
-      console.log('Starting technical document upload...');
-      
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) {
         throw new Error('Пользователь не авторизован');
       }
-
-      console.log('User authenticated:', user.id);
 
       // Upload file to Supabase Storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `technical/${category}/${fileName}`;
 
-      console.log('Uploading file to path:', filePath);
-
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, selectedFile);
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('File uploaded successfully');
+      if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
-
-      console.log('Public URL:', publicUrl);
 
       // Parse technical specs if provided
       let technicalSpecs = {};
@@ -100,35 +84,25 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
         }
       }
 
-      // Try to insert document record
-      try {
-        const { error: insertError } = await supabase
-          .from('technical_documents')
-          .insert({
-            title: formData.title,
-            description: formData.description,
-            file_name: selectedFile.name,
-            file_url: publicUrl,
-            file_type: selectedFile.type,
-            file_size: selectedFile.size,
-            category,
-            subcategory: formData.subcategory || null,
-            tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-            technical_specs: technicalSpecs,
-            print_ready: formData.print_ready,
-            uploaded_by: user.id
-          });
+      // Insert document record
+      const { error: insertError } = await supabase
+        .from('technical_documents' as any)
+        .insert({
+          title: formData.title,
+          description: formData.description,
+          file_name: selectedFile.name,
+          file_url: publicUrl,
+          file_type: selectedFile.type,
+          file_size: selectedFile.size,
+          category,
+          subcategory: formData.subcategory || null,
+          tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+          technical_specs: technicalSpecs,
+          print_ready: formData.print_ready,
+          uploaded_by: user.data.user.id
+        });
 
-        if (insertError) {
-          console.error('Database insert error:', insertError);
-          // Don't throw error, file is already uploaded
-        } else {
-          console.log('Document metadata saved to database');
-        }
-      } catch (dbError) {
-        console.error('Database operation failed:', dbError);
-        // File is uploaded, just database save failed
-      }
+      if (insertError) throw insertError;
 
       toast({
         title: 'Успех',
@@ -136,11 +110,11 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
       });
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Upload error:', error);
       toast({
         title: 'Ошибка',
-        description: error.message || 'Не удалось загрузить документ',
+        description: 'Не удалось загрузить документ',
         variant: 'destructive'
       });
     } finally {
@@ -230,7 +204,7 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
 
             <div className="space-y-2">
               <Label htmlFor="file">Файл документа *</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 hover:border-primary/50 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
                 <input
                   type="file"
                   id="file"
@@ -242,12 +216,12 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
                   htmlFor="file"
                   className="cursor-pointer flex flex-col items-center space-y-2"
                 >
-                  <FileText className="w-12 h-12 text-muted-foreground" />
+                  <FileText className="w-12 h-12 text-gray-400" />
                   <div className="text-center">
                     <p className="text-sm font-medium">
                       {selectedFile ? selectedFile.name : 'Нажмите для выбора файла'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-gray-500">
                       PDF, DOC, XLS, PPT (макс. 10MB)
                     </p>
                   </div>
@@ -258,7 +232,7 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
             <div className="flex gap-3">
               <Button
                 type="submit"
-                disabled={isUploading || !selectedFile || !formData.title}
+                disabled={isUploading}
                 className="flex-1"
               >
                 {isUploading ? (
