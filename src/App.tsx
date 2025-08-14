@@ -10,6 +10,7 @@ import AboutUs from './pages/AboutUs';
 import NotFound from './pages/NotFound';
 import TechnicalDashboard from './pages/TechnicalDashboard';
 import LogisticsDashboard from "@/pages/LogisticsDashboard";
+import CommercialDashboard from "@/pages/CommercialDashboard";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ function App() {
               <Route path="/about-us" element={<AboutUs />} />
               <Route path="/technical-dashboard" element={<TechnicalDashboard />} />
               <Route path="/logistics-dashboard" element={<LogisticsDashboard />} />
+              <Route path="/commercial-dashboard" element={<CommercialDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

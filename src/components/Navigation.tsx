@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +40,12 @@ const Navigation: React.FC = () => {
                 className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
               >
                 Управление логистики
+              </Link>
+              <Link
+                to="/commercial-dashboard"
+                className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Коммерческая дирекция
               </Link>
               <Link
                 to="/about-us"
@@ -136,6 +143,13 @@ const Navigation: React.FC = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Управление логистики
+            </Link>
+            <Link
+              to="/commercial-dashboard"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Коммерческая дирекция
             </Link>
             <Link
               to="/about-us"
