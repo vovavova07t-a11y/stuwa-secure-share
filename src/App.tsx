@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import OrganizerLogin from "./pages/OrganizerLogin";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import InterdepartmentPage from "./pages/InterdepartmentPage";
+import CategoryLogin from "./pages/CategoryLogin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
               <Navigation />
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/category-login" element={<CategoryLogin />} />
                 <Route path="/about" element={<AboutUs />} />
                 <Route path="/executive" element={<ExecutiveDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
