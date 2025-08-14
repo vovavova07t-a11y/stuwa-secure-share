@@ -36,7 +36,7 @@ export const TechnicalDashboard: React.FC = () => {
     queryFn: async () => {
       try {
         let query = supabase
-          .from('technical_documents')
+          .from('technical_documents' as any)
           .select('*')
           .eq('status', filterStatus)
           .order('created_at', { ascending: false });
@@ -74,12 +74,12 @@ export const TechnicalDashboard: React.FC = () => {
     const loadFavorites = async () => {
       try {
         const { data } = await supabase
-          .from('user_favorites')
+          .from('user_favorites' as any)
           .select('document_id')
           .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
         
         if (data) {
-          setFavorites(new Set(data.map(f => f.document_id)));
+          setFavorites(new Set(data.map((f: any) => f.document_id)));
         }
       } catch (error) {
         console.error('Error loading favorites:', error);
@@ -102,7 +102,7 @@ export const TechnicalDashboard: React.FC = () => {
     try {
       const user = await supabase.auth.getUser();
       if (user.data.user) {
-        await supabase.from('document_access_logs').insert({
+        await supabase.from('document_access_logs' as any).insert({
           document_id: documentId,
           user_id: user.data.user.id,
           action,
@@ -124,7 +124,7 @@ export const TechnicalDashboard: React.FC = () => {
     try {
       // Increment download count
       await supabase
-        .from('technical_documents')
+        .from('technical_documents' as any)
         .update({ 
           download_count: document.download_count + 1,
           last_downloaded_at: new Date().toISOString()
@@ -158,7 +158,7 @@ export const TechnicalDashboard: React.FC = () => {
 
       if (favorites.has(documentId)) {
         await supabase
-          .from('user_favorites')
+          .from('user_favorites' as any)
           .delete()
           .eq('user_id', user.data.user.id)
           .eq('document_id', documentId);
@@ -170,7 +170,7 @@ export const TechnicalDashboard: React.FC = () => {
         });
       } else {
         await supabase
-          .from('user_favorites')
+          .from('user_favorites' as any)
           .insert({
             user_id: user.data.user.id,
             document_id: documentId
