@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,7 +60,7 @@ export const TechnicalDashboard: React.FC = () => {
           return [];
         }
         
-        return (data || []) as TechnicalDocument[];
+        return (data as unknown as TechnicalDocument[]) || [];
       } catch (error) {
         console.error('Query error:', error);
         return [];
@@ -69,7 +68,6 @@ export const TechnicalDashboard: React.FC = () => {
     }
   });
 
-  // Загружаем избранные документы
   useEffect(() => {
     const loadFavorites = async () => {
       try {
