@@ -1,209 +1,154 @@
-
 import React, { useState } from 'react';
-import { Menu, X, Shield, User, LogOut, ChevronDown, Building } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
-interface NavigationProps {
-  isAuthenticated?: boolean;
-  onAuthClick?: () => void;
-}
+const Navigation: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
-export const Navigation: React.FC<NavigationProps> = ({ 
-  isAuthenticated = false, 
-  onAuthClick 
-}) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showAboutDropdown, setShowAboutDropdown] = useState(false);
-
-  const navItems = [
-    { 
-      label: 'О нас', 
-      href: '#about',
-      hasDropdown: true,
-      dropdownItems: [
-        { label: 'Финансовая дирекция', href: '/about-us' }
-      ]
-    },
-    { label: 'Продукция', href: '#products' },
-    { label: 'Клиенты', href: '#clients' },
-    { label: 'Развитие', href: '#development' },
-    { label: 'Контакты', href: '#contacts' },
-  ];
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
-    <nav className="glass-nav fixed top-0 left-0 right-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="feature-icon">
-              <Shield className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">STUWA</h1>
-              <p className="text-xs text-muted-foreground">Secure Portal</p>
+    <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0 flex items-center">
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                STUWA
+              </span>
+            </Link>
+            <div className="hidden md:ml-6 md:flex md:space-x-8">
+              <Link
+                to="/"
+                className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Главная
+              </Link>
+              <Link
+                to="/technical-dashboard"
+                className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Техническая дирекция
+              </Link>
+              <Link
+                to="/logistics-dashboard"
+                className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Управление логистики
+              </Link>
+              <Link
+                to="/about-us"
+                className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
+              >
+                О нас
+              </Link>
             </div>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <div key={item.label} className="relative">
-                {item.hasDropdown ? (
-                  <div
-                    className="relative"
-                    onMouseEnter={() => setShowAboutDropdown(true)}
-                    onMouseLeave={() => setShowAboutDropdown(false)}
-                  >
-                    <button className="nav-link flex items-center">
-                      {item.label}
-                      <ChevronDown className="w-4 h-4 ml-1" />
-                    </button>
-                    
-                    {showAboutDropdown && (
-                      <div className="absolute top-full left-0 mt-1 w-56 glass-card rounded-lg shadow-lg py-2 animate-fade-in">
-                        {item.dropdownItems?.map((dropdownItem) => (
-                          <a
-                            key={dropdownItem.label}
-                            href={dropdownItem.href}
-                            className="block px-4 py-2 text-sm hover:bg-primary/10 transition-colors flex items-center"
-                          >
-                            <Building className="w-4 h-4 mr-2 text-primary" />
-                            {dropdownItem.label}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <a href={item.href} className="nav-link">
-                    {item.label}
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Auth Section */}
-          <div className="hidden md:flex items-center space-x-4">
-            {isAuthenticated ? (
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">Admin</span>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <LogOut className="w-4 h-4" />
+          <div className="flex items-center">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Button variant="outline" size="sm" onClick={signOut}>
+                  Выйти
                 </Button>
               </div>
             ) : (
-              <Button onClick={onAuthClick} className="btn-primary px-6">
-                Войти
-              </Button>
+              <div className="flex items-center space-x-4">
+                <Link to="/login">
+                  <Button variant="outline" size="sm">
+                    Войти
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button size="sm">Регистрация</Button>
+                </Link>
+              </div>
             )}
+            <div className="-mr-2 flex md:hidden">
+              <button
+                onClick={toggleMenu}
+                type="button"
+                className="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                aria-expanded="false"
+              >
+                <span className="sr-only">Open main menu</span>
+                <svg
+                  className={`${isMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+                <svg
+                  className={`${isMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-          </Button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="mobile-menu md:hidden animate-fade-in">
-          <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200/20">
-              <div className="flex items-center space-x-3">
-                <div className="feature-icon">
-                  <Shield className="w-6 h-6" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-foreground">STUWA</h1>
-                  <p className="text-xs text-muted-foreground">Secure Portal</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="flex-1 px-4 py-6">
-              <div className="space-y-4">
-                {navItems.map((item, index) => (
-                  <div key={item.label}>
-                    {item.hasDropdown ? (
-                      <div className="space-y-2">
-                        <div className={`text-lg font-medium text-foreground hover:text-primary transition-colors animate-slide-in-right animate-stagger-${index + 1}`}>
-                          {item.label}
-                        </div>
-                        {item.dropdownItems?.map((dropdownItem) => (
-                          <a
-                            key={dropdownItem.label}
-                            href={dropdownItem.href}
-                            className="block pl-4 text-md text-muted-foreground hover:text-primary transition-colors flex items-center"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <Building className="w-4 h-4 mr-2" />
-                            {dropdownItem.label}
-                          </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <a
-                        href={item.href}
-                        className={`block text-lg font-medium text-foreground hover:text-primary transition-colors animate-slide-in-right animate-stagger-${index + 1}`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {item.label}
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-gray-200/20">
-              {isAuthenticated ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
-                      <User className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Admin</p>
-                      <p className="text-sm text-muted-foreground">Администратор</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button onClick={onAuthClick} className="btn-primary w-full">
-                  Войти в систему
-                </Button>
-              )}
-            </div>
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+            <Link
+              to="/"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Главная
+            </Link>
+            <Link
+              to="/technical-dashboard"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Техническая дирекция
+            </Link>
+            <Link
+              to="/logistics-dashboard"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Управление логистики
+            </Link>
+            <Link
+              to="/about-us"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              О нас
+            </Link>
           </div>
         </div>
       )}
     </nav>
   );
 };
+
+export default Navigation;
