@@ -33,61 +33,31 @@ export const FinancialDashboard: React.FC = () => {
     queryKey: ['financial_documents', selectedCategory, searchQuery],
     queryFn: async () => {
       try {
-        // Use raw SQL query to avoid type issues
-        let query = `
-          SELECT * FROM financial_documents 
-          WHERE status = 'active' 
-        `;
-        
-        const params: any[] = [];
-        
+        // Use direct table query with type assertion
+        let query = (supabase as any)
+          .from('financial_documents')
+          .select('*')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+
         if (selectedCategory) {
-          query += ` AND category = $${params.length + 1}`;
-          params.push(selectedCategory);
+          query = query.eq('category', selectedCategory);
         }
 
         if (searchQuery) {
-          query += ` AND (title ILIKE $${params.length + 1} OR description ILIKE $${params.length + 1})`;
-          params.push(`%${searchQuery}%`);
+          query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
         }
 
-        query += ` ORDER BY created_at DESC`;
-
-        const { data, error } = await supabase.rpc('exec', {
-          sql: query,
-          args: params
-        });
+        const { data, error } = await query;
         
         if (error) {
           console.error('Error fetching documents:', error);
-          
-          // Fallback to direct query with any type assertion
-          const fallbackQuery = (supabase as any)
-            .from('financial_documents')
-            .select('*')
-            .eq('status', 'active')
-            .order('created_at', { ascending: false });
-
-          if (selectedCategory) {
-            fallbackQuery.eq('category', selectedCategory);
-          }
-
-          if (searchQuery) {
-            fallbackQuery.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-          }
-
-          const { data: fallbackData, error: fallbackError } = await fallbackQuery;
-          
-          if (fallbackError) {
-            toast({
-              title: 'Ошибка',
-              description: 'Не удалось загрузить документы',
-              variant: 'destructive'
-            });
-            return [];
-          }
-          
-          return fallbackData as FinancialDocument[];
+          toast({
+            title: 'Ошибка',
+            description: 'Не удалось загрузить документы',
+            variant: 'destructive'
+          });
+          return [];
         }
         
         return (data || []) as FinancialDocument[];

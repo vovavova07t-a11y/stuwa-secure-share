@@ -25,7 +25,7 @@ const AboutUs = () => {
       if (user) {
         setIsAuthenticated(true);
         
-        // Check if user has financial department access using any type assertion
+        // Check if user has financial department access using direct table query
         const { data: roles } = await (supabase as any)
           .from('user_roles')
           .select('*')
