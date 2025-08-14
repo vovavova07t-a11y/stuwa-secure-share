@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import Navigation from '@/components/Navigation';
 import { HeroSection } from '@/components/HeroSection';
 import { AuthModal } from '@/components/AuthModal';
 import { FileUploadZone } from '@/components/FileUploadZone';
@@ -23,8 +22,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
       <main>
         <HeroSection onGetStarted={() => setIsAuthModalOpen(true)} />
         
