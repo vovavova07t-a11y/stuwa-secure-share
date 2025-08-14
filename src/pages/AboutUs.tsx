@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navigation } from '@/components/Navigation';
+import Navigation from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 import { FinancialDashboard } from '@/components/FinancialDashboard';
 import { supabase } from '@/integrations/supabase/client';
