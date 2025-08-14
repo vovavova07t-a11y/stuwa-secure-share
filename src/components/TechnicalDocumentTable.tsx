@@ -112,7 +112,9 @@ export const TechnicalDocumentTable: React.FC<TechnicalDocumentTableProps> = ({
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-medium">{document.title}</p>
                     {document.print_ready && (
-                      <Printer className="w-3 h-3 text-green-600" title="Готов к печати" />
+                      <div title="Готов к печати">
+                        <Printer className="w-3 h-3 text-green-600" />
+                      </div>
                     )}
                     {favorites.has(document.id) && (
                       <Heart className="w-3 h-3 fill-red-500 text-red-500" />
@@ -148,7 +150,9 @@ export const TechnicalDocumentTable: React.FC<TechnicalDocumentTableProps> = ({
                 <div className="flex items-center gap-1">
                   <span>{document.download_count}</span>
                   {document.last_downloaded_at && (
-                    <Clock className="w-3 h-3 text-muted-foreground" title="Последнее скачивание" />
+                    <div title="Последнее скачивание">
+                      <Clock className="w-3 h-3 text-muted-foreground" />
+                    </div>
                   )}
                 </div>
               </TableCell>
