@@ -14,6 +14,8 @@ import CommercialDashboard from "@/pages/CommercialDashboard";
 import ContactsManagement from "@/pages/ContactsManagement";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
+import OrganizerLogin from "@/pages/OrganizerLogin";
+import OrganizerDashboard from "@/pages/OrganizerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,8 @@ function App() {
               <Route path="/contacts-management" element={<ContactsManagement />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/executive-dashboard" element={<ExecutiveDashboard />} />
+              <Route path="/organizer-login" element={<OrganizerLogin />} />
+              <Route path="/organizer-dashboard" element={<OrganizerDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
