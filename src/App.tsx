@@ -11,6 +11,9 @@ import NotFound from './pages/NotFound';
 import TechnicalDashboard from './pages/TechnicalDashboard';
 import LogisticsDashboard from "@/pages/LogisticsDashboard";
 import CommercialDashboard from "@/pages/CommercialDashboard";
+import ContactsManagement from "@/pages/ContactsManagement";
+import AdminDashboard from "@/pages/AdminDashboard";
+import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +30,9 @@ function App() {
               <Route path="/technical-dashboard" element={<TechnicalDashboard />} />
               <Route path="/logistics-dashboard" element={<LogisticsDashboard />} />
               <Route path="/commercial-dashboard" element={<CommercialDashboard />} />
+              <Route path="/contacts-management" element={<ContactsManagement />} />
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/executive-dashboard" element={<ExecutiveDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

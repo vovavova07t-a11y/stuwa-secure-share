@@ -3,6 +3,14 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown, Settings, Shield, BarChart3 } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -29,24 +37,54 @@ const Navigation: React.FC = () => {
               >
                 Главная
               </Link>
+              
+              {/* Technical Department Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1">
+                  Техническая дирекция
+                  <ChevronDown className="w-4 h-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem asChild>
+                    <Link to="/technical-dashboard">Панель управления</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Logistics Department Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1">
+                  Управление логистики
+                  <ChevronDown className="w-4 h-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem asChild>
+                    <Link to="/logistics-dashboard">Панель управления</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Commercial Department Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1">
+                  Коммерческая дирекция
+                  <ChevronDown className="w-4 h-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem asChild>
+                    <Link to="/commercial-dashboard">Панель управления</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Contacts Management */}
               <Link
-                to="/technical-dashboard"
+                to="/contacts-management"
                 className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
               >
-                Техническая дирекция
+                Контакты
               </Link>
-              <Link
-                to="/logistics-dashboard"
-                className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Управление логистики
-              </Link>
-              <Link
-                to="/commercial-dashboard"
-                className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Коммерческая дирекция
-              </Link>
+
               <Link
                 to="/about-us"
                 className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium transition-colors"
@@ -59,6 +97,31 @@ const Navigation: React.FC = () => {
           <div className="flex items-center">
             {user ? (
               <div className="flex items-center space-x-4">
+                {/* Admin/Executive Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Управление
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link to="/executive-dashboard" className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        Исполнительная панель
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin-dashboard" className="flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        Администрирование
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button variant="outline" size="sm" onClick={signOut}>
                   Выйти
                 </Button>
@@ -150,6 +213,27 @@ const Navigation: React.FC = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Коммерческая дирекция
+            </Link>
+            <Link
+              to="/contacts-management"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Контакты
+            </Link>
+            <Link
+              to="/executive-dashboard"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Исполнительная панель
+            </Link>
+            <Link
+              to="/admin-dashboard"
+              className="block px-3 py-2 text-base font-medium text-gray-900 hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Администрирование
             </Link>
             <Link
               to="/about-us"
