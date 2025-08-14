@@ -29,7 +29,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({ contract, onClose,
     end_date: contract?.end_date || '',
     total_value: contract?.total_value || '',
     currency: contract?.currency || 'EUR',
-    progress_percentage: contract?.progress_percentage || 0,
+    progress_percentage: contract?.progress_percentage?.toString() || '0',
     priority: contract?.priority || 'medium'
   });
 
@@ -111,7 +111,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({ contract, onClose,
             
             <div className="space-y-2">
               <Label htmlFor="contract_type">Тип договора</Label>
-              <Select value={formData.contract_type} onValueChange={(value) => setFormData({ ...formData, contract_type: value })}>
+              <Select value={formData.contract_type} onValueChange={(value: 'sales' | 'procurement' | 'service') => setFormData({ ...formData, contract_type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -147,7 +147,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({ contract, onClose,
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="status">Статус</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select value={formData.status} onValueChange={(value: 'draft' | 'active' | 'completed' | 'cancelled' | 'expired') => setFormData({ ...formData, status: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -163,7 +163,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({ contract, onClose,
             
             <div className="space-y-2">
               <Label htmlFor="priority">Приоритет</Label>
-              <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+              <Select value={formData.priority} onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => setFormData({ ...formData, priority: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -233,7 +233,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({ contract, onClose,
                 min="0"
                 max="100"
                 value={formData.progress_percentage}
-                onChange={(e) => setFormData({ ...formData, progress_percentage: parseInt(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, progress_percentage: e.target.value })}
               />
             </div>
           </div>

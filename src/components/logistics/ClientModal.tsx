@@ -157,7 +157,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({ client, onClose, onSuc
             
             <div className="space-y-2">
               <Label htmlFor="client_type">Тип клиента</Label>
-              <Select value={formData.client_type} onValueChange={(value) => setFormData({ ...formData, client_type: value })}>
+              <Select value={formData.client_type} onValueChange={(value: 'corporate' | 'individual' | 'partner') => setFormData({ ...formData, client_type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -171,7 +171,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({ client, onClose, onSuc
             
             <div className="space-y-2">
               <Label htmlFor="status">Статус</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select value={formData.status} onValueChange={(value: 'active' | 'inactive' | 'potential') => setFormData({ ...formData, status: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

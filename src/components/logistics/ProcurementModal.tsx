@@ -197,7 +197,7 @@ export const ProcurementModal: React.FC<ProcurementModalProps> = ({ opportunity,
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="status">Статус</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select value={formData.status} onValueChange={(value: 'open' | 'in_progress' | 'won' | 'lost' | 'cancelled') => setFormData({ ...formData, status: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -213,7 +213,7 @@ export const ProcurementModal: React.FC<ProcurementModalProps> = ({ opportunity,
             
             <div className="space-y-2">
               <Label htmlFor="priority">Приоритет</Label>
-              <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>
+              <Select value={formData.priority} onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => setFormData({ ...formData, priority: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

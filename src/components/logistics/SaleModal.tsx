@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -109,7 +108,7 @@ export const SaleModal: React.FC<SaleModalProps> = ({ sale, onClose, onSuccess }
             
             <div className="space-y-2">
               <Label htmlFor="status">Статус</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select value={formData.status} onValueChange={(value: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled') => setFormData({ ...formData, status: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
