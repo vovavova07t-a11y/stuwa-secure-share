@@ -7,17 +7,22 @@ import { Wrench, FileText, Settings, Book, Shield, Zap } from 'lucide-react';
 import { UniversalFileUpload } from './UniversalFileUpload';
 
 const categories = [
-  { id: 'manuals', name: 'Руководства пользователя', icon: Book },
-  { id: 'specifications', name: 'Технические спецификации', icon: FileText },
-  { id: 'schematics', name: 'Схемы и чертежи', icon: Wrench },
-  { id: 'software', name: 'Программное обеспечение', icon: Zap },
-  { id: 'safety', name: 'Инструкции по безопасности', icon: Shield },
-  { id: 'configuration', name: 'Конфигурационные файлы', icon: Settings }
+  { id: 'production_development', name: 'Программа развития', icon: Book },
+  { id: 'production_overview', name: 'Обзор продукции', icon: FileText },
+  { id: 'production_specs', name: 'Технические спецификации', icon: Wrench },
+  { id: 'production_presentations', name: 'Презентации деятельности', icon: Zap },
+  { id: 'production_business_plans', name: 'Бизнес-планы', icon: Shield },
+  { id: 'production_catalogs', name: 'Каталоги компании', icon: Settings }
 ];
 
 export const TechnicalDashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showUpload, setShowUpload] = useState(false);
+
+  const getCategoryTitle = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Неизвестная категория';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,7 +42,7 @@ export const TechnicalDashboard: React.FC = () => {
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbPage>
-                    {categories.find(cat => cat.id === selectedCategory)?.name}
+                    {getCategoryTitle(selectedCategory)}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </>
@@ -146,14 +151,14 @@ export const TechnicalDashboard: React.FC = () => {
                 <Card className="glass-card">
                   <CardHeader>
                     <CardTitle className="text-2xl">
-                      {categories.find(cat => cat.id === selectedCategory)?.name}
+                      {getCategoryTitle(selectedCategory)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {showUpload ? (
                       <UniversalFileUpload
-                        title={`Загрузка документов - ${categories.find(cat => cat.id === selectedCategory)?.name}`}
-                        category={selectedCategory}
+                        title={`Загрузка документов - ${getCategoryTitle(selectedCategory)}`}
+                        categoryId={selectedCategory}
                         allowedTypes={['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png']}
                         onFilesChange={(files) => {
                           console.log(`Технические файлы для категории ${selectedCategory}:`, files);

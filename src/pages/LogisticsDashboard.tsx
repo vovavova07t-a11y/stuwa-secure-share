@@ -2,24 +2,34 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { Users, TrendingUp, FileText, ShoppingCart, Calendar, MapPin, Target, AlertCircle } from 'lucide-react';
-import { LogisticsMetrics } from '@/components/logistics/LogisticsMetrics';
-import { ClientsOverview } from '@/components/logistics/ClientsOverview';
-import { SalesReport } from '@/components/logistics/SalesReport';
-import { ContractsProgress } from '@/components/logistics/ContractsProgress';
-import { ProcurementOpportunities } from '@/components/logistics/ProcurementOpportunities';
-import { ContractsManagement } from '@/components/logistics/ContractsManagement';
-import { InterdepartmentSection } from '@/components/interdepartment/InterdepartmentSection';
-import { Separator } from '@/components/ui/separator';
+import { Truck, Users, FileText, BarChart3, Building, Target } from 'lucide-react';
+import { UniversalFileUpload } from '@/components/UniversalFileUpload';
+import Navigation from '@/components/Navigation';
+import { Footer } from '@/components/Footer';
+
+const categories = [
+  { id: 'clients_germany', name: 'Клиенты в Германии', icon: Building },
+  { id: 'clients_sales_report', name: 'Отчет по продажам', icon: BarChart3 },
+  { id: 'clients_contracts', name: 'Управление контрактами', icon: FileText },
+  { id: 'clients_progress', name: 'Ход выполнения контрактов', icon: Target },
+  { id: 'clients_procurement', name: 'Возможности закупок', icon: Truck },
+  { id: 'clients_communications', name: 'Коммуникации с клиентами', icon: Users }
+];
 
 const LogisticsDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showUpload, setShowUpload] = useState(false);
+
+  const getCategoryTitle = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Неизвестная категория';
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Breadcrumb Navigation */}
+      <Navigation />
+      
       <div className="container mx-auto px-4 py-6">
         <Breadcrumb>
           <BreadcrumbList>
@@ -30,109 +40,150 @@ const LogisticsDashboard: React.FC = () => {
             <BreadcrumbItem>
               <BreadcrumbPage>Управление логистики</BreadcrumbPage>
             </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Клиенты</BreadcrumbPage>
-            </BreadcrumbItem>
+            {selectedCategory && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>
+                    {getCategoryTitle(selectedCategory)}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
       </div>
 
       <div className="container mx-auto px-4 pb-20">
-        <div className="animate-fade-in">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Управление клиентами STUWA
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Комплексное управление отношениями с клиентами и продажами
-            </p>
+        {!selectedCategory ? (
+          <div className="animate-fade-in">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Управление логистики STUWA
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                Управление клиентскими отношениями и логистическими процессами
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categories.map((category, index) => {
+                const Icon = category.icon;
+                return (
+                  <Card 
+                    key={category.id}
+                    className={`glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-${index + 1}`}
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    <CardHeader className="text-center">
+                      <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <Icon className="w-8 h-8" />
+                      </div>
+                      <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
+                        {category.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <Button 
+                          variant="ghost" 
+                          className="w-full group-hover:bg-primary/10 transition-colors"
+                        >
+                          Перейти к документам
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
+        ) : (
+          <div className="animate-fade-in">
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="w-full lg:w-80 space-y-4">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Разделы</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setSelectedCategory('')}
+                    >
+                      ← Все разделы
+                    </Button>
+                    {categories.map((category) => {
+                      const Icon = category.icon;
+                      return (
+                        <Button
+                          key={category.id}
+                          variant={selectedCategory === category.id ? "default" : "ghost"}
+                          className="w-full justify-start"
+                          onClick={() => setSelectedCategory(category.id)}
+                        >
+                          <Icon className="w-4 h-4 mr-2" />
+                          {category.name}
+                        </Button>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
 
-          {/* Quick Stats */}
-          <LogisticsMetrics />
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Действия</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      className="w-full btn-primary"
+                      onClick={() => setShowUpload(!showUpload)}
+                    >
+                      {showUpload ? 'Скрыть загрузку' : 'Загрузить документ'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Main Content Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6">
-              <TabsTrigger value="overview" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Обзор</span>
-              </TabsTrigger>
-              <TabsTrigger value="sales" className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                <span className="hidden sm:inline">Продажи</span>
-              </TabsTrigger>
-              <TabsTrigger value="contracts" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">Договора</span>
-              </TabsTrigger>
-              <TabsTrigger value="progress" className="flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                <span className="hidden sm:inline">Освоение</span>
-              </TabsTrigger>
-              <TabsTrigger value="procurement" className="flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4" />
-                <span className="hidden sm:inline">Закупки</span>
-              </TabsTrigger>
-              <TabsTrigger value="current-issues" className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Вопросы</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              <ClientsOverview />
-            </TabsContent>
-
-            <TabsContent value="sales" className="space-y-6">
-              <SalesReport />
-            </TabsContent>
-
-            <TabsContent value="contracts" className="space-y-6">
-              <ContractsManagement />
-            </TabsContent>
-
-            <TabsContent value="progress" className="space-y-6">
-              <ContractsProgress />
-            </TabsContent>
-
-            <TabsContent value="procurement" className="space-y-6">
-              <ProcurementOpportunities />
-            </TabsContent>
-
-            <TabsContent value="current-issues" className="space-y-6">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Текущие вопросы (Германия)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-                      <h3 className="font-semibold text-amber-800 mb-2">Регулятивные изменения</h3>
-                      <p className="text-amber-700">Новые требования по упаковке вступают в силу с 1 января 2025 года.</p>
-                    </div>
-                    <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
-                      <h3 className="font-semibold text-blue-800 mb-2">Логистические вызовы</h3>
-                      <p className="text-blue-700">Повышение тарифов на автомобильные перевозки в регионе Северный Рейн-Вестфалия.</p>
-                    </div>
-                    <div className="p-4 border border-green-200 bg-green-50 rounded-lg">
-                      <h3 className="font-semibold text-green-800 mb-2">Возможности роста</h3>
-                      <p className="text-green-700">Расширение сети дистрибуции в южных регионах Германии.</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          <Separator className="my-8" />
-          <InterdepartmentSection currentDepartment="logistics" />
-        </div>
+              <div className="flex-1 space-y-6">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-2xl">
+                      {getCategoryTitle(selectedCategory)}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {showUpload ? (
+                      <UniversalFileUpload
+                        title={`Загрузка документов - ${getCategoryTitle(selectedCategory)}`}
+                        categoryId={selectedCategory}
+                        allowedTypes={['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']}
+                        onFilesChange={(files) => {
+                          console.log(`Логистические файлы для категории ${selectedCategory}:`, files);
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-12">
+                        <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">Документы не загружены</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Нажмите "Загрузить документ" чтобы добавить файлы в этот раздел
+                        </p>
+                        <Button onClick={() => setShowUpload(true)} className="btn-primary">
+                          Загрузить первый документ
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      
+      <Footer />
     </div>
   );
 };

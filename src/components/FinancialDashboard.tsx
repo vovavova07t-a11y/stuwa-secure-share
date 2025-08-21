@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,18 +8,23 @@ import { UniversalFileUpload } from './UniversalFileUpload';
 import { FileTransfersTable } from './interdepartment/FileTransfersTable';
 
 const categories = [
-  { id: 'debt_reports', name: 'Отчеты по задолженностям', icon: BarChart3 },
-  { id: 'monthly_reports', name: 'Финансовый отчет за месяц', icon: Calendar },
-  { id: 'quarterly_tax_reports', name: 'Налоговый отчет за квартал', icon: FileText },
-  { id: 'annual_reports', name: 'Финансовая отчетность за год', icon: Archive },
-  { id: 'corporate_documents', name: 'Учредительные документы', icon: Building },
-  { id: 'org_structure', name: 'Оргструктура и штатное расписание', icon: Users },
-  { id: 'board_protocols', name: 'Протоколы НС', icon: Shield }
+  { id: 'about_debt_reports', name: 'Отчеты по задолженностям', icon: BarChart3 },
+  { id: 'about_monthly_finance', name: 'Финансовый отчет за месяц', icon: Calendar },
+  { id: 'about_quarterly_tax', name: 'Налоговый отчет за квартал', icon: FileText },
+  { id: 'about_annual_finance', name: 'Финансовая отчетность за год', icon: Archive },
+  { id: 'about_founding_docs', name: 'Учредительные документы', icon: Building },
+  { id: 'about_org_structure', name: 'Оргструктура и штатное расписание', icon: Users },
+  { id: 'about_protocols', name: 'Протоколы НС', icon: Shield }
 ];
 
 export const FinancialDashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showUpload, setShowUpload] = useState(false);
+
+  const getCategoryTitle = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Неизвестная категория';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,7 +44,7 @@ export const FinancialDashboard: React.FC = () => {
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbPage>
-                    {categories.find(cat => cat.id === selectedCategory)?.name}
+                    {getCategoryTitle(selectedCategory)}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </>
@@ -147,14 +153,14 @@ export const FinancialDashboard: React.FC = () => {
                 <Card className="glass-card">
                   <CardHeader>
                     <CardTitle className="text-2xl">
-                      {categories.find(cat => cat.id === selectedCategory)?.name}
+                      {getCategoryTitle(selectedCategory)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {showUpload ? (
                       <UniversalFileUpload
-                        title={`Загрузка документов - ${categories.find(cat => cat.id === selectedCategory)?.name}`}
-                        category={selectedCategory}
+                        title={`Загрузка документов - ${getCategoryTitle(selectedCategory)}`}
+                        categoryId={selectedCategory}
                         allowedTypes={['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']}
                         onFilesChange={(files) => {
                           console.log(`Файлы для категории ${selectedCategory}:`, files);

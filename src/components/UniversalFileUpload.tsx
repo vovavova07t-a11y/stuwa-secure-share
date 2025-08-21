@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle, Download, Loader2, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,12 +10,13 @@ interface UploadedFile {
   status: 'uploading' | 'success' | 'error';
   progress: number;
   uploadedAt: Date;
+  categoryId: string;
 }
 
 interface UniversalFileUploadProps {
   title?: string;
-  category?: string;
-  maxFileSize?: number; // в байтах
+  categoryId: string;
+  maxFileSize?: number;
   allowedTypes?: string[];
   multiple?: boolean;
   onFilesChange?: (files: UploadedFile[]) => void;
@@ -24,8 +24,8 @@ interface UniversalFileUploadProps {
 
 export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   title = "Загрузка документов",
-  category = "general",
-  maxFileSize = 10 * 1024 * 1024, // 10MB
+  categoryId,
+  maxFileSize = 10 * 1024 * 1024,
   allowedTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'txt'],
   multiple = true,
   onFilesChange
@@ -34,6 +34,22 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    const storedFiles = localStorage.getItem(`files_${categoryId}`);
+    if (storedFiles) {
+      try {
+        const parsedFiles = JSON.parse(storedFiles);
+        setUploadedFiles(parsedFiles);
+      } catch (error) {
+        console.error('Error loading stored files:', error);
+      }
+    }
+  }, [categoryId]);
+
+  const saveFilesToStorage = useCallback((files: UploadedFile[]) => {
+    localStorage.setItem(`files_${categoryId}`, JSON.stringify(files));
+  }, [categoryId]);
 
   const validateFile = (file: File): boolean => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -69,11 +85,15 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         if (progress >= 100) {
           progress = 100;
           clearInterval(interval);
-          setUploadedFiles(prev => prev.map(f => 
-            f.id === fileId 
-              ? { ...f, status: 'success' as const, progress: 100 }
-              : f
-          ));
+          setUploadedFiles(prev => {
+            const newFiles = prev.map(f => 
+              f.id === fileId 
+                ? { ...f, status: 'success' as const, progress: 100 }
+                : f
+            );
+            saveFilesToStorage(newFiles);
+            return newFiles;
+          });
           resolve();
         } else {
           setUploadedFiles(prev => prev.map(f => 
@@ -100,29 +120,37 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     if (filesToUpload.length === 0) return;
 
     const newFiles: UploadedFile[] = filesToUpload.map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).substring(2)}`,
+      id: `${categoryId}_${Date.now()}_${Math.random().toString(36).substring(2)}`,
       file,
       status: 'uploading' as const,
       progress: 0,
-      uploadedAt: new Date()
+      uploadedAt: new Date(),
+      categoryId
     }));
 
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setUploadedFiles(prev => {
+      const updatedFiles = [...prev, ...newFiles];
+      saveFilesToStorage(updatedFiles);
+      return updatedFiles;
+    });
 
-    // Симулируем загрузку для каждого файла
     for (const uploadedFile of newFiles) {
       try {
         await simulateUpload(uploadedFile.id);
         toast({
           title: 'Файл загружен',
-          description: `${uploadedFile.file.name} успешно загружен`
+          description: `${uploadedFile.file.name} успешно загружен в "${title}"`
         });
       } catch (error) {
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === uploadedFile.id 
-            ? { ...f, status: 'error' as const }
-            : f
-        ));
+        setUploadedFiles(prev => {
+          const updatedFiles = prev.map(f => 
+            f.id === uploadedFile.id 
+              ? { ...f, status: 'error' as const }
+              : f
+          );
+          saveFilesToStorage(updatedFiles);
+          return updatedFiles;
+        });
         toast({
           title: 'Ошибка загрузки',
           description: `Не удалось загрузить ${uploadedFile.file.name}`,
@@ -131,11 +159,10 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       }
     }
 
-    // Вызываем callback с обновленными файлами
     if (onFilesChange) {
       onFilesChange(uploadedFiles);
     }
-  }, [maxFileSize, allowedTypes, toast, onFilesChange, uploadedFiles]);
+  }, [maxFileSize, allowedTypes, toast, onFilesChange, uploadedFiles, categoryId, title, saveFilesToStorage]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -156,7 +183,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFiles(e.target.files);
-    // Очищаем input для возможности повторного выбора того же файла
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -165,6 +191,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const removeFile = (fileId: string) => {
     setUploadedFiles(prev => {
       const newFiles = prev.filter(f => f.id !== fileId);
+      saveFilesToStorage(newFiles);
       if (onFilesChange) {
         onFilesChange(newFiles);
       }
@@ -214,10 +241,10 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
           <CardTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
             {title}
+            <span className="text-xs text-muted-foreground">({categoryId})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Upload Zone */}
           <div
             className={`upload-zone p-8 rounded-2xl text-center transition-all duration-300 border-2 border-dashed cursor-pointer ${
               dragActive 
@@ -266,7 +293,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         </CardContent>
       </Card>
 
-      {/* Uploaded Files */}
       {uploadedFiles.length > 0 && (
         <Card className="glass-card">
           <CardHeader>

@@ -1,251 +1,189 @@
 
 import React, { useState } from 'react';
-import Navigation from '@/components/Navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClientRequestsReport } from '@/components/commercial/ClientRequestsReport';
-import { ClientDatabase } from '@/components/commercial/ClientDatabase';
-import { ProductCatalog } from '@/components/commercial/ProductCatalog';
-import { PriceLists } from '@/components/commercial/PriceLists';
-import { ActiveQuotations } from '@/components/commercial/ActiveQuotations';
-import { PartnershipsDocuments } from '@/components/commercial/PartnershipsDocuments';
-import { 
-  Users, 
-  FileText, 
-  Package, 
-  DollarSign, 
-  Quote, 
-  Handshake,
-  TrendingUp,
-  BarChart3
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { TrendingUp, Users, FileText, PresentationChart, Target, Building2 } from 'lucide-react';
+import { UniversalFileUpload } from '@/components/UniversalFileUpload';
+import Navigation from '@/components/Navigation';
+import { Footer } from '@/components/Footer';
+
+const categories = [
+  { id: 'development_client_requests', name: 'Запросы клиентов', icon: Users },
+  { id: 'development_client_list', name: 'База клиентов', icon: Building2 },
+  { id: 'development_partnerships', name: 'Документы о партнерстве', icon: Target },
+  { id: 'development_quotations', name: 'Активные котировки', icon: PresentationChart },
+  { id: 'development_price_lists', name: 'Прайс-листы', icon: FileText },
+  { id: 'development_catalogs', name: 'Каталог продукции', icon: TrendingUp }
+];
 
 const CommercialDashboard: React.FC = () => {
-  const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showUpload, setShowUpload] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto px-4 py-20">
-          <Card className="glass-card max-w-md mx-auto text-center">
-            <CardHeader>
-              <CardTitle>Требуется авторизация</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Для доступа к Коммерческой дирекции необходимо войти в систему
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const overviewCards = [
-    {
-      title: 'Активные клиенты',
-      value: '156',
-      change: '+12%',
-      icon: Users,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Открытые запросы',
-      value: '24',
-      change: '+8%',
-      icon: FileText,
-      color: 'text-orange-600'
-    },
-    {
-      title: 'Активные КП',
-      value: '18',
-      change: '+15%',
-      icon: Quote,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Месячная выручка',
-      value: '€125,000',
-      change: '+22%',
-      icon: TrendingUp,
-      color: 'text-purple-600'
-    }
-  ];
+  const getCategoryTitle = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Неизвестная категория';
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Коммерческая дирекция
-          </h1>
-          <p className="text-muted-foreground">
-            Управление бизнес-развитием и отношениями с клиентами
-          </p>
-        </div>
+      <div className="container mx-auto px-4 py-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Главная</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Коммерческая дирекция</BreadcrumbPage>
+            </BreadcrumbItem>
+            {selectedCategory && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>
+                    {getCategoryTitle(selectedCategory)}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="overview">Обзор</TabsTrigger>
-            <TabsTrigger value="requests">Запросы</TabsTrigger>
-            <TabsTrigger value="clients">Клиенты</TabsTrigger>
-            <TabsTrigger value="products">Продукция</TabsTrigger>
-            <TabsTrigger value="pricing">Прайс-листы</TabsTrigger>
-            <TabsTrigger value="quotations">КП</TabsTrigger>
-            <TabsTrigger value="partnerships">Соглашения</TabsTrigger>
-          </TabsList>
+      <div className="container mx-auto px-4 pb-20">
+        {!selectedCategory ? (
+          <div className="animate-fade-in">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Коммерческая дирекция STUWA
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                Управление коммерческими документами и клиентскими отношениями
+              </p>
+            </div>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {overviewCards.map((card, index) => (
-                <Card key={index} className="glass-card">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {card.title}
-                        </p>
-                        <p className="text-2xl font-bold text-foreground">
-                          {card.value}
-                        </p>
-                        <p className="text-sm text-green-600 font-medium">
-                          {card.change}
-                        </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categories.map((category, index) => {
+                const Icon = category.icon;
+                return (
+                  <Card 
+                    key={category.id}
+                    className={`glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-${index + 1}`}
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    <CardHeader className="text-center">
+                      <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <Icon className="w-8 h-8" />
                       </div>
-                      <card.icon className={`w-8 h-8 ${card.color}`} />
-                    </div>
+                      <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
+                        {category.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <Button 
+                          variant="ghost" 
+                          className="w-full group-hover:bg-primary/10 transition-colors"
+                        >
+                          Перейти к документам
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="animate-fade-in">
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="w-full lg:w-80 space-y-4">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Разделы</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setSelectedCategory('')}
+                    >
+                      ← Все разделы
+                    </Button>
+                    {categories.map((category) => {
+                      const Icon = category.icon;
+                      return (
+                        <Button
+                          key={category.id}
+                          variant={selectedCategory === category.id ? "default" : "ghost"}
+                          className="w-full justify-start"
+                          onClick={() => setSelectedCategory(category.id)}
+                        >
+                          <Icon className="w-4 h-4 mr-2" />
+                          {category.name}
+                        </Button>
+                      );
+                    })}
                   </CardContent>
                 </Card>
-              ))}
+
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Действия</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      className="w-full btn-primary"
+                      onClick={() => setShowUpload(!showUpload)}
+                    >
+                      {showUpload ? 'Скрыть загрузку' : 'Загрузить документ'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex-1 space-y-6">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-2xl">
+                      {getCategoryTitle(selectedCategory)}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {showUpload ? (
+                      <UniversalFileUpload
+                        title={`Загрузка документов - ${getCategoryTitle(selectedCategory)}`}
+                        categoryId={selectedCategory}
+                        allowedTypes={['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']}
+                        onFilesChange={(files) => {
+                          console.log(`Коммерческие файлы для категории ${selectedCategory}:`, files);
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-12">
+                        <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">Документы не загружены</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Нажмите "Загрузить документ" чтобы добавить файлы в этот раздел
+                        </p>
+                        <Button onClick={() => setShowUpload(true)} className="btn-primary">
+                          Загрузить первый документ
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    Воронка продаж
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Лиды</span>
-                      <span className="text-sm text-muted-foreground">45</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '90%' }}></div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Квалификация</span>
-                      <span className="text-sm text-muted-foreground">32</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div className="bg-orange-600 h-2 rounded-full" style={{ width: '70%' }}></div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Предложения</span>
-                      <span className="text-sm text-muted-foreground">18</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div className="bg-yellow-600 h-2 rounded-full" style={{ width: '40%' }}></div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Закрытые сделки</span>
-                      <span className="text-sm text-muted-foreground">12</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full" style={{ width: '25%' }}></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle>Недавняя активность</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Новый клиент добавлен</p>
-                        <p className="text-xs text-muted-foreground">BMW Group - 2 часа назад</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">КП отправлено</p>
-                        <p className="text-xs text-muted-foreground">Volkswagen AG - 4 часа назад</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-orange-600 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Обновлен прайс-лист</p>
-                        <p className="text-xs text-muted-foreground">Каталог 2024 - 6 часов назад</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-purple-600 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Подписан договор</p>
-                        <p className="text-xs text-muted-foreground">Mercedes-Benz - 1 день назад</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="requests">
-            <ClientRequestsReport />
-          </TabsContent>
-
-          <TabsContent value="clients">
-            <ClientDatabase />
-          </TabsContent>
-
-          <TabsContent value="products">
-            <ProductCatalog />
-          </TabsContent>
-
-          <TabsContent value="pricing">
-            <PriceLists />
-          </TabsContent>
-
-          <TabsContent value="quotations">
-            <ActiveQuotations />
-          </TabsContent>
-
-          <TabsContent value="partnerships">
-            <PartnershipsDocuments />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
+      
+      <Footer />
     </div>
   );
 };
