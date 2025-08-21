@@ -1,16 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DocumentViewer } from './DocumentViewer';
-import { DocumentUpload } from './DocumentUpload';
-import { DocumentTable } from './DocumentTable';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Building, FileText, Users, BarChart3, Calendar, Shield, Archive } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import type { FinancialDocument } from '@/types/financial';
+import { UniversalFileUpload } from './UniversalFileUpload';
 
 const categories = [
   { id: 'debt_reports', name: 'Отчеты по задолженностям', icon: BarChart3 },
@@ -24,113 +18,7 @@ const categories = [
 
 export const FinancialDashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedDocument, setSelectedDocument] = useState<FinancialDocument | null>(null);
   const [showUpload, setShowUpload] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const { toast } = useToast();
-
-  const { data: documents, isLoading, refetch } = useQuery({
-    queryKey: ['financial_documents', selectedCategory, searchQuery],
-    queryFn: async () => {
-      try {
-        // Use direct table query with type assertion
-        let query = (supabase as any)
-          .from('financial_documents')
-          .select('*')
-          .eq('status', 'active')
-          .order('created_at', { ascending: false });
-
-        if (selectedCategory) {
-          query = query.eq('category', selectedCategory);
-        }
-
-        if (searchQuery) {
-          query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-        }
-
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error('Error fetching documents:', error);
-          toast({
-            title: 'Ошибка',
-            description: 'Не удалось загрузить документы',
-            variant: 'destructive'
-          });
-          return [];
-        }
-        
-        return (data || []) as FinancialDocument[];
-      } catch (error) {
-        console.error('Query error:', error);
-        toast({
-          title: 'Ошибка',
-          description: 'Не удалось загрузить документы',
-          variant: 'destructive'
-        });
-        return [];
-      }
-    }
-  });
-
-  const handleDocumentUpload = () => {
-    refetch();
-    setShowUpload(false);
-    toast({
-      title: 'Успех',
-      description: 'Документ успешно загружен'
-    });
-  };
-
-  const logDocumentAccess = async (documentId: string, action: string) => {
-    try {
-      await (supabase as any).from('document_access_logs').insert({
-        document_id: documentId,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-        action,
-        ip_address: 'client_ip',
-        user_agent: navigator.userAgent
-      });
-    } catch (error) {
-      console.error('Error logging access:', error);
-    }
-  };
-
-  const handleDocumentView = (document: FinancialDocument) => {
-    setSelectedDocument(document);
-    logDocumentAccess(document.id, 'view');
-  };
-
-  const handleDocumentDownload = async (document: FinancialDocument) => {
-    try {
-      // Increment download count
-      await (supabase as any)
-        .from('financial_documents')
-        .update({ 
-          download_count: document.download_count + 1,
-          last_downloaded_at: new Date().toISOString()
-        })
-        .eq('id', document.id);
-
-      logDocumentAccess(document.id, 'download');
-      
-      // Create download link
-      const link = window.document.createElement('a');
-      link.href = document.file_url;
-      link.download = document.file_name;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-      
-      refetch();
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось скачать файл',
-        variant: 'destructive'
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -246,9 +134,9 @@ export const FinancialDashboard: React.FC = () => {
                   <CardContent>
                     <Button 
                       className="w-full btn-primary"
-                      onClick={() => setShowUpload(true)}
+                      onClick={() => setShowUpload(!showUpload)}
                     >
-                      Загрузить документ
+                      {showUpload ? 'Скрыть загрузку' : 'Загрузить документ'}
                     </Button>
                   </CardContent>
                 </Card>
@@ -258,28 +146,32 @@ export const FinancialDashboard: React.FC = () => {
               <div className="flex-1 space-y-6">
                 <Card className="glass-card">
                   <CardHeader>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <CardTitle className="text-2xl">
-                        {categories.find(cat => cat.id === selectedCategory)?.name}
-                      </CardTitle>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Поиск документов..."
-                          className="px-4 py-2 border border-border rounded-lg bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                      </div>
-                    </div>
+                    <CardTitle className="text-2xl">
+                      {categories.find(cat => cat.id === selectedCategory)?.name}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <DocumentTable
-                      documents={documents || []}
-                      isLoading={isLoading}
-                      onView={handleDocumentView}
-                      onDownload={handleDocumentDownload}
-                    />
+                    {showUpload ? (
+                      <UniversalFileUpload
+                        title={`Загрузка документов - ${categories.find(cat => cat.id === selectedCategory)?.name}`}
+                        category={selectedCategory}
+                        allowedTypes={['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']}
+                        onFilesChange={(files) => {
+                          console.log(`Файлы для категории ${selectedCategory}:`, files);
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-12">
+                        <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">Документы не загружены</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Нажмите "Загрузить документ" чтобы добавить файлы в этот раздел
+                        </p>
+                        <Button onClick={() => setShowUpload(true)} className="btn-primary">
+                          Загрузить первый документ
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -287,22 +179,6 @@ export const FinancialDashboard: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Modals */}
-      {showUpload && (
-        <DocumentUpload
-          category={selectedCategory}
-          onClose={() => setShowUpload(false)}
-          onSuccess={handleDocumentUpload}
-        />
-      )}
-
-      {selectedDocument && (
-        <DocumentViewer
-          document={selectedDocument}
-          onClose={() => setSelectedDocument(null)}
-        />
-      )}
     </div>
   );
 };
