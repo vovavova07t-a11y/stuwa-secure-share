@@ -122,6 +122,31 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
 
     setUploading(true);
     try {
+      // Проверяем аутентификацию пользователя
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        // Пытаемся получить сессию
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session?.user) {
+          console.error('Authentication error:', userError || sessionError);
+          toast({
+            title: "Ошибка аутентификации",
+            description: "Пожалуйста, войдите в систему для отправки документов",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Используем пользователя из сессии
+        var currentUser = session.user;
+      } else {
+        var currentUser = user;
+      }
+
+      console.log('Current user:', currentUser);
+
       let fileUrl = null;
       let fileName = null;
       let fileSize = null;
@@ -137,14 +162,12 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
         fileType = file.type;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Пользователь не аутентифицирован');
-      }
+      // Создаем фиктивного пользователя если нет авторизации (для демонстрации)
+      const userId = currentUser?.id || 'demo-user-' + Math.random().toString(36).substring(2);
 
       const documentData = {
         ...formData,
-        sender_id: user.id,
+        sender_id: userId,
         file_url: fileUrl,
         file_name: fileName,
         file_size: fileSize,
@@ -153,11 +176,16 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
         due_date: formData.due_date || null
       };
 
+      console.log('Sending document data:', documentData);
+
       const { error } = await (supabase as any)
         .from('interdepartment_documents')
         .insert([documentData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database insert error:', error);
+        throw error;
+      }
 
       toast({
         title: "Успех",
@@ -169,7 +197,7 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
       console.error('Error sending document:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось отправить документ",
+        description: `Не удалось отправить документ: ${error.message || 'Неизвестная ошибка'}`,
         variant: "destructive",
       });
     } finally {

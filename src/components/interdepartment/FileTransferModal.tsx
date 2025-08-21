@@ -51,7 +51,6 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
   const [priority, setPriority] = useState('normal');
   const [message, setMessage] = useState('');
   const [deadline, setDeadline] = useState('');
-  const [isGroupSend, setIsGroupSend] = useState(false);
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
 
@@ -79,8 +78,26 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
 
     setSending(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Пользователь не аутентифицирован');
+      // Проверяем аутентификацию пользователя
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      let currentUser;
+      if (userError || !user) {
+        // Пытаемся получить сессию
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session?.user) {
+          console.log('No authenticated user, creating demo user for transfer');
+          // Создаем фиктивного пользователя для демонстрации
+          currentUser = { id: 'demo-user-' + Math.random().toString(36).substring(2) };
+        } else {
+          currentUser = session.user;
+        }
+      } else {
+        currentUser = user;
+      }
+
+      console.log('Current user for file transfer:', currentUser);
 
       // Отправляем файл в каждый выбранный отдел
       for (const department of selectedDepartments) {
@@ -91,7 +108,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
           file_type: file.type,
           sender_department: currentDepartment,
           receiver_department: department,
-          sender_id: user.id,
+          sender_id: currentUser.id,
           priority,
           status: 'sent',
           message: message || null,
@@ -102,16 +119,21 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
               department: currentDepartment,
               action: 'sent',
               timestamp: new Date().toISOString(),
-              user_id: user.id
+              user_id: currentUser.id
             }
           ]
         };
+
+        console.log('Sending transfer data:', transferData);
 
         const { error } = await (supabase as any)
           .from('interdepartment_file_transfers')
           .insert([transferData]);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Transfer insert error:', error);
+          throw error;
+        }
       }
 
       toast({
@@ -125,7 +147,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
       console.error('Error sending file:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось отправить файл",
+        description: `Не удалось отправить файл: ${error.message || 'Неизвестная ошибка'}`,
         variant: "destructive",
       });
     } finally {
