@@ -2,24 +2,27 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { Truck, Users, FileText, BarChart3, Building, Target } from 'lucide-react';
+import { Users, Building2, Target, Presentation, FileText, TrendingUp, ArrowLeftRight } from 'lucide-react';
 import { UniversalFileUpload } from '@/components/UniversalFileUpload';
+import { InterdepartmentDashboard } from '@/components/interdepartment/InterdepartmentDashboard';
 import Navigation from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 
 const categories = [
-  { id: 'clients_germany', name: 'Клиенты в Германии', icon: Building },
-  { id: 'clients_sales_report', name: 'Отчет по продажам', icon: BarChart3 },
-  { id: 'clients_contracts', name: 'Управление контрактами', icon: FileText },
-  { id: 'clients_progress', name: 'Ход выполнения контрактов', icon: Target },
-  { id: 'clients_procurement', name: 'Возможности закупок', icon: Truck },
-  { id: 'clients_communications', name: 'Коммуникации с клиентами', icon: Users }
+  { id: 'development_client_requests', name: 'Запросы клиентов', icon: Users },
+  { id: 'development_client_list', name: 'База клиентов', icon: Building2 },
+  { id: 'development_partnerships', name: 'Документы о партнерстве', icon: Target },
+  { id: 'development_quotations', name: 'Активные котировки', icon: Presentation },
+  { id: 'development_price_lists', name: 'Прайс-листы', icon: FileText },
+  { id: 'development_catalogs', name: 'Каталог продукции', icon: TrendingUp }
 ];
 
 const LogisticsDashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showUpload, setShowUpload] = useState(false);
+  const [showInterdepartment, setShowInterdepartment] = useState(false);
 
   const getCategoryTitle = (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
@@ -38,9 +41,9 @@ const LogisticsDashboard: React.FC = () => {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Управление логистики</BreadcrumbPage>
+              <BreadcrumbPage>Развитие</BreadcrumbPage>
             </BreadcrumbItem>
-            {selectedCategory && (
+            {selectedCategory && !showInterdepartment && (
               <>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
@@ -50,19 +53,78 @@ const LogisticsDashboard: React.FC = () => {
                 </BreadcrumbItem>
               </>
             )}
+            {showInterdepartment && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Межотдельский обмен</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
       </div>
 
       <div className="container mx-auto px-4 pb-20">
-        {!selectedCategory ? (
+        {showInterdepartment ? (
+          <div className="animate-fade-in">
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="w-full lg:w-80 space-y-4">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Разделы</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setShowInterdepartment(false)}
+                    >
+                      ← Управление логистики
+                    </Button>
+                    {categories.map((category) => {
+                      const Icon = category.icon;
+                      return (
+                        <Button
+                          key={category.id}
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setSelectedCategory(category.id);
+                            setShowInterdepartment(false);
+                          }}
+                        >
+                          <Icon className="w-4 h-4 mr-2" />
+                          {category.name}
+                        </Button>
+                      );
+                    })}
+                    <Button
+                      variant="default"
+                      className="w-full justify-start"
+                      onClick={() => setShowInterdepartment(true)}
+                    >
+                      <ArrowLeftRight className="w-4 h-4 mr-2" />
+                      Межотдельский обмен
+                      <Badge className="ml-auto bg-red-500 text-white">4</Badge>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="flex-1">
+                <InterdepartmentDashboard />
+              </div>
+            </div>
+          </div>
+        ) : !selectedCategory ? (
           <div className="animate-fade-in">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Управление логистики STUWA
               </h1>
               <p className="text-xl text-muted-foreground">
-                Управление клиентскими отношениями и логистическими процессами
+                Развитие бизнеса и управление логистическими процессами
               </p>
             </div>
 
@@ -96,6 +158,32 @@ const LogisticsDashboard: React.FC = () => {
                   </Card>
                 );
               })}
+              
+              {/* Межотдельский обмен карточка */}
+              <Card 
+                className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7"
+                onClick={() => setShowInterdepartment(true)}
+              >
+                <CardHeader className="text-center">
+                  <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <ArrowLeftRight className="w-8 h-8" />
+                  </div>
+                  <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
+                    Межотдельский обмен
+                    <Badge className="ml-2 bg-red-500 text-white">4</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full group-hover:bg-primary/10 transition-colors"
+                    >
+                      Обмен файлами
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         ) : (
@@ -128,6 +216,15 @@ const LogisticsDashboard: React.FC = () => {
                         </Button>
                       );
                     })}
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setShowInterdepartment(true)}
+                    >
+                      <ArrowLeftRight className="w-4 h-4 mr-2" />
+                      Межотдельский обмен
+                      <Badge className="ml-auto bg-red-500 text-white">4</Badge>
+                    </Button>
                   </CardContent>
                 </Card>
 
@@ -135,12 +232,20 @@ const LogisticsDashboard: React.FC = () => {
                   <CardHeader>
                     <CardTitle className="text-lg">Действия</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-2">
                     <Button 
                       className="w-full btn-primary"
                       onClick={() => setShowUpload(!showUpload)}
                     >
                       {showUpload ? 'Скрыть загрузку' : 'Загрузить документ'}
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowInterdepartment(true)}
+                    >
+                      <ArrowLeftRight className="w-4 h-4 mr-2" />
+                      Отправить в другой отдел
                     </Button>
                   </CardContent>
                 </Card>
