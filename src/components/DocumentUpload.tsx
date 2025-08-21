@@ -73,14 +73,6 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     setUploadProgress(0);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        throw new Error('Пользователь не авторизован');
-      }
-
-      console.log('Starting upload process for user:', user.id);
-
       // Upload file to Supabase Storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -99,24 +91,17 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         });
 
       clearInterval(progressInterval);
-      setUploadProgress(95);
+      setUploadProgress(100);
 
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('File uploaded successfully:', uploadData.path);
+      if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
 
-      console.log('Public URL generated:', publicUrl);
-
-      // Save document metadata to database
-      const { error: dbError } = await supabase
+      // Save document metadata to database using direct insert
+      const { error: dbError } = await (supabase as any)
         .from('financial_documents')
         .insert({
           title,
@@ -126,40 +111,24 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
           file_type: selectedFile.type || 'application/octet-stream',
           file_size: selectedFile.size,
           category,
-          uploaded_by: user.id
+          uploaded_by: (await supabase.auth.getUser()).data.user?.id
         });
 
-      setUploadProgress(100);
+      if (dbError) throw dbError;
 
-      if (dbError) {
-        console.error('Database insert error:', dbError);
-        // Don't throw here - file is already uploaded, just inform user
-        toast({
-          title: 'Частичный успех',
-          description: 'Файл загружен, но возникла ошибка при сохранении метаданных',
-          variant: 'destructive'
-        });
-      } else {
-        console.log('Document metadata saved successfully');
-        
-        // Log upload action (ignore errors here)
-        try {
-          await supabase.from('document_access_logs').insert({
-            document_id: uploadData.path,
-            user_id: user.id,
-            action: 'upload',
-            ip_address: 'client_ip',
-            user_agent: navigator.userAgent
-          });
-        } catch (logError) {
-          console.warn('Failed to log upload action:', logError);
-        }
+      // Log upload action
+      await (supabase as any).from('document_access_logs').insert({
+        document_id: uploadData.path,
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        action: 'upload',
+        ip_address: 'client_ip',
+        user_agent: navigator.userAgent
+      });
 
-        toast({
-          title: 'Успех',
-          description: 'Документ успешно загружен'
-        });
-      }
+      toast({
+        title: 'Успех',
+        description: 'Документ успешно загружен'
+      });
 
       onSuccess();
     } catch (error: any) {

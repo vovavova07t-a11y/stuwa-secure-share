@@ -53,13 +53,10 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
     setIsUploading(true);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) {
         throw new Error('Пользователь не авторизован');
       }
-
-      console.log('Starting technical document upload for user:', user.id);
 
       // Upload file to Supabase Storage
       const fileExt = selectedFile.name.split('.').pop();
@@ -70,19 +67,12 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
         .from('documents')
         .upload(filePath, selectedFile);
 
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('File uploaded successfully:', filePath);
+      if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
-
-      console.log('Public URL generated:', publicUrl);
 
       // Parse technical specs if provided
       let technicalSpecs = {};
@@ -96,7 +86,7 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
 
       // Insert document record
       const { error: insertError } = await supabase
-        .from('technical_documents')
+        .from('technical_documents' as any)
         .insert({
           title: formData.title,
           description: formData.description,
@@ -109,31 +99,22 @@ export const TechnicalDocumentUpload: React.FC<TechnicalDocumentUploadProps> = (
           tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
           technical_specs: technicalSpecs,
           print_ready: formData.print_ready,
-          uploaded_by: user.id
+          uploaded_by: user.data.user.id
         });
 
-      if (insertError) {
-        console.error('Database insert error:', insertError);
-        // Don't throw here - file is already uploaded
-        toast({
-          title: 'Частичный успех',
-          description: 'Файл загружен, но возникла ошибка при сохранении метаданных',
-          variant: 'destructive'
-        });
-      } else {
-        console.log('Technical document metadata saved successfully');
-        toast({
-          title: 'Успех',
-          description: 'Документ успешно загружен'
-        });
-      }
+      if (insertError) throw insertError;
+
+      toast({
+        title: 'Успех',
+        description: 'Документ успешно загружен'
+      });
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Upload error:', error);
       toast({
         title: 'Ошибка',
-        description: error.message || 'Не удалось загрузить документ',
+        description: 'Не удалось загрузить документ',
         variant: 'destructive'
       });
     } finally {
