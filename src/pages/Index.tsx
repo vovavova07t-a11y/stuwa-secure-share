@@ -40,7 +40,10 @@ const Index = () => {
                 </div>
                 
                 <div className="animate-slide-up animate-stagger-2">
-                  <UniversalFileUpload onFilesChange={handleFilesChange} />
+                  <UniversalFileUpload 
+                    categoryId="general_upload"
+                    onFilesChange={handleFilesChange} 
+                  />
                 </div>
               </div>
             </div>

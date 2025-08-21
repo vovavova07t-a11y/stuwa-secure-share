@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { TrendingUp, Users, FileText, PresentationChart, Target, Building2 } from 'lucide-react';
+import { TrendingUp, Users, FileText, Presentation, Target, Building2 } from 'lucide-react';
 import { UniversalFileUpload } from '@/components/UniversalFileUpload';
 import Navigation from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
@@ -12,7 +12,7 @@ const categories = [
   { id: 'development_client_requests', name: 'Запросы клиентов', icon: Users },
   { id: 'development_client_list', name: 'База клиентов', icon: Building2 },
   { id: 'development_partnerships', name: 'Документы о партнерстве', icon: Target },
-  { id: 'development_quotations', name: 'Активные котировки', icon: PresentationChart },
+  { id: 'development_quotations', name: 'Активные котировки', icon: Presentation },
   { id: 'development_price_lists', name: 'Прайс-листы', icon: FileText },
   { id: 'development_catalogs', name: 'Каталог продукции', icon: TrendingUp }
 ];
