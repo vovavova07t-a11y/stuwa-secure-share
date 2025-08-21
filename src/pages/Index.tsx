@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { HeroSection } from '@/components/HeroSection';
 import { AuthModal } from '@/components/AuthModal';
-import { FileUploadZone } from '@/components/FileUploadZone';
+import { UniversalFileUpload } from '@/components/UniversalFileUpload';
 import { SecuritySection } from '@/components/SecuritySection';
 import { Footer } from '@/components/Footer';
 
@@ -40,7 +40,7 @@ const Index = () => {
                 </div>
                 
                 <div className="animate-slide-up animate-stagger-2">
-                  <FileUploadZone onFileUpload={handleFileUpload} />
+                  <UniversalFileUpload onFileUpload={handleFileUpload} />
                 </div>
               </div>
             </div>
