@@ -15,8 +15,8 @@ const Index = () => {
     setIsAuthModalOpen(false);
   };
 
-  const handleFileUpload = (files: File[]) => {
-    console.log('Files uploaded:', files);
+  const handleFilesChange = (uploadedFiles: any[]) => {
+    console.log('Files uploaded:', uploadedFiles);
     // Here would be the actual file upload logic
   };
 
@@ -40,7 +40,7 @@ const Index = () => {
                 </div>
                 
                 <div className="animate-slide-up animate-stagger-2">
-                  <UniversalFileUpload onFileUpload={handleFileUpload} />
+                  <UniversalFileUpload onFilesChange={handleFilesChange} />
                 </div>
               </div>
             </div>
