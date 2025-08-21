@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Eye, Calendar, User } from 'lucide-react';
 import type { FinancialDocument } from '@/types/financial';
+import { FileTransferButton } from './interdepartment/FileTransferButton';
 
 interface DocumentTableProps {
   documents: FinancialDocument[];
@@ -117,6 +117,16 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
                   >
                     <Download className="w-4 h-4" />
                   </Button>
+                  <FileTransferButton
+                    file={{
+                      id: document.id,
+                      name: document.file_name || document.title,
+                      url: document.file_url || '',
+                      size: document.file_size,
+                      type: document.file_type || ''
+                    }}
+                    currentDepartment="financial"
+                  />
                 </div>
               </TableCell>
             </TableRow>

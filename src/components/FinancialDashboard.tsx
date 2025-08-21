@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Building, FileText, Users, BarChart3, Calendar, Shield, Archive } from 'lucide-react';
 import { UniversalFileUpload } from './UniversalFileUpload';
+import { FileTransfersTable } from './interdepartment/FileTransfersTable';
 
 const categories = [
   { id: 'debt_reports', name: 'Отчеты по задолженностям', icon: BarChart3 },
@@ -174,6 +174,9 @@ export const FinancialDashboard: React.FC = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Межотдельский обмен файлами */}
+                <FileTransfersTable department="financial" />
               </div>
             </div>
           </div>
