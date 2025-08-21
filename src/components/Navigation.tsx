@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
@@ -15,10 +16,10 @@ import { Bell } from 'lucide-react';
 import { NotificationCenter } from './interdepartment/NotificationCenter';
 
 interface NavigationProps {
-  onLoginClick: () => void;
+  onLoginClick?: () => void;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ onLoginClick }) => {
+const Navigation: React.FC<NavigationProps> = ({ onLoginClick = () => {} }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -156,3 +157,5 @@ export const Navigation: React.FC<NavigationProps> = ({ onLoginClick }) => {
     </nav>
   );
 };
+
+export default Navigation;
