@@ -40,10 +40,19 @@ const PRIORITY_OPTIONS = [
   { value: 'urgent', label: 'Срочно', color: 'bg-red-100 text-red-800', icon: Zap }
 ];
 
-// Получаем демо-пользователя
+// Генерируем стабильные UUID для демо-пользователей
+const DEPARTMENT_UUIDS = {
+  financial: '11111111-1111-1111-1111-111111111111',
+  technical: '22222222-2222-2222-2222-222222222222',
+  logistics: '33333333-3333-3333-3333-333333333333',
+  commercial: '44444444-4444-4444-4444-444444444444',
+  office: '55555555-5555-5555-5555-555555555555'
+};
+
+// Получаем демо-пользователя с правильным UUID
 const getDemoUser = (department: string) => {
   return {
-    id: `demo-user-${department}`,
+    id: DEPARTMENT_UUIDS[department as keyof typeof DEPARTMENT_UUIDS] || DEPARTMENT_UUIDS.office,
     email: `${department}@stuwa.com`,
     department: department
   };
@@ -87,9 +96,10 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
 
     setSending(true);
     try {
-      // Используем демо-пользователя
+      // Используем демо-пользователя с правильным UUID
       const demoUser = getDemoUser(currentDepartment);
       console.log('Отправка файла от демо-пользователя:', demoUser);
+      console.log('UUID отправителя:', demoUser.id, 'тип:', typeof demoUser.id);
 
       // Отправляем файл в каждый выбранный отдел
       for (const department of selectedDepartments) {
@@ -100,7 +110,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
           file_type: file.type,
           sender_department: currentDepartment,
           receiver_department: department,
-          sender_id: demoUser.id,
+          sender_id: demoUser.id, // Теперь это правильный UUID
           priority,
           status: 'sent',
           message: message || null,
@@ -118,19 +128,22 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
 
         console.log('Данные передачи файла:', transferData);
 
-        try {
-          const { error } = await (supabase as any)
-            .from('interdepartment_file_transfers')
-            .insert([transferData]);
+        const { data, error } = await supabase
+          .from('interdepartment_file_transfers')
+          .insert([transferData])
+          .select();
 
-          if (error) {
-            console.error('Database error for department', department, ':', error);
-            // В демо-режиме продолжаем, даже если есть ошибка базы данных
-          }
-        } catch (dbError) {
-          console.error('Database connection error:', dbError);
-          // В демо-режиме игнорируем ошибки базы данных
+        if (error) {
+          console.error('Ошибка базы данных для отдела', department, ':', error);
+          toast({
+            title: "Ошибка базы данных",
+            description: `Не удалось отправить файл в отдел ${department}: ${error.message}`,
+            variant: "destructive",
+          });
+          continue;
         }
+
+        console.log('Файл успешно отправлен в отдел', department, ':', data);
       }
 
       toast({
@@ -141,14 +154,12 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error('Error sending file:', error);
-      // В демо-режиме все равно показываем успех
+      console.error('Общая ошибка при отправке файла:', error);
       toast({
-        title: "Успех",
-        description: `Файл отправлен в ${selectedDepartments.length} отдел(а) (демо-режим)`,
+        title: "Ошибка",
+        description: "Произошла ошибка при отправке файла. Проверьте консоль для деталей.",
+        variant: "destructive",
       });
-      onSuccess?.();
-      onClose();
     } finally {
       setSending(false);
     }
