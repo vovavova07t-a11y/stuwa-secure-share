@@ -127,20 +127,22 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
         };
 
         console.log('Данные передачи файла:', transferData);
+        console.log('Попытка записи в таблицу interdepartment_file_transfers');
 
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('interdepartment_file_transfers')
           .insert([transferData])
           .select();
 
         if (error) {
           console.error('Ошибка базы данных для отдела', department, ':', error);
+          console.error('Детали ошибки:', error.message, error.details, error.hint);
           toast({
             title: "Ошибка базы данных",
             description: `Не удалось отправить файл в отдел ${department}: ${error.message}`,
             variant: "destructive",
           });
-          continue;
+          return; // Останавливаем выполнение при первой ошибке
         }
 
         console.log('Файл успешно отправлен в отдел', department, ':', data);

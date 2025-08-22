@@ -169,15 +169,17 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({
 
       console.log('Данные документа для отправки:', documentData);
       console.log('UUID отправителя:', demoUser.id, 'тип:', typeof demoUser.id);
+      console.log('Попытка записи в таблицу interdepartment_documents');
 
-      // Отправляем в базу данных
-      const { data, error } = await supabase
+      // Отправляем в базу данных с type assertion
+      const { data, error } = await (supabase as any)
         .from('interdepartment_documents')
         .insert([documentData])
         .select();
 
       if (error) {
         console.error('Ошибка базы данных:', error);
+        console.error('Детали ошибки:', error.message, error.details, error.hint);
         toast({
           title: "Ошибка базы данных",
           description: `Не удалось отправить документ: ${error.message}`,
