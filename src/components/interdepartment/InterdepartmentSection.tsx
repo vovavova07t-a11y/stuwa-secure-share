@@ -1,209 +1,362 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import { 
-  ArrowRightLeft, 
   Send, 
-  Inbox, 
+  FileText, 
   Clock, 
-  Users,
-  TrendingUp,
-  AlertCircle
+  CheckCircle, 
+  AlertCircle, 
+  Plus, 
+  Eye,
+  Download,
+  MessageSquare
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { SendDocumentModal } from './SendDocumentModal';
+import { FileTransferModal } from './FileTransferModal';
+import { getCurrentDepartmentFromPath, DEPARTMENT_NAMES } from './utils/departmentUtils';
 
 interface InterdepartmentSectionProps {
-  currentDepartment: string;
+  currentDepartment?: string;
 }
 
-// Mock data - в реальном приложении это будет загружаться из API
-const mockStats = {
-  incoming: 5,
-  outgoing: 3,
-  pending: 2,
-  collaborative: 1
+interface Document {
+  id: string;
+  title: string;
+  document_type: string;
+  priority: string;
+  status: string;
+  sender_department: string;
+  receiver_department: string;
+  created_at: string;
+  due_date?: string;
+  file_name?: string;
+  file_url?: string;
+  description?: string;
+}
+
+const STATUS_CONFIG = {
+  sent: { label: 'Отправлен', color: 'bg-blue-100 text-blue-800', icon: Send },
+  received: { label: 'Получен', color: 'bg-yellow-100 text-yellow-800', icon: Eye },
+  in_progress: { label: 'В работе', color: 'bg-orange-100 text-orange-800', icon: Clock },
+  completed: { label: 'Завершен', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  rejected: { label: 'Отклонен', color: 'bg-red-100 text-red-800', icon: AlertCircle }
 };
 
-const DEPARTMENT_NAMES = {
-  financial: 'Финансовая дирекция',
-  technical: 'Техническая дирекция', 
-  commercial: 'Коммерческая дирекция',
-  logistics: 'Управление логистики',
-  office: 'Офис-менеджер'
+const PRIORITY_CONFIG = {
+  low: { label: 'Низкий', color: 'bg-gray-100 text-gray-800' },
+  medium: { label: 'Средний', color: 'bg-blue-100 text-blue-800' },
+  high: { label: 'Высокий', color: 'bg-orange-100 text-orange-800' },
+  critical: { label: 'Критический', color: 'bg-red-100 text-red-800' }
 };
 
 export const InterdepartmentSection: React.FC<InterdepartmentSectionProps> = ({ 
   currentDepartment 
 }) => {
+  const department = currentDepartment || getCurrentDepartmentFromPath();
+  const [incomingDocuments, setIncomingDocuments] = useState<Document[]>([]);
+  const [outgoingDocuments, setOutgoingDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showFileModal, setShowFileModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const { toast } = useToast();
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      console.log(`Загрузка документов для отдела: ${department}`);
+      
+      // Входящие документы - где текущий отдел является получателем
+      const { data: incoming, error: incomingError } = await (supabase as any)
+        .from('interdepartment_documents')
+        .select('*')
+        .eq('receiver_department', department)
+        .order('created_at', { ascending: false });
+
+      if (incomingError) {
+        console.error('Ошибка загрузки входящих документов:', incomingError);
+      } else {
+        console.log(`Найдено входящих документов: ${incoming?.length || 0}`);
+        console.log('Входящие документы:', incoming);
+      }
+
+      // Исходящие документы - где текущий отдел является отправителем
+      const { data: outgoing, error: outgoingError } = await (supabase as any)
+        .from('interdepartment_documents')
+        .select('*')
+        .eq('sender_department', department)
+        .order('created_at', { ascending: false });
+
+      if (outgoingError) {
+        console.error('Ошибка загрузки исходящих документов:', outgoingError);
+      } else {
+        console.log(`Найдено исходящих документов: ${outgoing?.length || 0}`);
+        console.log('Исходящие документы:', outgoing);
+      }
+
+      setIncomingDocuments(incoming || []);
+      setOutgoingDocuments(outgoing || []);
+
+    } catch (error) {
+      console.error('Общая ошибка при загрузке документов:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить документы",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [department]);
+
+  const handleSendFile = (document: Document) => {
+    if (document.file_url) {
+      setSelectedFile({
+        id: document.id,
+        name: document.file_name || document.title,
+        url: document.file_url,
+        size: 0,
+        type: 'document'
+      });
+      setShowFileModal(true);
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const DocumentRow: React.FC<{ document: Document; type: 'incoming' | 'outgoing' }> = ({ 
+    document, 
+    type 
+  }) => {
+    const StatusIcon = STATUS_CONFIG[document.status as keyof typeof STATUS_CONFIG]?.icon || FileText;
+    const isOverdue = document.due_date && new Date(document.due_date) < new Date() && document.status !== 'completed';
+    
+    return (
+      <TableRow className={`hover:bg-muted/50 ${isOverdue ? 'bg-red-50' : ''}`}>
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" />
+            <div>
+              <p className="font-medium">{document.title}</p>
+              <p className="text-sm text-muted-foreground">{document.document_type}</p>
+            </div>
+          </div>
+        </TableCell>
+        
+        <TableCell>
+          <span className="text-sm">
+            {type === 'incoming' 
+              ? DEPARTMENT_NAMES[document.sender_department as keyof typeof DEPARTMENT_NAMES]
+              : DEPARTMENT_NAMES[document.receiver_department as keyof typeof DEPARTMENT_NAMES]
+            }
+          </span>
+        </TableCell>
+        
+        <TableCell>
+          <span className="text-sm">{formatDate(document.created_at)}</span>
+        </TableCell>
+        
+        <TableCell>
+          <Badge className={PRIORITY_CONFIG[document.priority as keyof typeof PRIORITY_CONFIG]?.color}>
+            {PRIORITY_CONFIG[document.priority as keyof typeof PRIORITY_CONFIG]?.label}
+          </Badge>
+        </TableCell>
+        
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <StatusIcon className="w-4 h-4" />
+            <Badge className={STATUS_CONFIG[document.status as keyof typeof STATUS_CONFIG]?.color}>
+              {STATUS_CONFIG[document.status as keyof typeof STATUS_CONFIG]?.label}
+            </Badge>
+          </div>
+        </TableCell>
+        
+        <TableCell>
+          {document.description && (
+            <p className="text-sm text-muted-foreground max-w-xs truncate">
+              {document.description}
+            </p>
+          )}
+        </TableCell>
+        
+        <TableCell>
+          <div className="flex items-center gap-1">
+            {document.file_url && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(document.file_url, '_blank')}
+                className="hover:bg-primary/10"
+                title="Скачать файл"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            )}
+            
+            {type === 'incoming' && document.file_url && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSendFile(document)}
+                className="hover:bg-primary/10"
+                title="Переслать файл"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <ArrowRightLeft className="w-6 h-6" />
-          Межотдельское взаимодействие
-        </h2>
-        <Link to="/interdepartment">
-          <Button variant="outline">
-            Открыть полную панель
-          </Button>
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Входящие</CardTitle>
-            <Inbox className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.incoming}</div>
-            <p className="text-xs text-muted-foreground">
-              документов требуют внимания
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Исходящие</CardTitle>
-            <Send className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.outgoing}</div>
-            <p className="text-xs text-muted-foreground">
-              отправленных документов
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">На согласовании</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.pending}</div>
-            <p className="text-xs text-muted-foreground">
-              ожидают решения
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Совместные</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.collaborative}</div>
-            <p className="text-xs text-muted-foreground">
-              совместных проектов
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Активные процессы
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <p className="font-medium">Бюджет на Q1 2024</p>
-                <p className="text-sm text-muted-foreground">От: Финансовая дирекция</p>
-              </div>
-              <Badge className="bg-orange-100 text-orange-800">В обработке</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <p className="font-medium">Техническая спецификация</p>
-                <p className="text-sm text-muted-foreground">От: Техническая дирекция</p>
-              </div>
-              <Badge className="bg-yellow-100 text-yellow-800">Получен</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <p className="font-medium">Договор поставки</p>
-                <p className="text-sm text-muted-foreground">От: Коммерческая дирекция</p>
-              </div>
-              <Badge className="bg-green-100 text-green-800">Утвержден</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Требуют внимания
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 border rounded-lg border-red-200 bg-red-50">
-              <div>
-                <p className="font-medium">Отчет по продажам</p>
-                <p className="text-sm text-muted-foreground">Просрочен на 2 дня</p>
-              </div>
-              <Badge className="bg-red-100 text-red-800">Критический</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 border rounded-lg border-orange-200 bg-orange-50">
-              <div>
-                <p className="font-medium">Логистический план</p>
-                <p className="text-sm text-muted-foreground">Срок: завтра</p>
-              </div>
-              <Badge className="bg-orange-100 text-orange-800">Высокий</Badge>
-            </div>
-            <div className="text-center py-4">
-              <Link to="/interdepartment">
-                <Button variant="outline">
-                  Посмотреть все документы
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
+    <>
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle>Быстрые действия</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Межотдельское взаимодействие - {DEPARTMENT_NAMES[department as keyof typeof DEPARTMENT_NAMES]}
+            </CardTitle>
+            <Button onClick={() => setShowSendModal(true)} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Отправить документ
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link to="/interdepartment?action=send">
-              <Button variant="outline" className="w-full flex items-center gap-2">
+          <Tabs defaultValue="incoming" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="incoming" className="flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Входящие ({incomingDocuments.length})
+              </TabsTrigger>
+              <TabsTrigger value="outgoing" className="flex items-center gap-2">
                 <Send className="w-4 h-4" />
-                Отправить документ
-              </Button>
-            </Link>
-            <Link to="/interdepartment?tab=incoming">
-              <Button variant="outline" className="w-full flex items-center gap-2">
-                <Inbox className="w-4 h-4" />
-                Входящие документы
-              </Button>
-            </Link>
-            <Link to="/interdepartment?tab=pending">
-              <Button variant="outline" className="w-full flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                На согласовании
-              </Button>
-            </Link>
-            <Link to="/interdepartment?tab=collaborative">
-              <Button variant="outline" className="w-full flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Совместные проекты
-              </Button>
-            </Link>
-          </div>
+                Исходящие ({outgoingDocuments.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="incoming" className="mt-6">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Документ</TableHead>
+                      <TableHead>От отдела</TableHead>
+                      <TableHead>Дата получения</TableHead>
+                      <TableHead>Приоритет</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Описание</TableHead>
+                      <TableHead>Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {incomingDocuments.map((document) => (
+                      <DocumentRow key={document.id} document={document} type="incoming" />
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                {incomingDocuments.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Нет входящих документов</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="outgoing" className="mt-6">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Документ</TableHead>
+                      <TableHead>В отдел</TableHead>
+                      <TableHead>Дата отправки</TableHead>
+                      <TableHead>Приоритет</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Описание</TableHead>
+                      <TableHead>Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {outgoingDocuments.map((document) => (
+                      <DocumentRow key={document.id} document={document} type="outgoing" />
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                {outgoingDocuments.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Send className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Нет исходящих документов</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
-    </div>
+
+      {/* Send Document Modal */}
+      {showSendModal && (
+        <SendDocumentModal
+          onClose={() => setShowSendModal(false)}
+          onSuccess={() => {
+            setShowSendModal(false);
+            fetchDocuments();
+          }}
+          currentDepartment={department}
+        />
+      )}
+
+      {/* File Transfer Modal */}
+      {showFileModal && selectedFile && (
+        <FileTransferModal
+          isOpen={showFileModal}
+          onClose={() => {
+            setShowFileModal(false);
+            setSelectedFile(null);
+          }}
+          file={selectedFile}
+          currentDepartment={department}
+          onSuccess={() => {
+            setShowFileModal(false);
+            setSelectedFile(null);
+            fetchDocuments();
+          }}
+        />
+      )}
+    </>
   );
 };

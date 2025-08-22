@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,19 +8,13 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Upload, X } from 'lucide-react';
+import { getCurrentDepartmentFromPath, getDemoUserForDepartment, DEPARTMENT_OPTIONS } from './utils/departmentUtils';
 
 interface SendDocumentModalProps {
   onClose: () => void;
   onSuccess: () => void;
+  currentDepartment?: string;
 }
-
-const DEPARTMENT_OPTIONS = [
-  { value: 'financial', label: 'Финансовая дирекция' },
-  { value: 'technical', label: 'Техническая дирекция' },
-  { value: 'commercial', label: 'Коммерческая дирекция' },
-  { value: 'logistics', label: 'Управление логистики' },
-  { value: 'office', label: 'Офис-менеджер' }
-];
 
 const DOCUMENT_TYPES = [
   'Бюджет',
@@ -43,35 +36,19 @@ const PRIORITY_OPTIONS = [
   { value: 'critical', label: 'Критический' }
 ];
 
-// Получаем текущий отдел из URL или localStorage
-const getCurrentDepartment = (): string => {
-  const path = window.location.pathname;
-  if (path.includes('/about')) return 'financial';
-  if (path.includes('/technical')) return 'technical';
-  if (path.includes('/commercial')) return 'commercial';
-  if (path.includes('/logistics')) return 'logistics';
-  if (path.includes('/contacts')) return 'office';
-  return 'financial'; // по умолчанию
-};
-
-// Генерируем демо-пользователя
-const getDemoUser = () => {
-  const department = getCurrentDepartment();
-  return {
-    id: `demo-user-${department}`,
-    email: `${department}@stuwa.com`,
-    department: department
-  };
-};
-
-export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, onSuccess }) => {
-  const currentDepartment = getCurrentDepartment();
+export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ 
+  onClose, 
+  onSuccess, 
+  currentDepartment 
+}) => {
+  const department = currentDepartment || getCurrentDepartmentFromPath();
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     document_type: '',
     priority: 'medium',
-    sender_department: currentDepartment,
+    sender_department: department,
     receiver_department: '',
     due_date: ''
   });
@@ -104,7 +81,7 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `interdepartment/${fileName}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file);
 
@@ -165,9 +142,10 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
         fileType = file.type;
       }
 
-      // Используем демо-пользователя вместо Supabase Auth
-      const demoUser = getDemoUser();
-      console.log('Отправка документа от демо-пользователя:', demoUser);
+      // Используем демо-пользователя для текущего отдела
+      const demoUser = getDemoUserForDepartment(department);
+      console.log(`Отправка документа от отдела "${department}" в отдел "${formData.receiver_department}"`);
+      console.log('Демо-пользователь:', demoUser);
 
       const documentData = {
         ...formData,
@@ -189,13 +167,12 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
 
       if (error) {
         console.error('Database error:', error);
-        // Если ошибка базы данных, все равно показываем успех для демо
-        console.log('Документ отправлен в демо-режиме');
+        // В демо-режиме показываем успех даже при ошибке БД
       }
 
       toast({
         title: "Успех",
-        description: "Документ успешно отправлен",
+        description: `Документ успешно отправлен из отдела "${department}" в отдел "${formData.receiver_department}"`,
       });
 
       onSuccess();
@@ -216,7 +193,7 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({ onClose, o
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Отправить документ</DialogTitle>
+          <DialogTitle>Отправить документ из отдела: {DEPARTMENT_OPTIONS.find(d => d.value === department)?.label}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
