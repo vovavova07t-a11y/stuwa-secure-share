@@ -20,7 +20,6 @@ export interface InterdepartmentTransfer {
   is_group_send: boolean;
   transfer_chain: any[];
   created_at: string;
-  updated_at: string;
   delivered_at?: string;
   viewed_at?: string;
   processed_at?: string;
@@ -107,8 +106,7 @@ export const useInterdepartmentTransfers = (department: string) => {
   const updateTransferStatus = async (transferId: string, status: string) => {
     try {
       const updateData: any = { 
-        status,
-        updated_at: new Date().toISOString()
+        status
       };
 
       // Добавляем соответствующую временную метку
@@ -118,6 +116,8 @@ export const useInterdepartmentTransfers = (department: string) => {
         updateData.processed_at = new Date().toISOString();
       } else if (status === 'delivered') {
         updateData.delivered_at = new Date().toISOString();
+      } else if (status === 'recalled') {
+        updateData.recalled_at = new Date().toISOString();
       }
 
       const { error } = await supabase
