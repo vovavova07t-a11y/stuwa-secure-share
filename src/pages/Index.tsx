@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { HeroSection } from '@/components/HeroSection';
 import { AuthModal } from '@/components/AuthModal';
 import { UniversalFileUpload } from '@/components/UniversalFileUpload';
-import { SecuritySection } from '@/components/SecuritySection';
-import { Footer } from '@/components/Footer';
 
 const Index = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -49,11 +47,7 @@ const Index = () => {
             </div>
           </section>
         )}
-        
-        <SecuritySection />
       </main>
-      
-      <Footer />
       
       <AuthModal 
         isOpen={isAuthModalOpen}
