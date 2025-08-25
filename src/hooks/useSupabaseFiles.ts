@@ -30,7 +30,8 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       setIsLoading(true);
       console.log(`🔄 Загрузка файлов для отдела: ${department}, категории: ${categoryId}`);
       
-      const { data, error } = await supabase
+      // Use type assertion to handle the files table that exists in the database
+      const { data, error } = await (supabase as any)
         .from('files')
         .select('*')
         .eq('department', department)
@@ -43,12 +44,20 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       }
 
       console.log(`📁 Загружено ${data?.length || 0} файлов из базы данных для категории ${categoryId}`);
-      console.log('📋 Файлы:', data?.map(f => f.file_name) || []);
+      console.log('📋 Файлы:', data?.map((f: any) => f.file_name) || []);
       
-      // Обеспечиваем, что все файлы имеют корректные URL
-      const filesWithUrls = (data || []).map(file => ({
-        ...file,
-        file_url: file.file_url || `${SUPABASE_URL}/storage/v1/object/public/files/${file.storage_path}`
+      // Обеспечиваем, что все файлы имеют корректные URL и приводим к правильному типу
+      const filesWithUrls: FileData[] = (data || []).map((file: any) => ({
+        id: file.id,
+        file_name: file.file_name,
+        file_url: file.file_url || `${SUPABASE_URL}/storage/v1/object/public/files/${file.storage_path}`,
+        file_type: file.file_type,
+        file_size: file.file_size,
+        category_id: file.category_id,
+        department: file.department,
+        uploaded_at: file.uploaded_at || file.created_at,
+        uploaded_by: file.uploaded_by,
+        storage_path: file.storage_path
       }));
       
       setFiles(filesWithUrls);
@@ -66,7 +75,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
   };
 
   // ИСПРАВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ФАЙЛА
-  const saveFile = async (file: File, categoryId: string, department: string) => {
+  const saveFile = async (file: File, categoryId: string, department: string): Promise<FileData> => {
     try {
       const fileId = crypto.randomUUID();
       const fileName = `${department}/${categoryId}/${fileId}_${file.name}`;
@@ -108,7 +117,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         uploaded_by: (await supabase.auth.getUser()).data.user?.id
       };
 
-      const { data: insertData, error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await (supabase as any)
         .from('files')
         .insert(fileData)
         .select()
@@ -123,11 +132,24 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
       console.log('✅ Файл успешно сохранен в базу данных:', insertData);
       
-      // Добавляем новый файл в локальное состояние
-      setFiles(prevFiles => [insertData, ...prevFiles]);
+      // Приводим результат к правильному типу и добавляем в локальное состояние
+      const newFile: FileData = {
+        id: insertData.id,
+        file_name: insertData.file_name,
+        file_url: insertData.file_url,
+        file_type: insertData.file_type,
+        file_size: insertData.file_size,
+        category_id: insertData.category_id,
+        department: insertData.department,
+        uploaded_at: insertData.uploaded_at || insertData.created_at,
+        uploaded_by: insertData.uploaded_by,
+        storage_path: insertData.storage_path
+      };
+
+      setFiles(prevFiles => [newFile, ...prevFiles]);
       
-      return insertData;
-    } catch (error) {
+      return newFile;
+    } catch (error: any) {
       console.error('Ошибка сохранения файла:', error);
       toast({
         title: 'Ошибка загрузки',
@@ -163,7 +185,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       }
 
       // Удаляем запись из базы данных
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await (supabase as any)
         .from('files')
         .delete()
         .eq('id', fileId);
@@ -182,7 +204,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         title: 'Файл удален',
         description: `Файл "${fileToDelete.file_name}" успешно удален`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка удаления файла:', error);
       toast({
         title: 'Ошибка',
