@@ -26,11 +26,10 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('department', department)
-        .eq('category_id', categoryId)
-        .order('created_at', { ascending: false });
+        .rpc('get_files_by_department_and_category', {
+          p_department: department,
+          p_category_id: categoryId
+        });
 
       if (error) {
         console.error('Ошибка загрузки файлов:', error);
@@ -46,6 +45,23 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       setFiles(data || []);
     } catch (error) {
       console.error('Ошибка при загрузке файлов:', error);
+      // Если функция не существует, попробуем прямой запрос
+      try {
+        const { data: directData, error: directError } = await supabase
+          .from('files')
+          .select('*')
+          .eq('department', department)
+          .eq('category_id', categoryId)
+          .order('created_at', { ascending: false });
+
+        if (directError) throw directError;
+        
+        console.log(`📁 Загружено ${directData?.length || 0} файлов напрямую из таблицы`);
+        setFiles(directData as FileData[] || []);
+      } catch (directFetchError) {
+        console.error('Ошибка прямого запроса:', directFetchError);
+        setFiles([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,36 +90,47 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         .from('files')
         .getPublicUrl(fileName);
 
-      // Сохраняем информацию о файле в базу данных
-      const { data: dbData, error: dbError } = await supabase
-        .from('files')
-        .insert({
-          id: fileId,
-          file_name: file.name,
-          file_size: file.size,
-          file_type: file.type,
-          category_id: categoryId,
-          department: department,
-          file_url: urlData.publicUrl,
-          storage_path: fileName,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .select()
-        .single();
+      // Сохраняем информацию о файле в базу данных через RPC или прямую вставку
+      const fileData = {
+        id: fileId,
+        file_name: file.name,
+        file_size: file.size,
+        file_type: file.type,
+        category_id: categoryId,
+        department: department,
+        file_url: urlData.publicUrl,
+        storage_path: fileName,
+        uploaded_by: (await supabase.auth.getUser()).data.user?.id
+      };
 
-      if (dbError) {
-        console.error('Ошибка сохранения в базу данных:', dbError);
-        // Удаляем файл из Storage если не удалось сохранить в БД
-        await supabase.storage.from('files').remove([fileName]);
-        throw dbError;
+      try {
+        // Пробуем использовать RPC функцию
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('insert_file', fileData);
+
+        if (rpcError) throw rpcError;
+        console.log('✅ Файл успешно сохранен через RPC');
+      } catch (rpcError) {
+        // Если RPC не работает, используем прямую вставку
+        const { data: insertData, error: insertError } = await supabase
+          .from('files')
+          .insert(fileData)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Ошибка сохранения в базу данных:', insertError);
+          // Удаляем файл из Storage если не удалось сохранить в БД
+          await supabase.storage.from('files').remove([fileName]);
+          throw insertError;
+        }
+        console.log('✅ Файл успешно сохранен через прямую вставку');
       }
-
-      console.log('✅ Файл успешно сохранен в Supabase');
       
       // Обновляем локальный список файлов
       await loadFiles();
       
-      return dbData;
+      return fileData;
     } catch (error) {
       console.error('Ошибка сохранения файла:', error);
       toast({
@@ -119,19 +146,17 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
   const deleteFile = async (fileId: string) => {
     try {
       // Получаем информацию о файле
-      const { data: fileData, error: fetchError } = await supabase
-        .from('files')
-        .select('storage_path')
-        .eq('id', fileId)
-        .single();
-
-      if (fetchError) throw fetchError;
+      const fileToDelete = files.find(f => f.id === fileId);
+      
+      if (!fileToDelete) {
+        throw new Error('Файл не найден');
+      }
 
       // Удаляем файл из Storage
-      if (fileData.storage_path) {
+      if (fileToDelete.storage_path) {
         const { error: storageError } = await supabase.storage
           .from('files')
-          .remove([fileData.storage_path]);
+          .remove([fileToDelete.storage_path]);
 
         if (storageError) {
           console.error('Ошибка удаления из Storage:', storageError);
