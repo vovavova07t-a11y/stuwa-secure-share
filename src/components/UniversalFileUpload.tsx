@@ -56,9 +56,9 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
             ...file,
             uploadedAt: typeof file.uploadedAt === 'string' 
               ? new Date(file.uploadedAt) 
-              : file.uploadedAt?.value?.iso 
-                ? new Date(file.uploadedAt.value.iso)
-                : new Date(file.uploadedAt)
+              : file.uploadedAt instanceof Date
+                ? file.uploadedAt
+                : new Date()
           }));
         
         setUploadedFiles(validFiles);
@@ -93,8 +93,10 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       localStorage.setItem(`files_${categoryId}`, JSON.stringify(filesToSave));
       console.log(`Сохранены файлы для категории ${categoryId}:`, filesToSave);
       
-      // Отправляем событие об обновлении файлов
-      window.dispatchEvent(new Event('filesUpdated'));
+      // Отправляем кастомное событие об обновлении файлов
+      window.dispatchEvent(new CustomEvent('filesUpdated', { 
+        detail: { categoryId, files: validFiles } 
+      }));
       
       if (onFilesChange) {
         onFilesChange(validFiles);
@@ -217,7 +219,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         });
       }
     }
-  }, [maxFileSize, allowedTypes, toast, categoryId, title, saveFilesToStorage]);
+  }, [maxFileSize, allowedTypes, toast, categoryId, title, saveFilesToStorage, validateFile]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -271,7 +273,9 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     localStorage.removeItem(`files_${categoryId}`);
     
     // Отправляем событие об обновлении файлов
-    window.dispatchEvent(new Event('filesUpdated'));
+    window.dispatchEvent(new CustomEvent('filesUpdated', { 
+      detail: { categoryId, files: [] } 
+    }));
     
     toast({
       title: 'Все файлы удалены',

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,9 +68,9 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
             ...file,
             uploadedAt: typeof file.uploadedAt === 'string' 
               ? new Date(file.uploadedAt) 
-              : file.uploadedAt?.value?.iso 
-                ? new Date(file.uploadedAt.value.iso)
-                : new Date(file.uploadedAt)
+              : file.uploadedAt instanceof Date
+                ? file.uploadedAt
+                : new Date()
           }));
         
         console.log(`Валидные файлы для категории ${categoryId}:`, validFiles);
@@ -87,29 +86,35 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
   }, [categoryId]);
 
   useEffect(() => {
+    // Загружаем файлы при монтировании
     loadFiles();
     
+    // Создаем обработчик для событий localStorage
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `files_${categoryId}` || e.key === null) {
+        console.log(`Storage changed for ${categoryId}`, e);
         loadFiles();
       }
     };
 
-    const handleCustomEvent = () => {
+    // Создаем обработчик для кастомных событий
+    const handleFilesUpdated = (e: CustomEvent) => {
+      console.log(`Files updated event for ${categoryId}`, e.detail);
       loadFiles();
     };
 
-    // Слушаем изменения localStorage
+    // Добавляем слушатели
     window.addEventListener('storage', handleStorageChange);
-    // Слушаем кастомные события обновления файлов
-    window.addEventListener('filesUpdated', handleCustomEvent);
+    window.addEventListener('filesUpdated', handleFilesUpdated as EventListener);
 
-    // Также проверяем файлы через интервал для надежности
-    const interval = setInterval(loadFiles, 2000);
+    // Дополнительно проверяем файлы через небольшие интервалы
+    const interval = setInterval(() => {
+      loadFiles();
+    }, 1000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('filesUpdated', handleCustomEvent);
+      window.removeEventListener('filesUpdated', handleFilesUpdated as EventListener);
       clearInterval(interval);
     };
   }, [loadFiles]);
@@ -175,7 +180,7 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
         localStorage.setItem(`files_${categoryId}`, JSON.stringify(updatedFiles));
         
         // Отправляем событие об обновлении
-        window.dispatchEvent(new Event('filesUpdated'));
+        window.dispatchEvent(new CustomEvent('filesUpdated', { detail: { categoryId } }));
         
         if (onFileDelete) {
           onFileDelete(file.id);
