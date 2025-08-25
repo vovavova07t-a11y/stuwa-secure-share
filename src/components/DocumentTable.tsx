@@ -1,11 +1,9 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Eye, Calendar } from 'lucide-react';
+import { FileText, Download, Eye, Calendar, User } from 'lucide-react';
 import type { FinancialDocument } from '@/types/financial';
 import { FileTransferButton } from './interdepartment/FileTransferButton';
-import { UniversalDocumentViewer } from './UniversalDocumentViewer';
 
 interface DocumentTableProps {
   documents: FinancialDocument[];
@@ -20,8 +18,6 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
   onView,
   onDownload
 }) => {
-  const [viewingDocument, setViewingDocument] = useState<FinancialDocument | null>(null);
-
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -44,11 +40,6 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
     return <FileText className="w-4 h-4 text-primary" />;
   };
 
-  const handleViewDocument = (document: FinancialDocument) => {
-    setViewingDocument(document);
-    onView(document);
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -67,90 +58,81 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
   }
 
   return (
-    <>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8"></TableHead>
-              <TableHead>Название</TableHead>
-              <TableHead>Размер</TableHead>
-              <TableHead>Версия</TableHead>
-              <TableHead>Скачиваний</TableHead>
-              <TableHead>Дата создания</TableHead>
-              <TableHead className="text-right">Действия</TableHead>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-8"></TableHead>
+            <TableHead>Название</TableHead>
+            <TableHead>Размер</TableHead>
+            <TableHead>Версия</TableHead>
+            <TableHead>Скачиваний</TableHead>
+            <TableHead>Дата создания</TableHead>
+            <TableHead className="text-right">Действия</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {documents.map((document) => (
+            <TableRow key={document.id} className="hover:bg-muted/50">
+              <TableCell>
+                {getFileIcon(document.file_type)}
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p className="font-medium">{document.title}</p>
+                  {document.description && (
+                    <p className="text-sm text-muted-foreground">{document.description}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{document.file_name}</p>
+                </div>
+              </TableCell>
+              <TableCell>{formatFileSize(document.file_size)}</TableCell>
+              <TableCell>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
+                  v{document.version}
+                </span>
+              </TableCell>
+              <TableCell>{document.download_count}</TableCell>
+              <TableCell>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {formatDate(document.created_at)}
+                </div>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onView(document)}
+                    className="hover:bg-primary/10"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDownload(document)}
+                    className="hover:bg-primary/10"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <FileTransferButton
+                    file={{
+                      id: document.id,
+                      name: document.file_name || document.title,
+                      url: document.file_url || '',
+                      size: document.file_size,
+                      type: document.file_type || ''
+                    }}
+                    currentDepartment="financial"
+                  />
+                </div>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {documents.map((document) => (
-              <TableRow key={document.id} className="hover:bg-muted/50">
-                <TableCell>
-                  {getFileIcon(document.file_type)}
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{document.title}</p>
-                    {document.description && (
-                      <p className="text-sm text-muted-foreground">{document.description}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">{document.file_name}</p>
-                  </div>
-                </TableCell>
-                <TableCell>{formatFileSize(document.file_size)}</TableCell>
-                <TableCell>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
-                    v{document.version}
-                  </span>
-                </TableCell>
-                <TableCell>{document.download_count}</TableCell>
-                <TableCell>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    {formatDate(document.created_at)}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewDocument(document)}
-                      className="hover:bg-primary/10"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDownload(document)}
-                      className="hover:bg-primary/10"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <FileTransferButton
-                      file={{
-                        id: document.id,
-                        name: document.file_name || document.title,
-                        url: document.file_url || '',
-                        size: document.file_size,
-                        type: document.file_type || ''
-                      }}
-                      currentDepartment="financial"
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {viewingDocument && (
-        <UniversalDocumentViewer
-          document={viewingDocument}
-          onClose={() => setViewingDocument(null)}
-        />
-      )}
-    </>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
