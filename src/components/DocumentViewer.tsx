@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Download, FileText, Calendar, User, Eye } from 'lucide-react';
@@ -14,6 +14,27 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   document,
   onClose
 }) => {
+  // Обработчик клавиши Escape
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        console.log('🔒 Закрытие просмотрщика по Escape');
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
+  // Блокировка прокрутки фона при открытии модального окна
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -41,17 +62,30 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     window.document.body.removeChild(link);
   };
 
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      console.log('🔒 Закрытие просмотрщика по клику на backdrop');
+      onClose();
+    }
+  };
+
   const isPDF = document.file_type === 'application/pdf';
   const isImage = document.file_type.startsWith('image/');
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="document-viewer-title"
+    >
       <Card className="glass-card w-full max-w-6xl h-[90vh] flex flex-col animate-scale-in">
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <div className="flex items-center space-x-3">
             <FileText className="w-6 h-6 text-primary" />
             <div>
-              <CardTitle className="text-lg">{document.title}</CardTitle>
+              <CardTitle id="document-viewer-title" className="text-lg">{document.title}</CardTitle>
               <p className="text-sm text-muted-foreground">{document.file_name}</p>
             </div>
           </div>
@@ -60,7 +94,12 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               <Download className="w-4 h-4 mr-2" />
               Скачать
             </Button>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose}
+              className="hover:bg-destructive/10 hover:text-destructive"
+            >
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -135,6 +174,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             )}
           </div>
         </CardContent>
+        
+        <div className="p-4 border-t bg-muted/20 text-center text-xs text-muted-foreground">
+          💡 Нажмите Escape или кликните вне окна для закрытия
+        </div>
       </Card>
     </div>
   );

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,27 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
 }) => {
   const [zoom, setZoom] = useState(100);
   const [showComments, setShowComments] = useState(false);
+
+  // Обработчик клавиши Escape
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        console.log('🔒 Закрытие технического просмотрщика по Escape');
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
+  // Блокировка прокрутки фона при открытии модального окна
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -49,6 +70,13 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
     window.open(document.file_url, '_blank');
   };
 
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      console.log('🔒 Закрытие технического просмотрщика по клику на backdrop');
+      onClose();
+    }
+  };
+
   const isPDF = document.file_type === 'application/pdf';
   const isImage = document.file_type.startsWith('image/');
 
@@ -64,13 +92,19 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tech-document-viewer-title"
+    >
       <Card className="glass-card w-full max-w-7xl h-[95vh] flex flex-col animate-scale-in">
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <div className="flex items-center space-x-3">
             <FileText className="w-6 h-6 text-primary" />
             <div>
-              <CardTitle className="text-lg">{document.title}</CardTitle>
+              <CardTitle id="tech-document-viewer-title" className="text-lg">{document.title}</CardTitle>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm text-muted-foreground">{document.file_name}</p>
                 {getStatusBadge(document.status)}
@@ -109,7 +143,12 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
               <Download className="w-4 h-4 mr-2" />
               Скачать
             </Button>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose}
+              className="hover:bg-destructive/10 hover:text-destructive"
+            >
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -221,6 +260,10 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
             )}
           </div>
         </CardContent>
+        
+        <div className="p-4 border-t bg-muted/20 text-center text-xs text-muted-foreground">
+          💡 Нажмите Escape или кликните вне окна для закрытия
+        </div>
       </Card>
     </div>
   );

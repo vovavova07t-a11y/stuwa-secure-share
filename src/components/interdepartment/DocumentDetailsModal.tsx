@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -64,6 +63,27 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Блокировка прокрутки фона при открытии модального окна
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  // Обработчик клавиши Escape
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        console.log('🔒 Закрытие детального модального окна по Escape');
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   const fetchComments = async () => {
     try {
@@ -135,7 +155,7 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[9998]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -327,6 +347,10 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
               </Button>
             </div>
           </div>
+        </div>
+
+        <div className="mt-4 p-2 bg-muted/20 rounded text-xs text-muted-foreground text-center">
+          💡 Нажмите Escape для закрытия окна
         </div>
       </DialogContent>
     </Dialog>

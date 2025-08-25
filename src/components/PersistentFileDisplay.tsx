@@ -57,18 +57,23 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
     loadFiles();
   }, [categoryId]);
 
-  // Добавляем обработчик клавиши Escape
+  // Добавляем обработчик клавиши Escape для модального окна удаления
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && showDeleteConfirm) {
-        console.log('🔒 Закрытие модального окна по Escape');
+        console.log('🔒 Закрытие модального окна удаления по Escape');
         setShowDeleteConfirm(null);
       }
     };
 
     if (showDeleteConfirm) {
+      // Блокируем прокрутку фона
+      document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
   }, [showDeleteConfirm]);
 
@@ -229,9 +234,9 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
       // Удаляем из глобального состояния
       removeFile(categoryId, fileId);
       
-      // Закрываем модальное окно
+      // Закрываем модальное окно и восстанавливаем прокрутку
       setShowDeleteConfirm(null);
-      console.log('🔒 Модальное окно закрыто после удаления');
+      console.log('🔒 Модальное окно удаления закрыто');
 
       toast({
         title: "Файл удален",
@@ -255,7 +260,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
 
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
-      console.log('🔒 Закрытие модального окна по клику на backdrop');
+      console.log('🔒 Закрытие модального окна удаления по клику на backdrop');
       setShowDeleteConfirm(null);
     }
   };
