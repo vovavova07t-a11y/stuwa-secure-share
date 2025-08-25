@@ -40,7 +40,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       console.log(`🔄 Загрузка переданных файлов для отдела: ${department}`);
       
       const { data, error } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .select('*')
         .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
         .order('created_at', { ascending: false });
@@ -51,7 +51,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       console.log(`📁 Загружено ${data?.length || 0} переданных файлов`);
-      setTransfers(data || []);
+      setTransfers((data as InterdepartmentTransfer[]) || []);
     } catch (error) {
       console.error('Ошибка при загрузке переданных файлов:', error);
       setTransfers([]);
@@ -76,7 +76,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { data: insertData, error: insertError } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .insert([cleanTransferData])
         .select()
         .single();
@@ -89,9 +89,9 @@ export const useInterdepartmentTransfers = (department: string) => {
       console.log('✅ Передача файла создана:', insertData);
       
       // Добавляем новую передачу в локальное состояние
-      setTransfers(prevTransfers => [insertData, ...prevTransfers]);
+      setTransfers(prevTransfers => [insertData as InterdepartmentTransfer, ...prevTransfers]);
       
-      return insertData;
+      return insertData as InterdepartmentTransfer;
     } catch (error: any) {
       console.error('Ошибка создания передачи файла:', error);
       toast({
@@ -120,7 +120,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { error } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .update(updateData)
         .eq('id', transferId);
 
