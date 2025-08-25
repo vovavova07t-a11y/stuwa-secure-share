@@ -22,25 +22,25 @@ interface TechnicalDocumentViewerProps {
 }
 
 export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = ({
-  document,
+  document: doc,
   onClose,
   onDelete,
   onSendToOtherDepartment
 }) => {
   const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = document.file_url;
-    link.download = document.file_name;
+    const link = window.document.createElement('a');
+    link.href = doc.file_url;
+    link.download = doc.file_name;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
+    window.document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    window.document.body.removeChild(link);
   };
 
   const handleSend = () => {
     if (onSendToOtherDepartment) {
-      onSendToOtherDepartment(document);
+      onSendToOtherDepartment(doc);
     }
   };
 
@@ -48,7 +48,7 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
     <Card className="w-full max-w-4xl mx-auto mt-6">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl">{document.title}</CardTitle>
+          <CardTitle className="text-xl">{doc.title}</CardTitle>
           <Button 
             variant="ghost" 
             size="sm" 
@@ -65,32 +65,32 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
         <div className="bg-gray-50 p-4 rounded-lg">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-medium">Имя файла:</span> {document.file_name}
+              <span className="font-medium">Имя файла:</span> {doc.file_name}
             </div>
             <div>
-              <span className="font-medium">Тип:</span> {document.file_type}
+              <span className="font-medium">Тип:</span> {doc.file_type}
             </div>
             <div>
-              <span className="font-medium">Размер:</span> {Math.round(document.file_size / 1024)} KB
+              <span className="font-medium">Размер:</span> {Math.round(doc.file_size / 1024)} KB
             </div>
             <div>
-              <span className="font-medium">Категория:</span> {document.category}
+              <span className="font-medium">Категория:</span> {doc.category}
             </div>
           </div>
         </div>
 
         {/* Встроенный просмотр документа */}
         <div className="border rounded-lg overflow-hidden" style={{ height: '500px' }}>
-          {document.file_type === 'application/pdf' ? (
+          {doc.file_type === 'application/pdf' ? (
             <iframe
-              src={document.file_url}
+              src={doc.file_url}
               className="w-full h-full"
-              title={document.title}
+              title={doc.title}
             />
-          ) : document.file_type.startsWith('image/') ? (
+          ) : doc.file_type.startsWith('image/') ? (
             <img
-              src={document.file_url}
-              alt={document.title}
+              src={doc.file_url}
+              alt={doc.title}
               className="w-full h-full object-contain"
             />
           ) : (

@@ -41,16 +41,16 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
     return <FileText className="w-4 h-4 text-primary" />;
   };
 
-  const handleDownload = (document: FinancialDocument) => {
-    const link = document.createElement('a');
-    link.href = document.file_url;
-    link.download = document.file_name;
+  const handleDownload = (doc: FinancialDocument) => {
+    const link = window.document.createElement('a');
+    link.href = doc.file_url;
+    link.download = doc.file_name;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
+    window.document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    onDownload(document);
+    window.document.body.removeChild(link);
+    onDownload(doc);
   };
 
   if (isLoading) {
