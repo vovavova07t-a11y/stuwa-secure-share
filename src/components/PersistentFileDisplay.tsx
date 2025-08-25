@@ -12,12 +12,10 @@ import {
   Image as ImageIcon, 
   File, 
   FileSpreadsheet,
-  Clock,
   Calendar,
   AlertTriangle
 } from 'lucide-react';
 import { DocumentViewer } from './DocumentViewer';
-import { TechnicalDocumentViewer } from './TechnicalDocumentViewer';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -62,8 +60,8 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         {
           event: '*',
           schema: 'public',
-          table: 'uploaded_files',
-          filter: `category_id=eq.${categoryId}`
+          table: 'documents',
+          filter: `category=eq.${categoryId}`
         },
         () => {
           loadFiles();
@@ -80,56 +78,50 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
     try {
       setLoading(true);
       
-      // Загружаем файлы из Supabase с использованием rpc или прямого запроса
+      // Загружаем файлы из таблицы documents
       const { data, error } = await supabase
-        .rpc('get_uploaded_files', { p_category_id: categoryId });
+        .from('documents')
+        .select('*')
+        .eq('category', categoryId)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Ошибка загрузки файлов:', error);
-        // Пробуем альтернативный способ
-        const { data: altData, error: altError } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('category', categoryId);
-        
-        if (altError) {
-          throw altError;
-        }
-        
-        // Преобразуем данные в нужный формат
-        const transformedData = altData?.map(doc => ({
-          id: doc.id,
-          file_name: doc.file_name || doc.title,
-          file_url: doc.file_url || '',
-          file_type: doc.file_type || 'application/octet-stream',
-          file_size: doc.file_size || 0,
-          category_id: categoryId,
-          uploaded_at: doc.created_at || new Date().toISOString(),
-          uploaded_by: doc.created_by
-        })) || [];
-        
-        setFiles(transformedData);
-      } else {
-        console.log(`Загружено файлов для категории ${categoryId}:`, data?.length || 0);
-        setFiles(data || []);
+        throw error;
       }
+
+      // Преобразуем данные в нужный формат
+      const transformedData: FileData[] = data?.map(doc => ({
+        id: doc.id,
+        file_name: doc.file_name || doc.title || 'Безымянный файл',
+        file_url: doc.file_url || '',
+        file_type: doc.file_type || 'application/octet-stream',
+        file_size: doc.file_size || 0,
+        category_id: categoryId,
+        uploaded_at: doc.created_at || new Date().toISOString(),
+        uploaded_by: doc.created_by
+      })) || [];
+
+      console.log(`Загружено файлов для категории ${categoryId}:`, transformedData.length);
+      setFiles(transformedData);
 
       // Также проверяем localStorage для совместимости
       const localFiles = localStorage.getItem(`files_${categoryId}`);
       if (localFiles) {
         try {
           const parsedLocalFiles = JSON.parse(localFiles);
-          if (parsedLocalFiles.length > 0 && (!data || data.length === 0)) {
+          if (Array.isArray(parsedLocalFiles) && parsedLocalFiles.length > 0 && transformedData.length === 0) {
             // Если в базе нет файлов, но есть в localStorage, показываем их
-            setFiles(parsedLocalFiles.map((f: any) => ({
+            const localFilesData = parsedLocalFiles.map((f: any) => ({
               id: f.id,
-              file_name: f.file.name,
-              file_url: URL.createObjectURL(f.file),
-              file_type: f.file.type,
-              file_size: f.file.size,
+              file_name: f.file?.name || f.file_name || 'Файл',
+              file_url: f.file ? URL.createObjectURL(f.file) : f.file_url,
+              file_type: f.file?.type || f.file_type || 'application/octet-stream',
+              file_size: f.file?.size || f.file_size || 0,
               category_id: categoryId,
-              uploaded_at: f.uploadedAt
-            })));
+              uploaded_at: f.uploadedAt || f.uploaded_at || new Date().toISOString()
+            }));
+            setFiles(localFilesData);
           }
         } catch (e) {
           console.error('Ошибка парсинга localStorage:', e);
@@ -232,21 +224,15 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
 
   const handleDeleteFile = async (fileId: string) => {
     try {
-      // Пробуем удалить из uploaded_files (если есть)
-      const { error: uploadedError } = await supabase.rpc('delete_uploaded_file', { 
-        p_file_id: fileId 
-      });
+      // Удаляем из таблицы documents
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', fileId);
 
-      if (uploadedError) {
-        // Пробуем удалить из documents
-        const { error: docError } = await supabase
-          .from('documents')
-          .delete()
-          .eq('id', fileId);
-
-        if (docError) {
-          throw docError;
-        }
+      if (error) {
+        console.error('Ошибка удаления файла:', error);
+        throw error;
       }
 
       // Обновляем локальное состояние
@@ -255,9 +241,13 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
       // Очищаем localStorage
       const localFiles = localStorage.getItem(`files_${categoryId}`);
       if (localFiles) {
-        const parsedFiles = JSON.parse(localFiles);
-        const updatedFiles = parsedFiles.filter((f: any) => f.id !== fileId);
-        localStorage.setItem(`files_${categoryId}`, JSON.stringify(updatedFiles));
+        try {
+          const parsedFiles = JSON.parse(localFiles);
+          const updatedFiles = parsedFiles.filter((f: any) => f.id !== fileId);
+          localStorage.setItem(`files_${categoryId}`, JSON.stringify(updatedFiles));
+        } catch (e) {
+          console.error('Ошибка обновления localStorage:', e);
+        }
       }
 
       toast({
