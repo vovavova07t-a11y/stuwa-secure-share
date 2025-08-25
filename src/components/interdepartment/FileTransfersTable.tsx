@@ -29,6 +29,11 @@ const DEPARTMENT_LABELS: Record<string, string> = {
 export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ department }) => {
   const { transfers, isLoading, updateTransferStatus } = useInterdepartmentTransfers(department);
 
+  // Фильтруем файлы только для текущего отдела
+  const departmentTransfers = transfers.filter(transfer => 
+    transfer.sender_department === department || transfer.receiver_department === department
+  );
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       sent: { label: 'Отправлено', variant: 'secondary' as const, icon: Send },
@@ -70,24 +75,162 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     );
   };
 
-  const handleDownload = (transfer: any) => {
-    const link = window.document.createElement('a');
-    link.href = transfer.file_url;
-    link.download = transfer.file_name;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    window.document.body.appendChild(link);
-    link.click();
-    window.document.body.removeChild(link);
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
+  const handleDownload = async (transfer: any) => {
+    try {
+      console.log('⬇️ Скачивание файла:', transfer.file_name);
+      
+      // Получаем файл с правильными заголовками
+      const response = await fetch(transfer.file_url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Ошибка загрузки файла');
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Создаем временную ссылку для скачивания
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = transfer.file_name; // Сохраняем оригинальное имя
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Освобождаем память
+      window.URL.revokeObjectURL(blobUrl);
+      
+      console.log('✅ Файл успешно скачан:', transfer.file_name);
 
-    // Обновляем статус если файл еще не был просмотрен
-    if (transfer.status === 'sent' || transfer.status === 'delivered') {
-      updateTransferStatus(transfer.id, 'viewed');
+      // Обновляем статус если файл еще не был просмотрен
+      if (transfer.status === 'sent' || transfer.status === 'delivered') {
+        updateTransferStatus(transfer.id, 'viewed');
+      }
+    } catch (error) {
+      console.error('❌ Ошибка при скачивании:', error);
+      // Fallback - открываем в новой вкладке только если скачивание не удалось
+      window.open(transfer.file_url, '_blank', 'noopener,noreferrer');
     }
   };
 
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОСМОТРА  
   const handleView = (transfer: any) => {
-    window.open(transfer.file_url, '_blank');
+    console.log('👁️ Просмотр файла:', transfer.file_name);
+    
+    // Для PDF показываем во встроенном просмотрщике
+    if (transfer.file_type === 'application/pdf' || transfer.file_name.toLowerCase().endsWith('.pdf')) {
+      // Создаем модальное окно для PDF
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      const iframe = document.createElement('iframe');
+      iframe.src = transfer.file_url;
+      iframe.style.cssText = `
+        width: 90%;
+        height: 90%;
+        border: none;
+        background: white;
+      `;
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.innerHTML = '✕';
+      closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 10000;
+      `;
+      
+      closeBtn.onclick = () => document.body.removeChild(modal);
+      modal.onclick = (e) => {
+        if (e.target === modal) document.body.removeChild(modal);
+      };
+      
+      modal.appendChild(iframe);
+      modal.appendChild(closeBtn);
+      document.body.appendChild(modal);
+    } 
+    // Для изображений показываем в полноэкранном режиме
+    else if (transfer.file_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(transfer.file_name)) {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      const img = document.createElement('img');
+      img.src = transfer.file_url;
+      img.style.cssText = `
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+      `;
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.innerHTML = '✕';
+      closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 10000;
+      `;
+      
+      closeBtn.onclick = () => document.body.removeChild(modal);
+      modal.onclick = (e) => {
+        if (e.target === modal) document.body.removeChild(modal);
+      };
+      
+      modal.appendChild(img);
+      modal.appendChild(closeBtn);
+      document.body.appendChild(modal);
+    }
+    // Для других файлов предлагаем скачать
+    else {
+      if (confirm(`Предварительный просмотр недоступен для файла "${transfer.file_name}". Скачать файл?`)) {
+        handleDownload(transfer);
+      }
+    }
     
     // Обновляем статус если файл еще не был просмотрен
     if (transfer.status === 'sent' || transfer.status === 'delivered') {
@@ -132,13 +275,13 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
 
       <Card>
         <CardHeader>
-          <CardTitle>Входящие и исходящие передачи</CardTitle>
+          <CardTitle>Входящие и исходящие передачи ({departmentTransfers.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {transfers.length === 0 ? (
+          {departmentTransfers.length === 0 ? (
             <div className="text-center py-12">
               <Send className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Нет переданных файлов</p>
+              <p className="text-muted-foreground">Нет переданных файлов для отдела {DEPARTMENT_LABELS[department]}</p>
             </div>
           ) : (
             <Table>
@@ -154,7 +297,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transfers.map((transfer) => (
+                {departmentTransfers.map((transfer) => (
                   <TableRow key={transfer.id}>
                     <TableCell className="font-medium">
                       <div>
@@ -199,6 +342,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
                           variant="outline"
                           onClick={() => handleDownload(transfer)}
                           title="Скачать файл"
+                          className="hover:bg-green-50 hover:text-green-700"
                         >
                           <Download className="w-4 h-4" />
                         </Button>

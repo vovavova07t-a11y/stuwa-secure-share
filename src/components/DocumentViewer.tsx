@@ -28,13 +28,13 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   onDelete,
   onSendToOtherDepartment
 }) => {
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
+  // ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
   const handleDownload = async () => {
     try {
-      console.log('⬇️ DocumentViewer: Скачивание файла:', doc.file_name);
+      console.log('⬇️ DocumentViewer: Принудительное скачивание файла:', doc.file_name);
       
       if (doc.file instanceof File) {
-        // Если есть оригинальный File объект
+        // Если есть оригинальный File объект - создаем blob URL
         const url = URL.createObjectURL(doc.file);
         const link = document.createElement('a');
         link.href = url;
@@ -45,37 +45,62 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         console.log('✅ Файл скачан через File объект');
-      } else {
-        // Скачивание через URL с правильными заголовками
-        const response = await fetch(doc.file_url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error('Ошибка загрузки файла');
-        }
-        
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        
+        return;
+      }
+
+      // Для файлов из Supabase - принудительное скачивание через fetch
+      const response = await fetch(doc.file_url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Получаем blob данные
+      const blob = await response.blob();
+      
+      // Создаем URL для blob
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Создаем временную ссылку для принудительного скачивания
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = doc.file_name; // Сохраняем оригинальное имя файла
+      link.style.display = 'none';
+      
+      // Добавляем в DOM, кликаем и сразу удаляем
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Освобождаем память
+      window.URL.revokeObjectURL(blobUrl);
+      console.log('✅ Файл успешно скачан через fetch:', doc.file_name);
+      
+    } catch (error) {
+      console.error('❌ Ошибка при скачивании:', error);
+      
+      // Если fetch не сработал, пытаемся через прямую ссылку с download атрибутом
+      try {
         const link = document.createElement('a');
-        link.href = blobUrl;
+        link.href = doc.file_url;
         link.download = doc.file_name;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        window.URL.revokeObjectURL(blobUrl);
-        console.log('✅ Файл скачан через URL');
+        console.log('✅ Файл скачан через прямую ссылку');
+      } catch (fallbackError) {
+        console.error('❌ Fallback тоже не сработал:', fallbackError);
+        // В крайнем случае открываем в новой вкладке
+        window.open(doc.file_url, '_blank', 'noopener,noreferrer');
       }
-    } catch (error) {
-      console.error('❌ Ошибка при скачивании:', error);
-      // Fallback - открываем в новой вкладке
-      window.open(doc.file_url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -120,7 +145,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             <div className="col-span-2">
               <span className="font-medium">Статус:</span> 
               <span className="ml-2 text-green-600">
-                {doc.file instanceof File ? '💾 Локальный файл' : '🔗 Supabase файл'}
+                {doc.file instanceof File ? '💾 Локальный файл' : '🔗 Внешний файл'}
               </span>
             </div>
           </div>
@@ -145,7 +170,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               <div className="text-center">
                 <div className="text-4xl mb-4">📄</div>
                 <p className="text-gray-600">Предварительный просмотр недоступен</p>
-                <p className="text-sm text-gray-500">Нажмите "Скачать" для открытия файла</p>
+                <p className="text-sm text-gray-500">Нажмите "Скачать" для сохранения файла</p>
                 <Button 
                   className="mt-4"
                   onClick={handleDownload}
