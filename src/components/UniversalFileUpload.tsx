@@ -7,11 +7,14 @@ import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
   id: string;
-  file: File;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
   status: 'uploading' | 'success' | 'error';
   progress: number;
   uploadedAt: Date;
   categoryId: string;
+  fileUrl?: string;
 }
 
 interface UniversalFileUploadProps {
@@ -37,20 +40,54 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const storedFiles = localStorage.getItem(`files_${categoryId}`);
-    if (storedFiles) {
+    const loadStoredFiles = () => {
       try {
-        const parsedFiles = JSON.parse(storedFiles);
-        setUploadedFiles(parsedFiles);
+        const storedFiles = localStorage.getItem(`files_${categoryId}`);
+        if (storedFiles) {
+          const parsedFiles = JSON.parse(storedFiles);
+          // Фильтруем файлы, чтобы исключить поврежденные записи
+          const validFiles = parsedFiles.filter((file: any) => 
+            file && 
+            file.fileName && 
+            file.id && 
+            typeof file.fileName === 'string' &&
+            file.fileName !== '' &&
+            file.categoryId === categoryId
+          );
+          setUploadedFiles(validFiles);
+          console.log(`Загружены файлы для категории ${categoryId}:`, validFiles);
+        }
       } catch (error) {
-        console.error('Error loading stored files:', error);
+        console.error('Ошибка загрузки сохраненных файлов:', error);
+        // Очистим поврежденные данные
+        localStorage.removeItem(`files_${categoryId}`);
       }
-    }
+    };
+
+    loadStoredFiles();
   }, [categoryId]);
 
   const saveFilesToStorage = useCallback((files: UploadedFile[]) => {
-    localStorage.setItem(`files_${categoryId}`, JSON.stringify(files));
-  }, [categoryId]);
+    try {
+      // Сохраняем только валидные файлы
+      const validFiles = files.filter(file => 
+        file && 
+        file.fileName && 
+        file.id && 
+        typeof file.fileName === 'string' &&
+        file.fileName !== ''
+      );
+      
+      localStorage.setItem(`files_${categoryId}`, JSON.stringify(validFiles));
+      console.log(`Сохранены файлы для категории ${categoryId}:`, validFiles);
+      
+      if (onFilesChange) {
+        onFilesChange(validFiles);
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения файлов:', error);
+    }
+  }, [categoryId, onFilesChange]);
 
   const validateFile = (file: File): boolean => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -120,14 +157,20 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
     if (filesToUpload.length === 0) return;
 
-    const newFiles: UploadedFile[] = filesToUpload.map(file => ({
-      id: `${categoryId}_${Date.now()}_${Math.random().toString(36).substring(2)}`,
-      file,
-      status: 'uploading' as const,
-      progress: 0,
-      uploadedAt: new Date(),
-      categoryId
-    }));
+    const newFiles: UploadedFile[] = filesToUpload.map(file => {
+      const fileUrl = URL.createObjectURL(file);
+      return {
+        id: `${categoryId}_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type || 'unknown',
+        status: 'uploading' as const,
+        progress: 0,
+        uploadedAt: new Date(),
+        categoryId,
+        fileUrl
+      };
+    });
 
     setUploadedFiles(prev => {
       const updatedFiles = [...prev, ...newFiles];
@@ -140,7 +183,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         await simulateUpload(uploadedFile.id);
         toast({
           title: 'Файл загружен',
-          description: `${uploadedFile.file.name} успешно загружен в "${title}"`
+          description: `${uploadedFile.fileName} успешно загружен в "${title}"`
         });
       } catch (error) {
         setUploadedFiles(prev => {
@@ -154,16 +197,12 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         });
         toast({
           title: 'Ошибка загрузки',
-          description: `Не удалось загрузить ${uploadedFile.file.name}`,
+          description: `Не удалось загрузить ${uploadedFile.fileName}`,
           variant: 'destructive'
         });
       }
     }
-
-    if (onFilesChange) {
-      onFilesChange(uploadedFiles);
-    }
-  }, [maxFileSize, allowedTypes, toast, onFilesChange, uploadedFiles, categoryId, title, saveFilesToStorage]);
+  }, [maxFileSize, allowedTypes, toast, categoryId, title, saveFilesToStorage]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -191,11 +230,14 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const removeFile = (fileId: string) => {
     setUploadedFiles(prev => {
+      // Освобождаем URL объект перед удалением
+      const fileToRemove = prev.find(f => f.id === fileId);
+      if (fileToRemove?.fileUrl) {
+        URL.revokeObjectURL(fileToRemove.fileUrl);
+      }
+      
       const newFiles = prev.filter(f => f.id !== fileId);
       saveFilesToStorage(newFiles);
-      if (onFilesChange) {
-        onFilesChange(newFiles);
-      }
       return newFiles;
     });
     toast({
@@ -204,15 +246,31 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     });
   };
 
+  const clearAllFiles = () => {
+    // Освобождаем все URL объекты
+    uploadedFiles.forEach(file => {
+      if (file.fileUrl) {
+        URL.revokeObjectURL(file.fileUrl);
+      }
+    });
+    
+    setUploadedFiles([]);
+    localStorage.removeItem(`files_${categoryId}`);
+    toast({
+      title: 'Все файлы удалены',
+      description: 'Все файлы успешно удалены из списка'
+    });
+  };
+
   const downloadFile = (uploadedFile: UploadedFile) => {
-    const url = URL.createObjectURL(uploadedFile.file);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = uploadedFile.file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if (uploadedFile.fileUrl) {
+      const link = document.createElement('a');
+      link.href = uploadedFile.fileUrl;
+      link.download = uploadedFile.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -223,13 +281,13 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (fileName: string | undefined | null) => {
+  const getFileIcon = (fileName: string) => {
     if (!fileName || typeof fileName !== 'string') {
       return <FileText className="w-5 h-5 text-gray-500" />;
     }
     
     const extension = fileName.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png'].includes(extension || '')) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
       return <Image className="w-5 h-5 text-blue-500" />;
     }
     return <FileText className="w-5 h-5 text-gray-500" />;
@@ -243,11 +301,24 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     <div className="space-y-6">
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            {title}
-            <span className="text-xs text-muted-foreground">({categoryId})</span>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              {title}
+              <span className="text-xs text-muted-foreground">({categoryId})</span>
+            </CardTitle>
+            {uploadedFiles.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFiles}
+                className="text-destructive hover:text-destructive"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Очистить все
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div
@@ -312,12 +383,12 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-3 flex-1">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {getFileIcon(uploadedFile.file?.name)}
+                        {getFileIcon(uploadedFile.fileName)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{uploadedFile.file?.name || 'Неизвестный файл'}</p>
+                        <p className="font-medium text-sm truncate">{uploadedFile.fileName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatFileSize(uploadedFile.file?.size || 0)} • {uploadedFile.uploadedAt.toLocaleString()}
+                          {formatFileSize(uploadedFile.fileSize)} • {uploadedFile.uploadedAt.toLocaleString()}
                         </p>
                       </div>
                     </div>
