@@ -16,22 +16,20 @@ export interface FileData {
   storage_path?: string;
 }
 
-// Use the constants directly from the client file
 const SUPABASE_URL = "https://cevdbplhmncqbyuzchhj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldmRicGxobW5jcWJ5dXpjaGhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTMzNDEsImV4cCI6MjA1ODMyOTM0MX0.Vj7N9OOr4oDJtfgo1WsF32Hc46VkG1oh0bC7gz6d7Kw";
 
-export const useSupabaseFiles = (department: string, categoryId: string, refreshKey?: number) => {
+export const useSupabaseFiles = (department: string, categoryId: string) => {
   const [files, setFiles] = useState<FileData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Загрузка файлов из базы данных с использованием прямого HTTP запроса
+  // Загрузка файлов из базы данных
   const loadFiles = async () => {
     try {
       setIsLoading(true);
       console.log(`🔄 Загрузка файлов для отдела: ${department}, категории: ${categoryId}`);
       
-      // Используем прямой HTTP запрос к Supabase REST API
       const response = await fetch(`${SUPABASE_URL}/rest/v1/files?department=eq.${department}&category_id=eq.${categoryId}&order=created_at.desc`, {
         headers: {
           'apikey': SUPABASE_PUBLISHABLE_KEY,
@@ -84,7 +82,7 @@ export const useSupabaseFiles = (department: string, categoryId: string, refresh
         .from('files')
         .getPublicUrl(fileName);
 
-      // Сохраняем информацию о файле в базу данных через прямой HTTP запрос
+      // Сохраняем информацию о файле в базу данных
       const fileData = {
         id: fileId,
         file_name: file.name,
@@ -110,24 +108,15 @@ export const useSupabaseFiles = (department: string, categoryId: string, refresh
 
       if (!response.ok) {
         console.error('Ошибка сохранения в базу данных');
-        // Удаляем файл из Storage если не удалось сохранить в БД
         await supabase.storage.from('files').remove([fileName]);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       console.log('✅ Файл успешно сохранен в базу данных');
       
-      // Автоматически обновляем локальный список файлов
-      await loadFiles();
-      
       return fileData;
     } catch (error) {
       console.error('Ошибка сохранения файла:', error);
-      toast({
-        title: 'Ошибка сохранения',
-        description: 'Не удалось сохранить файл в базу данных',
-        variant: 'destructive'
-      });
       throw error;
     }
   };
@@ -135,7 +124,6 @@ export const useSupabaseFiles = (department: string, categoryId: string, refresh
   // Удаление файла
   const deleteFile = async (fileId: string) => {
     try {
-      // Получаем информацию о файле
       const fileToDelete = files.find(f => f.id === fileId);
       
       if (!fileToDelete) {
@@ -153,7 +141,7 @@ export const useSupabaseFiles = (department: string, categoryId: string, refresh
         }
       }
 
-      // Удаляем запись из базы данных через HTTP запрос
+      // Удаляем запись из базы данных
       const response = await fetch(`${SUPABASE_URL}/rest/v1/files?id=eq.${fileId}`, {
         method: 'DELETE',
         headers: {
@@ -167,27 +155,18 @@ export const useSupabaseFiles = (department: string, categoryId: string, refresh
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Автоматически обновляем локальный список файлов
-      await loadFiles();
-      
-      toast({
-        title: 'Файл удален',
-        description: 'Файл успешно удален из базы данных'
-      });
+      // Обновляем локальное состояние
+      setFiles(prev => prev.filter(f => f.id !== fileId));
     } catch (error) {
       console.error('Ошибка удаления файла:', error);
-      toast({
-        title: 'Ошибка удаления',
-        description: 'Не удалось удалить файл',
-        variant: 'destructive'
-      });
+      throw error;
     }
   };
 
-  // Загружаем файлы при первом рендере и при изменении refreshKey
+  // Загружаем файлы при первом рендере
   useEffect(() => {
     loadFiles();
-  }, [department, categoryId, refreshKey]);
+  }, [department, categoryId]);
 
   return {
     files,

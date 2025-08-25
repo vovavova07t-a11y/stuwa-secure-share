@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,27 +8,27 @@ import { FileTransferModal } from './interdepartment/FileTransferModal';
 import { useSupabaseFiles } from '@/hooks/useSupabaseFiles';
 import { getCurrentDepartmentFromPath } from './interdepartment/utils/departmentUtils';
 import { useToast } from '@/hooks/use-toast';
+import { validateFile, formatFileSize } from '@/utils/fileUtils';
 import { 
   Search,
-  Filter,
   SortAsc,
   FileText,
   Upload,
   Grid3X3,
-  List
+  List,
+  Loader2
 } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger,
-  DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
 
 interface CategoryFilesGridProps {
   categoryId: string;
   categoryTitle: string;
-  onUploadClick: () => void;
+  onUploadClick?: () => void;
   showUploadButton?: boolean;
 }
 
@@ -38,7 +38,6 @@ type ViewMode = 'grid' | 'list';
 export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
   categoryId,
   categoryTitle,
-  onUploadClick,
   showUploadButton = true
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,12 +45,13 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const currentDepartment = getCurrentDepartmentFromPath();
   
-  // Используем хук с принудительным обновлением через key компонента
-  const { files, isLoading, deleteFile } = useSupabaseFiles(currentDepartment, categoryId);
+  const { files, isLoading, saveFile, deleteFile, loadFiles } = useSupabaseFiles(currentDepartment, categoryId);
 
   // Filter and sort files
   const filteredAndSortedFiles = React.useMemo(() => {
@@ -78,6 +78,66 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
 
     return filtered;
   }, [files, searchQuery, sortBy]);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles) return;
+
+    setIsUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      
+      // Валидация файла
+      const validation = validateFile(file, 50 * 1024 * 1024, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'zip', 'rar']);
+      
+      if (!validation.valid) {
+        toast({
+          title: 'Ошибка валидации',
+          description: `${file.name}: ${validation.error}`,
+          variant: 'destructive'
+        });
+        errorCount++;
+        continue;
+      }
+
+      try {
+        await saveFile(file, categoryId, currentDepartment);
+        successCount++;
+      } catch (error) {
+        console.error('Ошибка загрузки файла:', error);
+        errorCount++;
+      }
+    }
+
+    // Обновляем список файлов
+    await loadFiles();
+
+    // Показываем результат
+    if (successCount > 0) {
+      toast({
+        title: 'Файлы загружены',
+        description: `Успешно загружено ${successCount} файл${successCount > 1 ? (successCount > 4 ? 'ов' : 'а') : ''}`
+      });
+    }
+
+    if (errorCount > 0) {
+      toast({
+        title: 'Ошибки загрузки',
+        description: `Не удалось загрузить ${errorCount} файл${errorCount > 1 ? (errorCount > 4 ? 'ов' : 'а') : ''}`,
+        variant: 'destructive'
+      });
+    }
+
+    setIsUploading(false);
+    
+    // Очищаем input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSendFile = (file: any) => {
     setSelectedFile({
@@ -108,6 +168,10 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
     }
   };
 
+  const openFileDialog = () => {
+    fileInputRef.current?.click();
+  };
+
   console.log(`🔍 CategoryFilesGrid рендерится для категории ${categoryId}, файлов: ${files.length}`);
 
   if (isLoading) {
@@ -136,10 +200,33 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
               )}
             </CardTitle>
             {showUploadButton && (
-              <Button onClick={onUploadClick} className="btn-primary">
-                <Upload className="w-4 h-4 mr-2" />
-                Загрузить документ
-              </Button>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+                />
+                <Button 
+                  onClick={openFileDialog} 
+                  className="btn-primary"
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Загружаем...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Загрузить файлы
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
 
@@ -224,12 +311,21 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
               <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Нет загруженных документов</h3>
               <p className="text-muted-foreground mb-4">
-                Нажмите "Загрузить документ" чтобы добавить файлы в эту категорию
+                Нажмите "Загрузить файлы" чтобы добавить файлы в эту категорию
               </p>
               {showUploadButton && (
-                <Button onClick={onUploadClick} className="btn-primary">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Загрузить первый документ
+                <Button onClick={openFileDialog} className="btn-primary" disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Загружаем...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Загрузить первый файл
+                    </>
+                  )}
                 </Button>
               )}
             </div>
