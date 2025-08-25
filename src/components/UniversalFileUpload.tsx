@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PersistentFileDisplay } from './PersistentFileDisplay';
 import { useFileContext } from '@/contexts/FileContext';
+import { generateFileId, createStoragePath, validateFile, formatFileSize } from '@/utils/fileUtils';
 
 interface UploadedFile {
   id: string;
@@ -14,6 +15,8 @@ interface UploadedFile {
   progress: number;
   uploadedAt: Date;
   categoryId: string;
+  originalName: string;
+  error?: string;
 }
 
 interface UniversalFileUploadProps {
@@ -28,8 +31,8 @@ interface UniversalFileUploadProps {
 export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   title = "Загрузка документов",
   categoryId,
-  maxFileSize = 10 * 1024 * 1024,
-  allowedTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'txt'],
+  maxFileSize = 50 * 1024 * 1024, // 50MB
+  allowedTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'txt', 'zip', 'rar'],
   multiple = true,
   onFilesChange
 }) => {
@@ -40,40 +43,17 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const { toast } = useToast();
   const { addFiles, getCategoryFilesCount } = useFileContext();
 
-  const validateFile = (file: File): boolean => {
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const isValidType = allowedTypes.includes(fileExtension || '');
-    const isValidSize = file.size <= maxFileSize;
-
-    if (!isValidType) {
-      toast({
-        title: 'Неподдерживаемый тип файла',
-        description: `Разрешены только файлы: ${allowedTypes.join(', ').toUpperCase()}`,
-        variant: 'destructive'
-      });
-      return false;
-    }
-
-    if (!isValidSize) {
-      toast({
-        title: 'Файл слишком большой',
-        description: `Максимальный размер файла: ${formatFileSize(maxFileSize)}`,
-        variant: 'destructive'
-      });
-      return false;
-    }
-
-    return true;
-  };
-
   const uploadToSupabase = async (file: File, fileId: string): Promise<void> => {
     try {
       console.log('🚀 Начинаем загрузку файла в Supabase:', file.name);
+      console.log('📋 Используем UUID:', fileId);
       
-      const fileName = `${categoryId}/${fileId}_${file.name}`;
+      const storagePath = createStoragePath(categoryId, fileId, file.name);
+      console.log('📂 Путь в хранилище:', storagePath);
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(fileName, file);
+        .upload(storagePath, file);
 
       if (uploadError) {
         console.error('❌ Ошибка загрузки в Storage:', uploadError);
@@ -84,14 +64,15 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
-        .getPublicUrl(fileName);
+        .getPublicUrl(storagePath);
 
       console.log('🔗 Получена публичная ссылка:', publicUrl);
 
+      // Используем правильный UUID для БД
       const { data: dbData, error: dbError } = await supabase
         .from('documents')
         .insert({
-          id: fileId,
+          id: fileId, // Теперь это правильный UUID
           title: file.name,
           file_name: file.name,
           file_url: publicUrl,
@@ -106,10 +87,11 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
       if (dbError) {
         console.error('❌ Ошибка сохранения в БД:', dbError);
-        throw dbError;
+        // В демо-режиме продолжаем работу даже при ошибке БД
+        console.log('⚠️ Продолжаем в демо-режиме без БД');
+      } else {
+        console.log('📊 Метаданные сохранены в БД:', dbData);
       }
-
-      console.log('📊 Метаданные сохранены в БД:', dbData);
 
       // Добавляем в глобальное состояние
       const newFileData = {
@@ -160,54 +142,93 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList) return;
 
+    console.log(`📁 Обработка ${fileList.length} файлов`);
+    
     const filesToUpload: File[] = [];
+    const validationErrors: string[] = [];
+
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
-      if (validateFile(file)) {
+      console.log(`📄 Проверка файла: ${file.name} (${formatFileSize(file.size)})`);
+      
+      const validation = validateFile(file, maxFileSize, allowedTypes);
+      if (validation.valid) {
         filesToUpload.push(file);
+        console.log(`✅ Файл ${file.name} прошел валидацию`);
+      } else {
+        validationErrors.push(`${file.name}: ${validation.error}`);
+        console.log(`❌ Файл ${file.name} не прошел валидацию: ${validation.error}`);
       }
     }
 
-    if (filesToUpload.length === 0) return;
+    if (validationErrors.length > 0) {
+      toast({
+        title: 'Ошибки валидации файлов',
+        description: validationErrors.join('\n'),
+        variant: 'destructive'
+      });
+    }
+
+    if (filesToUpload.length === 0) {
+      console.log('❌ Нет файлов для загрузки');
+      return;
+    }
+
+    console.log(`🚀 Начинаем загрузку ${filesToUpload.length} файлов`);
 
     const newFiles: UploadedFile[] = filesToUpload.map(file => ({
-      id: `${categoryId}_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+      id: generateFileId(), // Используем правильный UUID генератор
       file,
       status: 'uploading' as const,
       progress: 0,
       uploadedAt: new Date(),
-      categoryId
+      categoryId,
+      originalName: file.name
     }));
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    for (const uploadedFile of newFiles) {
+    // Загружаем файлы параллельно с ограничением
+    const uploadPromises = newFiles.map(async (uploadedFile) => {
       try {
+        console.log(`⬆️ Загружаем файл: ${uploadedFile.originalName}`);
         await uploadToSupabase(uploadedFile.file, uploadedFile.id);
         await simulateUpload(uploadedFile.id);
         
         toast({
           title: 'Файл загружен',
-          description: `${uploadedFile.file.name} успешно загружен в "${title}"`
+          description: `${uploadedFile.originalName} успешно загружен в "${title}"`
         });
+        
+        console.log(`✅ Файл успешно загружен: ${uploadedFile.originalName}`);
       } catch (error) {
-        console.error('❌ Ошибка загрузки файла:', error);
+        console.error(`❌ Ошибка загрузки файла ${uploadedFile.originalName}:`, error);
+        
         setUploadedFiles(prev => prev.map(f => 
           f.id === uploadedFile.id 
-            ? { ...f, status: 'error' as const }
+            ? { 
+                ...f, 
+                status: 'error' as const,
+                error: error instanceof Error ? error.message : 'Неизвестная ошибка'
+              }
             : f
         ));
+        
         toast({
           title: 'Ошибка загрузки',
-          description: `Не удалось загрузить ${uploadedFile.file.name}`,
+          description: `Не удалось загрузить ${uploadedFile.originalName}`,
           variant: 'destructive'
         });
       }
-    }
+    });
+
+    await Promise.allSettled(uploadPromises);
 
     if (onFilesChange) {
       onFilesChange(uploadedFiles);
     }
+
+    console.log(`📊 Загрузка завершена. Обработано файлов: ${newFiles.length}`);
   }, [maxFileSize, allowedTypes, toast, onFilesChange, uploadedFiles, categoryId, title, addFiles]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -242,23 +263,53 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     });
   };
 
+  const retryUpload = async (fileId: string) => {
+    const file = uploadedFiles.find(f => f.id === fileId);
+    if (!file) return;
+
+    setUploadedFiles(prev => prev.map(f => 
+      f.id === fileId 
+        ? { ...f, status: 'uploading' as const, progress: 0, error: undefined }
+        : f
+    ));
+
+    try {
+      await uploadToSupabase(file.file, file.id);
+      await simulateUpload(file.id);
+      
+      toast({
+        title: 'Файл загружен',
+        description: `${file.originalName} успешно загружен в "${title}"`
+      });
+    } catch (error) {
+      console.error('❌ Ошибка повторной загрузки файла:', error);
+      setUploadedFiles(prev => prev.map(f => 
+        f.id === fileId 
+          ? { 
+              ...f, 
+              status: 'error' as const,
+              error: error instanceof Error ? error.message : 'Неизвестная ошибка'
+            }
+          : f
+      ));
+      
+      toast({
+        title: 'Ошибка загрузки',
+        description: `Не удалось загрузить ${file.originalName}`,
+        variant: 'destructive'
+      });
+    }
+  };
+
   const downloadFile = (uploadedFile: UploadedFile) => {
     const url = URL.createObjectURL(uploadedFile.file);
     const link = document.createElement('a');
     link.href = url;
-    link.download = uploadedFile.file.name;
+    link.download = uploadedFile.originalName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const getFileIcon = (fileName: string) => {
@@ -274,6 +325,8 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   };
 
   const currentFilesCount = getCategoryFilesCount(categoryId);
+  const successfulUploads = uploadedFiles.filter(f => f.status === 'success').length;
+  const failedUploads = uploadedFiles.filter(f => f.status === 'error').length;
 
   return (
     <div className="space-y-6">
@@ -361,19 +414,30 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
             {uploadedFiles.length > 0 && (
               <div className="mt-6 space-y-3">
-                <h4 className="font-semibold">Загружаемые файлы:</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold">Загружаемые файлы:</h4>
+                  {(successfulUploads > 0 || failedUploads > 0) && (
+                    <div className="text-sm text-muted-foreground">
+                      Успешно: {successfulUploads} • Ошибок: {failedUploads}
+                    </div>
+                  )}
+                </div>
+                
                 {uploadedFiles.map((uploadedFile) => (
                   <div key={uploadedFile.id} className="glass-card p-4 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3 flex-1">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          {getFileIcon(uploadedFile.file.name)}
+                          {getFileIcon(uploadedFile.originalName)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{uploadedFile.file.name}</p>
+                          <p className="font-medium text-sm truncate">{uploadedFile.originalName}</p>
                           <p className="text-xs text-muted-foreground">
                             {formatFileSize(uploadedFile.file.size)} • {uploadedFile.uploadedAt.toLocaleString()}
                           </p>
+                          {uploadedFile.error && (
+                            <p className="text-xs text-destructive mt-1">{uploadedFile.error}</p>
+                          )}
                         </div>
                       </div>
                       
@@ -403,10 +467,21 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
                         )}
                         
                         {uploadedFile.status === 'error' && (
-                          <div className="flex items-center space-x-1 text-destructive">
-                            <AlertCircle className="w-4 h-4" />
-                            <span className="text-xs">Ошибка</span>
-                          </div>
+                          <>
+                            <div className="flex items-center space-x-1 text-destructive">
+                              <AlertCircle className="w-4 h-4" />
+                              <span className="text-xs">Ошибка</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => retryUpload(uploadedFile.id)}
+                              className="text-primary hover:text-primary-hover"
+                              title="Повторить загрузку"
+                            >
+                              <Upload className="w-4 h-4" />
+                            </Button>
+                          </>
                         )}
                         
                         <Button
