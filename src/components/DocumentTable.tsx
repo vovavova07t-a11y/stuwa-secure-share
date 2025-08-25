@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,18 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
 
   const getFileIcon = (fileType: string) => {
     return <FileText className="w-4 h-4 text-primary" />;
+  };
+
+  const handleDownload = (document: FinancialDocument) => {
+    const link = document.createElement('a');
+    link.href = document.file_url;
+    link.download = document.file_name;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    onDownload(document);
   };
 
   if (isLoading) {
@@ -112,7 +125,7 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDownload(document)}
+                    onClick={() => handleDownload(document)}
                     className="hover:bg-primary/10"
                   >
                     <Download className="w-4 h-4" />

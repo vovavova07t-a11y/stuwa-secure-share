@@ -45,6 +45,18 @@ export const TechnicalDocumentTable: React.FC<TechnicalDocumentTableProps> = ({
     return <FileText className="w-4 h-4 text-primary" />;
   };
 
+  const handleDownload = (document: TechnicalDocument) => {
+    const link = document.createElement('a');
+    link.href = document.file_url;
+    link.download = document.file_name;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    onDownload(document);
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: { label: 'Активный', variant: 'default' as const },
@@ -183,7 +195,7 @@ export const TechnicalDocumentTable: React.FC<TechnicalDocumentTableProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDownload(document)}
+                    onClick={() => handleDownload(document)}
                     className="hover:bg-primary/10"
                   >
                     <Download className="w-4 h-4" />

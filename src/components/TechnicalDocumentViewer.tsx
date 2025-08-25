@@ -28,7 +28,14 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
   onSendToOtherDepartment
 }) => {
   const handleDownload = () => {
-    window.open(document.file_url, '_blank');
+    const link = document.createElement('a');
+    link.href = document.file_url;
+    link.download = document.file_name;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleSend = () => {

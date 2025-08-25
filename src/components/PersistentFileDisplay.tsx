@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useFileContext } from '@/contexts/FileContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,6 +67,17 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
     if (fileType.includes('word')) return '📝';
     if (fileType.includes('excel') || fileType.includes('sheet')) return '📊';
     return '📎';
+  };
+
+  const handleDownload = (file: any) => {
+    const link = document.createElement('a');
+    link.href = file.file_url;
+    link.download = file.file_name;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (viewingDocument) {
@@ -138,7 +150,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => window.open(file.file_url, '_blank')}
+                      onClick={() => handleDownload(file)}
                       className="hover:bg-primary/10"
                     >
                       <Download className="w-4 h-4" />
