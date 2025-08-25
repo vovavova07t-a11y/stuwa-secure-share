@@ -79,45 +79,65 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
 
     setSending(true);
     try {
+      let successCount = 0;
+      let errorCount = 0;
+
       // Отправляем файл в каждый выбранный отдел
       for (const department of selectedDepartments) {
-        const transferData = {
-          file_name: file.name,
-          file_url: file.url,
-          file_size: file.size,
-          file_type: file.type,
-          sender_department: currentDepartment,
-          receiver_department: department,
-          sender_id: 'demo-user', // В реальном приложении здесь будет ID пользователя
-          priority,
-          status: 'sent',
-          message: message || null,
-          deadline: deadline ? new Date(deadline).toISOString() : null,
-          is_group_send: selectedDepartments.length > 1,
-          transfer_chain: [
-            {
-              department: currentDepartment,
-              action: 'sent',
-              timestamp: new Date().toISOString(),
-              user_id: 'demo-user'
-            }
-          ]
-        };
+        try {
+          const transferData = {
+            file_name: file.name,
+            file_url: file.url,
+            file_size: file.size,
+            file_type: file.type,
+            sender_department: currentDepartment,
+            receiver_department: department,
+            priority,
+            status: 'sent',
+            message: message || null,
+            deadline: deadline ? new Date(deadline).toISOString() : null,
+            is_group_send: selectedDepartments.length > 1,
+            transfer_chain: [
+              {
+                department: currentDepartment,
+                action: 'sent',
+                timestamp: new Date().toISOString()
+              }
+            ]
+          };
 
-        console.log('Отправка файла в отдел:', department, transferData);
+          console.log('Отправка файла в отдел:', department, transferData);
 
-        await createTransfer(transferData);
+          await createTransfer(transferData);
+          successCount++;
+        } catch (error) {
+          console.error(`Ошибка отправки в отдел ${department}:`, error);
+          errorCount++;
+        }
       }
 
-      toast({
-        title: "Успех",
-        description: `Файл успешно отправлен в ${selectedDepartments.length} отдел(а)`,
-      });
+      if (successCount > 0) {
+        toast({
+          title: "Успех",
+          description: `Файл успешно отправлен в ${successCount} отдел${successCount > 1 ? (successCount > 4 ? 'ов' : 'а') : ''}`,
+        });
 
-      onSuccess?.();
-      onClose();
+        if (errorCount === 0) {
+          onSuccess?.();
+          onClose();
+        }
+      }
+
+      if (errorCount > 0) {
+        toast({
+          title: "Частичная ошибка",
+          description: `Не удалось отправить в ${errorCount} отдел${errorCount > 1 ? (errorCount > 4 ? 'ов' : 'а') : ''}`,
+          variant: "destructive",
+        });
+      }
+
     } catch (error) {
-      console.error('Error sending file:', error);
+      console.error('Общая ошибка отправки:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось отправить файл",

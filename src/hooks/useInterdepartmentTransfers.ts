@@ -39,7 +39,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       setIsLoading(true);
       console.log(`🔄 Загрузка переданных файлов для отдела: ${department}`);
       
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('interdepartment_file_transfers')
         .select('*')
         .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
@@ -69,9 +69,15 @@ export const useInterdepartmentTransfers = (department: string) => {
     try {
       console.log('📤 Создание передачи файла:', transferData.file_name);
 
-      const { data: insertData, error: insertError } = await (supabase as any)
+      // Убираем sender_id если он равен "demo-user" или не является валидным UUID
+      const cleanTransferData = { ...transferData };
+      if (cleanTransferData.sender_id === 'demo-user' || !isValidUUID(cleanTransferData.sender_id)) {
+        delete cleanTransferData.sender_id;
+      }
+
+      const { data: insertData, error: insertError } = await supabase
         .from('interdepartment_file_transfers')
-        .insert([transferData])
+        .insert([cleanTransferData])
         .select()
         .single();
 
@@ -99,12 +105,23 @@ export const useInterdepartmentTransfers = (department: string) => {
 
   const updateTransferStatus = async (transferId: string, status: string) => {
     try {
-      const { error } = await (supabase as any)
+      const updateData: any = { 
+        status,
+        updated_at: new Date().toISOString()
+      };
+
+      // Добавляем соответствующую временную метку
+      if (status === 'viewed') {
+        updateData.viewed_at = new Date().toISOString();
+      } else if (status === 'processed') {
+        updateData.processed_at = new Date().toISOString();
+      } else if (status === 'delivered') {
+        updateData.delivered_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
         .from('interdepartment_file_transfers')
-        .update({ 
-          status,
-          [`${status}_at`]: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', transferId);
 
       if (error) {
@@ -115,13 +132,13 @@ export const useInterdepartmentTransfers = (department: string) => {
       // Обновляем локальное состояние
       setTransfers(prev => prev.map(transfer => 
         transfer.id === transferId 
-          ? { ...transfer, status, [`${status}_at`]: new Date().toISOString() }
+          ? { ...transfer, ...updateData }
           : transfer
       ));
       
       toast({
         title: 'Статус обновлен',
-        description: `Статус файла изменен на "${status}"`
+        description: `Статус файла изменен на "${getStatusLabel(status)}"`
       });
     } catch (error: any) {
       console.error('Ошибка обновления статуса передачи:', error);
@@ -132,6 +149,24 @@ export const useInterdepartmentTransfers = (department: string) => {
       });
       throw error;
     }
+  };
+
+  const getStatusLabel = (status: string): string => {
+    const statusLabels: Record<string, string> = {
+      sent: 'Отправлено',
+      delivered: 'Доставлено', 
+      viewed: 'Просмотрено',
+      processed: 'Обработано',
+      recalled: 'Отозвано'
+    };
+    return statusLabels[status] || status;
+  };
+
+  // Функция для проверки валидности UUID
+  const isValidUUID = (uuid?: string): boolean => {
+    if (!uuid) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   };
 
   useEffect(() => {
