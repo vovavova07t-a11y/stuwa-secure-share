@@ -3,19 +3,14 @@ import { Upload, File, X, CheckCircle, AlertCircle, Download, Loader2, FileText,
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface UploadedFile {
   id: string;
-  fileName: string;
-  fileSize: number;
-  fileType: string;
+  file: File;
   status: 'uploading' | 'success' | 'error';
   progress: number;
   uploadedAt: Date;
   categoryId: string;
-  fileUrl?: string;
 }
 
 interface UniversalFileUploadProps {
@@ -39,7 +34,22 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+
+  React.useEffect(() => {
+    const storedFiles = localStorage.getItem(`files_${categoryId}`);
+    if (storedFiles) {
+      try {
+        const parsedFiles = JSON.parse(storedFiles);
+        setUploadedFiles(parsedFiles);
+      } catch (error) {
+        console.error('Error loading stored files:', error);
+      }
+    }
+  }, [categoryId]);
+
+  const saveFilesToStorage = useCallback((files: UploadedFile[]) => {
+    localStorage.setItem(`files_${categoryId}`, JSON.stringify(files));
+  }, [categoryId]);
 
   const validateFile = (file: File): boolean => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -67,81 +77,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     return true;
   };
 
-  const uploadFileToSupabase = async (file: File, uploadedFileId: string): Promise<string> => {
-    try {
-      // Создаем уникальное имя файла
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${categoryId}/${fileName}`;
-
-      console.log('Загружаем файл в Supabase Storage:', filePath);
-
-      // Загружаем файл в Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        console.error('Ошибка загрузки в Storage:', error);
-        throw error;
-      }
-
-      console.log('Файл успешно загружен в Storage:', data);
-
-      // Получаем публичный URL файла
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(filePath);
-
-      console.log('Публичный URL файла:', publicUrl);
-      return publicUrl;
-    } catch (error) {
-      console.error('Ошибка загрузки файла в Supabase:', error);
-      throw error;
-    }
-  };
-
-  const saveFileToDatabase = async (file: File, fileUrl: string): Promise<void> => {
-    try {
-      console.log('Сохраняем информацию о файле в БД:', {
-        file_name: file.name,
-        file_size: file.size,
-        file_type: file.type,
-        file_url: fileUrl,
-        category_id: categoryId,
-        uploaded_by: user?.id || null,
-      });
-
-      const { data, error } = await supabase
-        .from('uploaded_files')
-        .insert([
-          {
-            file_name: file.name,
-            file_size: file.size,
-            file_type: file.type,
-            file_url: fileUrl,
-            category_id: categoryId,
-            uploaded_by: user?.id || null,
-          }
-        ])
-        .select();
-
-      if (error) {
-        console.error('Ошибка сохранения в БД:', error);
-        throw error;
-      }
-
-      console.log('Файл успешно сохранен в БД:', data);
-    } catch (error) {
-      console.error('Ошибка сохранения файла в базу данных:', error);
-      throw error;
-    }
-  };
-
-  const simulateUploadProgress = (fileId: string): Promise<void> => {
+  const simulateUpload = (fileId: string): Promise<void> => {
     return new Promise((resolve) => {
       let progress = 0;
       const interval = setInterval(() => {
@@ -149,11 +85,15 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         if (progress >= 100) {
           progress = 100;
           clearInterval(interval);
-          setUploadedFiles(prev => prev.map(f => 
-            f.id === fileId 
-              ? { ...f, status: 'success' as const, progress: 100 }
-              : f
-          ));
+          setUploadedFiles(prev => {
+            const newFiles = prev.map(f => 
+              f.id === fileId 
+                ? { ...f, status: 'success' as const, progress: 100 }
+                : f
+            );
+            saveFilesToStorage(newFiles);
+            return newFiles;
+          });
           resolve();
         } else {
           setUploadedFiles(prev => prev.map(f => 
@@ -181,62 +121,48 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
     const newFiles: UploadedFile[] = filesToUpload.map(file => ({
       id: `${categoryId}_${Date.now()}_${Math.random().toString(36).substring(2)}`,
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type || 'unknown',
+      file,
       status: 'uploading' as const,
       progress: 0,
       uploadedAt: new Date(),
-      categoryId,
+      categoryId
     }));
 
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setUploadedFiles(prev => {
+      const updatedFiles = [...prev, ...newFiles];
+      saveFilesToStorage(updatedFiles);
+      return updatedFiles;
+    });
 
-    for (let i = 0; i < newFiles.length; i++) {
-      const uploadedFile = newFiles[i];
-      const originalFile = filesToUpload[i];
-
+    for (const uploadedFile of newFiles) {
       try {
-        console.log('Начинаем загрузку файла:', originalFile.name);
-
-        // Симулируем прогресс загрузки
-        await simulateUploadProgress(uploadedFile.id);
-
-        // Загружаем файл в Supabase Storage
-        const fileUrl = await uploadFileToSupabase(originalFile, uploadedFile.id);
-
-        // Сохраняем информацию о файле в базу данных
-        await saveFileToDatabase(originalFile, fileUrl);
-
+        await simulateUpload(uploadedFile.id);
         toast({
           title: 'Файл загружен',
-          description: `${uploadedFile.fileName} успешно загружен в "${title}"`
+          description: `${uploadedFile.file.name} успешно загружен в "${title}"`
         });
-
-        // Удаляем файл из локального состояния после успешной загрузки
-        setUploadedFiles(prev => prev.filter(f => f.id !== uploadedFile.id));
-
       } catch (error) {
-        console.error('Ошибка загрузки файла:', error);
-        
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === uploadedFile.id 
-            ? { ...f, status: 'error' as const }
-            : f
-        ));
-
+        setUploadedFiles(prev => {
+          const updatedFiles = prev.map(f => 
+            f.id === uploadedFile.id 
+              ? { ...f, status: 'error' as const }
+              : f
+          );
+          saveFilesToStorage(updatedFiles);
+          return updatedFiles;
+        });
         toast({
           title: 'Ошибка загрузки',
-          description: `Не удалось загрузить ${uploadedFile.fileName}`,
+          description: `Не удалось загрузить ${uploadedFile.file.name}`,
           variant: 'destructive'
         });
       }
     }
 
     if (onFilesChange) {
-      onFilesChange([]);
+      onFilesChange(uploadedFiles);
     }
-  }, [maxFileSize, allowedTypes, toast, categoryId, title, user, onFilesChange]);
+  }, [maxFileSize, allowedTypes, toast, onFilesChange, uploadedFiles, categoryId, title, saveFilesToStorage]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -263,30 +189,29 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   };
 
   const removeFile = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+    setUploadedFiles(prev => {
+      const newFiles = prev.filter(f => f.id !== fileId);
+      saveFilesToStorage(newFiles);
+      if (onFilesChange) {
+        onFilesChange(newFiles);
+      }
+      return newFiles;
+    });
     toast({
       title: 'Файл удален',
       description: 'Файл успешно удален из списка'
     });
   };
 
-  const clearAllFiles = () => {
-    setUploadedFiles([]);
-    toast({
-      title: 'Все файлы удалены',
-      description: 'Все файлы успешно удалены из списка'
-    });
-  };
-
   const downloadFile = (uploadedFile: UploadedFile) => {
-    if (uploadedFile.fileUrl) {
-      const link = window.document.createElement('a');
-      link.href = uploadedFile.fileUrl;
-      link.download = uploadedFile.fileName;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-    }
+    const url = URL.createObjectURL(uploadedFile.file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = uploadedFile.file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -297,13 +222,9 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (fileName: string | undefined | null) => {
-    if (!fileName || typeof fileName !== 'string') {
-      return <FileText className="w-5 h-5 text-gray-500" />;
-    }
-    
+  const getFileIcon = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
+    if (['jpg', 'jpeg', 'png'].includes(extension || '')) {
       return <Image className="w-5 h-5 text-blue-500" />;
     }
     return <FileText className="w-5 h-5 text-gray-500" />;
@@ -317,24 +238,11 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     <div className="space-y-6">
       <Card className="glass-card">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              {title}
-              <span className="text-xs text-muted-foreground">({categoryId})</span>
-            </CardTitle>
-            {uploadedFiles.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllFiles}
-                className="text-destructive hover:text-destructive"
-              >
-                <X className="w-4 h-4 mr-2" />
-                Очистить все
-              </Button>
-            )}
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5" />
+            {title}
+            <span className="text-xs text-muted-foreground">({categoryId})</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div
@@ -389,7 +297,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="text-lg">
-              Загружаемые файлы ({uploadedFiles.length})
+              Загруженные файлы ({uploadedFiles.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -399,12 +307,12 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-3 flex-1">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {getFileIcon(uploadedFile.fileName)}
+                        {getFileIcon(uploadedFile.file.name)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{uploadedFile.fileName}</p>
+                        <p className="font-medium text-sm truncate">{uploadedFile.file.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatFileSize(uploadedFile.fileSize)} • {uploadedFile.uploadedAt.toLocaleString()}
+                          {formatFileSize(uploadedFile.file.size)} • {uploadedFile.uploadedAt.toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -418,10 +326,20 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
                       )}
                       
                       {uploadedFile.status === 'success' && (
-                        <div className="flex items-center space-x-1 text-success">
-                          <CheckCircle className="w-4 h-4" />
-                          <span className="text-xs">Загружено</span>
-                        </div>
+                        <>
+                          <div className="flex items-center space-x-1 text-success">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-xs">Загружено</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => downloadFile(uploadedFile)}
+                            className="text-primary hover:text-primary-hover"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </>
                       )}
                       
                       {uploadedFile.status === 'error' && (
