@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle, Download, Loader2, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         const storedFiles = localStorage.getItem(`files_${categoryId}`);
         if (storedFiles) {
           const parsedFiles = JSON.parse(storedFiles);
-          // Фильтруем файлы, чтобы исключить поврежденные записи
           const validFiles = parsedFiles.filter((file: any) => 
             file && 
             file.fileName && 
@@ -59,7 +57,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         }
       } catch (error) {
         console.error('Ошибка загрузки сохраненных файлов:', error);
-        // Очистим поврежденные данные
         localStorage.removeItem(`files_${categoryId}`);
       }
     };
@@ -69,7 +66,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const saveFilesToStorage = useCallback((files: UploadedFile[]) => {
     try {
-      // Сохраняем только валидные файлы
       const validFiles = files.filter(file => 
         file && 
         file.fileName && 
@@ -80,6 +76,9 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       
       localStorage.setItem(`files_${categoryId}`, JSON.stringify(validFiles));
       console.log(`Сохранены файлы для категории ${categoryId}:`, validFiles);
+      
+      // Отправляем событие об обновлении файлов
+      window.dispatchEvent(new Event('filesUpdated'));
       
       if (onFilesChange) {
         onFilesChange(validFiles);
@@ -230,7 +229,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const removeFile = (fileId: string) => {
     setUploadedFiles(prev => {
-      // Освобождаем URL объект перед удалением
       const fileToRemove = prev.find(f => f.id === fileId);
       if (fileToRemove?.fileUrl) {
         URL.revokeObjectURL(fileToRemove.fileUrl);
@@ -247,7 +245,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   };
 
   const clearAllFiles = () => {
-    // Освобождаем все URL объекты
     uploadedFiles.forEach(file => {
       if (file.fileUrl) {
         URL.revokeObjectURL(file.fileUrl);
@@ -256,6 +253,10 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     
     setUploadedFiles([]);
     localStorage.removeItem(`files_${categoryId}`);
+    
+    // Отправляем событие об обновлении файлов
+    window.dispatchEvent(new Event('filesUpdated'));
+    
     toast({
       title: 'Все файлы удалены',
       description: 'Все файлы успешно удалены из списка'
@@ -281,7 +282,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (fileName: string) => {
+  const getFileIcon = (fileName: string | undefined | null) => {
     if (!fileName || typeof fileName !== 'string') {
       return <FileText className="w-5 h-5 text-gray-500" />;
     }
