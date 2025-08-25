@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle, Download, Loader2, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -222,7 +223,11 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (fileName: string) => {
+  const getFileIcon = (fileName: string | undefined | null) => {
+    if (!fileName || typeof fileName !== 'string') {
+      return <FileText className="w-5 h-5 text-gray-500" />;
+    }
+    
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png'].includes(extension || '')) {
       return <Image className="w-5 h-5 text-blue-500" />;
@@ -307,12 +312,12 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-3 flex-1">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {getFileIcon(uploadedFile.file.name)}
+                        {getFileIcon(uploadedFile.file?.name)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{uploadedFile.file.name}</p>
+                        <p className="font-medium text-sm truncate">{uploadedFile.file?.name || 'Неизвестный файл'}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatFileSize(uploadedFile.file.size)} • {uploadedFile.uploadedAt.toLocaleString()}
+                          {formatFileSize(uploadedFile.file?.size || 0)} • {uploadedFile.uploadedAt.toLocaleString()}
                         </p>
                       </div>
                     </div>
