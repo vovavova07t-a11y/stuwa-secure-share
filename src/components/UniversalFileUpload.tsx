@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle, Download, Loader2, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -89,23 +88,25 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
       console.log('Публичная ссылка:', publicUrl);
 
-      // Сохраняем метаданные в базу данных
+      // Сохраняем метаданные в таблицу documents (используем существующую)
       const { data: dbData, error: dbError } = await supabase
-        .from('uploaded_files')
+        .from('documents')
         .insert({
           id: fileId,
+          title: file.name,
           file_name: file.name,
           file_url: publicUrl,
           file_type: file.type,
           file_size: file.size,
-          category_id: categoryId,
-          uploaded_at: new Date().toISOString()
+          category: categoryId,
+          description: `Загружено через портал STUWA в категорию ${categoryId}`,
+          created_at: new Date().toISOString()
         })
         .select()
         .single();
 
       if (dbError) {
-        console.error('Ошибка сохранения в БД:', dbError);
+        console.error('Ошибка сохранения в БД (documents):', dbError);
         throw dbError;
       }
 

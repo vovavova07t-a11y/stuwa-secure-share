@@ -80,20 +80,39 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
     try {
       setLoading(true);
       
-      // Загружаем файлы из Supabase
+      // Загружаем файлы из Supabase с использованием rpc или прямого запроса
       const { data, error } = await supabase
-        .from('uploaded_files')
-        .select('*')
-        .eq('category_id', categoryId)
-        .order('uploaded_at', { ascending: false });
+        .rpc('get_uploaded_files', { p_category_id: categoryId });
 
       if (error) {
         console.error('Ошибка загрузки файлов:', error);
-        throw error;
+        // Пробуем альтернативный способ
+        const { data: altData, error: altError } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('category', categoryId);
+        
+        if (altError) {
+          throw altError;
+        }
+        
+        // Преобразуем данные в нужный формат
+        const transformedData = altData?.map(doc => ({
+          id: doc.id,
+          file_name: doc.file_name || doc.title,
+          file_url: doc.file_url || '',
+          file_type: doc.file_type || 'application/octet-stream',
+          file_size: doc.file_size || 0,
+          category_id: categoryId,
+          uploaded_at: doc.created_at || new Date().toISOString(),
+          uploaded_by: doc.created_by
+        })) || [];
+        
+        setFiles(transformedData);
+      } else {
+        console.log(`Загружено файлов для категории ${categoryId}:`, data?.length || 0);
+        setFiles(data || []);
       }
-
-      console.log(`Загружено файлов для категории ${categoryId}:`, data?.length || 0);
-      setFiles(data || []);
 
       // Также проверяем localStorage для совместимости
       const localFiles = localStorage.getItem(`files_${categoryId}`);
@@ -213,15 +232,21 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
 
   const handleDeleteFile = async (fileId: string) => {
     try {
-      // Удаляем из Supabase
-      const { error } = await supabase
-        .from('uploaded_files')
-        .delete()
-        .eq('id', fileId);
+      // Пробуем удалить из uploaded_files (если есть)
+      const { error: uploadedError } = await supabase.rpc('delete_uploaded_file', { 
+        p_file_id: fileId 
+      });
 
-      if (error) {
-        console.error('Ошибка удаления файла:', error);
-        throw error;
+      if (uploadedError) {
+        // Пробуем удалить из documents
+        const { error: docError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('id', fileId);
+
+        if (docError) {
+          throw docError;
+        }
       }
 
       // Обновляем локальное состояние
