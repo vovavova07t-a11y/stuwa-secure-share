@@ -1,72 +1,122 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Bell, CheckCircle, Clock, AlertCircle, FileText, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface NotificationCenterProps {
   department: string;
 }
 
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  notification_type: string;
+  priority: string;
+  is_read: boolean;
+  created_at: string;
+  sender_id?: string;
+  document_id?: string;
+}
+
 export const NotificationCenter: React.FC<NotificationCenterProps> = ({ department }) => {
-  // Моковые данные для демонстрации
-  const notifications = [
-    {
-      id: '1',
-      title: 'Новый документ от Финансового отдела',
-      message: 'Получен отчет "Финансовые результаты Q4 2024"',
-      type: 'info',
-      status: 'unread',
-      timestamp: '2024-01-15 14:30',
-      fromDepartment: 'Финансовый отдел'
-    },
-    {
-      id: '2',
-      title: 'Срочный запрос от Коммерческого отдела',
-      message: 'Требуется подтверждение договора поставки',
-      type: 'urgent',
-      status: 'unread',
-      timestamp: '2024-01-15 13:45',
-      fromDepartment: 'Коммерческий отдел'
-    },
-    {
-      id: '3',
-      title: 'Документ обработан',
-      message: 'Техническая документация успешно получена',
-      type: 'success',
-      status: 'read',
-      timestamp: '2024-01-15 12:15',
-      fromDepartment: 'Технический отдел'
-    },
-    {
-      id: '4',
-      title: 'Напоминание',
-      message: 'Истекает срок рассмотрения заявки на закупку',
-      type: 'warning',
-      status: 'unread',
-      timestamp: '2024-01-15 11:00',
-      fromDepartment: 'Логистический отдел'
-    },
-    {
-      id: '5',
-      title: 'Системное уведомление',
-      message: 'Запланированное обслуживание системы 16 января',
-      type: 'info',
-      status: 'read',
-      timestamp: '2024-01-15 09:30',
-      fromDepartment: 'Системный администратор'
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      console.log(`🔔 Загрузка уведомлений для отдела: ${department}`);
+
+      // Загружаем уведомления из базы данных
+      const { data, error } = await supabase
+        .from('interdepartment_notifications' as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Ошибка загрузки уведомлений:', error);
+        throw error;
+      }
+
+      console.log(`📬 Загружено ${data?.length || 0} уведомлений`);
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Ошибка при загрузке уведомлений:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить уведомления',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('interdepartment_notifications' as any)
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', notificationId);
+
+      if (error) throw error;
+
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+      );
+    } catch (error) {
+      console.error('Ошибка при отметке уведомления:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+      
+      if (unreadIds.length === 0) return;
+
+      const { error } = await supabase
+        .from('interdepartment_notifications' as any)
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .in('id', unreadIds);
+
+      if (error) throw error;
+
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      
+      toast({
+        title: 'Готово',
+        description: 'Все уведомления отмечены как прочитанные'
+      });
+    } catch (error) {
+      console.error('Ошибка при отметке всех уведомлений:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, [department]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'urgent':
+      case 'deadline':
         return <AlertCircle className="w-4 h-4 text-red-500" />;
-      case 'warning':
+      case 'reminder':
         return <Clock className="w-4 h-4 text-orange-500" />;
       case 'success':
+      case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'document':
+        return <FileText className="w-4 h-4 text-blue-500" />;
+      case 'transfer':
+        return <Users className="w-4 h-4 text-purple-500" />;
       default:
         return <Bell className="w-4 h-4 text-blue-500" />;
     }
@@ -75,8 +125,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ departme
   const getTypeBadge = (type: string) => {
     const typeConfig = {
       urgent: { label: 'Срочно', className: 'bg-red-100 text-red-800' },
-      warning: { label: 'Внимание', className: 'bg-orange-100 text-orange-800' },
+      deadline: { label: 'Дедлайн', className: 'bg-red-100 text-red-800' },
+      reminder: { label: 'Напоминание', className: 'bg-orange-100 text-orange-800' },
       success: { label: 'Успешно', className: 'bg-green-100 text-green-800' },
+      completed: { label: 'Завершено', className: 'bg-green-100 text-green-800' },
+      document: { label: 'Документ', className: 'bg-blue-100 text-blue-800' },
+      transfer: { label: 'Передача', className: 'bg-purple-100 text-purple-800' },
       info: { label: 'Информация', className: 'bg-blue-100 text-blue-800' }
     };
 
@@ -89,7 +143,29 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ departme
     );
   };
 
-  const unreadCount = notifications.filter(n => n.status === 'unread').length;
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  if (loading) {
+    return (
+      <Card className="glass-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -102,9 +178,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ departme
             </Badge>
           )}
         </div>
-        <Button variant="outline">
-          Отметить все как прочитанные
-        </Button>
+        {unreadCount > 0 && (
+          <Button variant="outline" onClick={markAllAsRead}>
+            Отметить все как прочитанные
+          </Button>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -112,13 +190,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ departme
           <Card 
             key={notification.id}
             className={`transition-all duration-200 hover:shadow-md ${
-              notification.status === 'unread' ? 'border-l-4 border-l-primary bg-primary/5' : ''
+              !notification.is_read ? 'border-l-4 border-l-primary bg-primary/5' : ''
             }`}
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  {getNotificationIcon(notification.type)}
+                  {getNotificationIcon(notification.notification_type)}
                   <div className="flex-1">
                     <CardTitle className="text-base font-semibold mb-1">
                       {notification.title}
@@ -129,8 +207,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ departme
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {getTypeBadge(notification.type)}
-                  {notification.status === 'unread' && (
+                  {getTypeBadge(notification.notification_type)}
+                  {!notification.is_read && (
                     <div className="w-2 h-2 bg-primary rounded-full"></div>
                   )}
                 </div>
@@ -138,15 +216,20 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ departme
             </CardHeader>
             <CardContent className="pt-0">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>От: {notification.fromDepartment}</span>
-                <span>{notification.timestamp}</span>
+                <span>{formatDate(notification.created_at)}</span>
               </div>
               <div className="flex gap-2 mt-3">
-                <Button size="sm" variant="outline">
-                  Просмотреть
-                </Button>
-                {notification.status === 'unread' && (
-                  <Button size="sm" variant="ghost">
+                {notification.document_id && (
+                  <Button size="sm" variant="outline">
+                    Просмотреть документ
+                  </Button>
+                )}
+                {!notification.is_read && (
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => markAsRead(notification.id)}
+                  >
                     Отметить как прочитанное
                   </Button>
                 )}
