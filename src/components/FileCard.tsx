@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,8 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatFileSize } from '@/utils/fileUtils';
 import { FileData } from '@/hooks/useSupabaseFiles';
+import { FileTransferModal } from './interdepartment/FileTransferModal';
+import { getCurrentDepartmentFromPath } from './interdepartment/utils/departmentUtils';
 
 interface FileCardProps {
   file: FileData;
@@ -60,6 +61,9 @@ export const FileCard: React.FC<FileCardProps> = ({
   onDelete
 }) => {
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  
+  const currentDepartment = getCurrentDepartmentFromPath();
   
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ru-RU', {
@@ -93,6 +97,11 @@ export const FileCard: React.FC<FileCardProps> = ({
     onDownload?.(file);
   };
 
+  const handleSendToOtherDepartment = () => {
+    setShowTransferModal(true);
+    onSend?.(file);
+  };
+
   return (
     <>
       <Card className="glass-card hover:shadow-lg transition-all duration-300 group">
@@ -122,12 +131,10 @@ export const FileCard: React.FC<FileCardProps> = ({
                       <Download className="w-4 h-4 mr-2" />
                       Скачать
                     </DropdownMenuItem>
-                    {onSend && (
-                      <DropdownMenuItem onClick={() => onSend(file)}>
-                        <Send className="w-4 h-4 mr-2" />
-                        Отправить в отдел
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem onClick={handleSendToOtherDepartment}>
+                      <Send className="w-4 h-4 mr-2" />
+                      Отправить в отдел
+                    </DropdownMenuItem>
                     {onDelete && (
                       <DropdownMenuItem onClick={() => onDelete(file)} className="text-destructive">
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -175,6 +182,15 @@ export const FileCard: React.FC<FileCardProps> = ({
               >
                 <Download className="w-3 h-3" />
               </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleSendToOtherDepartment}
+                className="text-xs"
+                title="Отправить в другой отдел"
+              >
+                <Send className="w-3 h-3" />
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -203,6 +219,25 @@ export const FileCard: React.FC<FileCardProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* File Transfer Modal */}
+      {showTransferModal && (
+        <FileTransferModal
+          isOpen={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          file={{
+            id: file.id,
+            name: file.file_name,
+            url: file.file_url,
+            size: file.file_size,
+            type: file.file_type || 'document'
+          }}
+          currentDepartment={currentDepartment}
+          onSuccess={() => {
+            setShowTransferModal(false);
+          }}
+        />
       )}
     </>
   );
