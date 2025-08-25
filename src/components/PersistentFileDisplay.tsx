@@ -12,7 +12,8 @@ import {
   File, 
   FileSpreadsheet,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { DocumentViewer } from './DocumentViewer';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +48,21 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Добавляем обработчик клавиши Escape
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showDeleteConfirm) {
+        console.log('🔒 Закрытие модального окна по Escape');
+        setShowDeleteConfirm(null);
+      }
+    };
+
+    if (showDeleteConfirm) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showDeleteConfirm]);
+
   useEffect(() => {
     loadFiles();
     
@@ -61,6 +77,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
           filter: `category=eq.${categoryId}`
         },
         () => {
+          console.log('📡 Обновление файлов по подписке для категории:', categoryId);
           loadFiles();
         }
       )
@@ -74,6 +91,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   const loadFiles = async () => {
     try {
       setLoading(true);
+      console.log('📁 Загрузка файлов для категории:', categoryId);
       
       const { data, error } = await supabase
         .from('documents')
@@ -82,7 +100,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading files:', error);
+        console.error('❌ Ошибка загрузки файлов:', error);
         throw error;
       }
 
@@ -97,7 +115,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         uploaded_by: doc.created_by
       })) || [];
 
-      console.log(`Loaded ${transformedData.length} files for category ${categoryId}`);
+      console.log(`✅ Загружено ${transformedData.length} файлов для категории ${categoryId}`);
       setFiles(transformedData);
 
       const localFiles = localStorage.getItem(`files_${categoryId}`);
@@ -105,6 +123,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         try {
           const parsedLocalFiles = JSON.parse(localFiles);
           if (Array.isArray(parsedLocalFiles) && parsedLocalFiles.length > 0) {
+            console.log(`💾 Загружено ${parsedLocalFiles.length} файлов из localStorage`);
             const localFilesData = parsedLocalFiles.map((f: any) => ({
               id: f.id,
               file_name: f.file?.name || f.file_name || 'Файл',
@@ -117,11 +136,11 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
             setFiles(localFilesData);
           }
         } catch (e) {
-          console.error('Error parsing localStorage:', e);
+          console.error('❌ Ошибка парсинга localStorage:', e);
         }
       }
     } catch (error) {
-      console.error('Error loading files:', error);
+      console.error('❌ Ошибка загрузки файлов:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить файлы",
@@ -173,6 +192,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   };
 
   const handleViewFile = (file: FileData) => {
+    console.log('👁️ Открытие файла для просмотра:', file.file_name);
     const documentForViewer = {
       id: file.id,
       title: file.file_name,
@@ -191,6 +211,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   };
 
   const handleDownload = (file: FileData) => {
+    console.log('📥 Скачивание файла:', file.file_name);
     const link = document.createElement('a');
     link.href = file.file_url;
     link.download = file.file_name;
@@ -205,6 +226,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   };
 
   const handleSendFile = (file: FileData) => {
+    console.log('📤 Отправка файла:', file.file_name);
     if (onSendToOtherDepartment) {
       onSendToOtherDepartment(file);
     } else {
@@ -216,42 +238,76 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   };
 
   const handleDeleteFile = async (fileId: string) => {
+    console.log('🗑️ Начало удаления файла с ID:', fileId);
+    
     try {
+      const fileToDelete = files.find(f => f.id === fileId);
+      if (!fileToDelete) {
+        console.error('❌ Файл не найден для удаления:', fileId);
+        return;
+      }
+
+      console.log('🗑️ Удаление файла из Supabase:', fileToDelete.file_name);
+      
       const { error } = await supabase
         .from('documents')
         .delete()
         .eq('id', fileId);
 
       if (error) {
-        console.error('Error deleting file:', error);
+        console.error('❌ Ошибка удаления из Supabase:', error);
         throw error;
       }
 
-      setFiles(prev => prev.filter(f => f.id !== fileId));
+      console.log('✅ Файл удален из Supabase, обновление локального состояния');
       
+      setFiles(prev => {
+        const updated = prev.filter(f => f.id !== fileId);
+        console.log(`📊 Файлов после удаления: ${updated.length}`);
+        return updated;
+      });
+      
+      // Удаляем из localStorage
       const localFiles = localStorage.getItem(`files_${categoryId}`);
       if (localFiles) {
         try {
           const parsedFiles = JSON.parse(localFiles);
           const updatedFiles = parsedFiles.filter((f: any) => f.id !== fileId);
           localStorage.setItem(`files_${categoryId}`, JSON.stringify(updatedFiles));
+          console.log('✅ Файл удален из localStorage');
         } catch (e) {
-          console.error('Error updating localStorage:', e);
+          console.error('❌ Ошибка обновления localStorage:', e);
         }
       }
 
+      // Закрываем модальное окно
+      setShowDeleteConfirm(null);
+      console.log('🔒 Модальное окно закрыто после удаления');
+
       toast({
         title: "Файл удален",
-        description: "Файл успешно удален",
+        description: `Файл ${fileToDelete.file_name} успешно удален`,
       });
+
     } catch (error) {
-      console.error('Error deleting file:', error);
+      console.error('❌ Ошибка при удалении файла:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось удалить файл",
         variant: "destructive",
       });
-    } finally {
+    }
+  };
+
+  const handleCancelDelete = () => {
+    console.log('❌ Отмена удаления файла');
+    setShowDeleteConfirm(null);
+  };
+
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // Проверяем, что клик был именно по backdrop, а не по содержимому
+    if (event.target === event.currentTarget) {
+      console.log('🔒 Закрытие модального окна по клику на backdrop');
       setShowDeleteConfirm(null);
     }
   };
@@ -302,6 +358,11 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
             Файлы в категории: {categoryTitle} ({files.length})
+            {files.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                📊 {files.length} файл{files.length > 1 ? (files.length > 4 ? 'ов' : 'а') : ''}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -372,7 +433,10 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowDeleteConfirm(file.id)}
+                        onClick={() => {
+                          console.log('🗑️ Открытие модального окна удаления для файла:', file.file_name);
+                          setShowDeleteConfirm(file.id);
+                        }}
                         className="flex-1 text-xs text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-3 h-3 mr-1" />
@@ -387,40 +451,58 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         </CardContent>
       </Card>
 
+      {/* ИСПРАВЛЕННОЕ МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="glass-card w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 cursor-pointer"
+          onClick={handleBackdropClick}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
+        >
+          <Card className="glass-card w-full max-w-md cursor-auto">
+            <CardHeader className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelDelete}
+                className="absolute right-2 top-2 h-8 w-8 p-0"
+                aria-label="Закрыть"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              <CardTitle id="delete-dialog-title" className="flex items-center gap-2 text-destructive pr-10">
                 <AlertTriangle className="w-5 h-5" />
                 Подтверждение удаления
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="mb-4">Вы уверены, что хотите удалить этот файл? Это действие нельзя отменить.</p>
+              <p className="mb-4">
+                Вы уверены, что хотите удалить этот файл? Это действие нельзя отменить.
+              </p>
               <div className="flex gap-2">
                 <Button
                   variant="destructive"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                  onClick={() => {
+                    console.log('🔴 Нажата кнопка удаления');
                     handleDeleteFile(showDeleteConfirm);
                   }}
                   className="flex-1"
+                  autoFocus
                 >
                   Удалить
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowDeleteConfirm(null);
-                  }}
+                  onClick={handleCancelDelete}
                   className="flex-1"
                 >
                   Отмена
                 </Button>
+              </div>
+              
+              <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs text-yellow-800 dark:text-yellow-200">
+                💡 Подсказка: Нажмите Escape или кликните вне окна для отмены
               </div>
             </CardContent>
           </Card>
@@ -431,6 +513,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         <DocumentViewer
           document={selectedFile}
           onClose={() => {
+            console.log('🔒 Закрытие просмотрщика документов');
             setShowViewer(false);
             setSelectedFile(null);
           }}
