@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { InterdepartmentSection } from './InterdepartmentSection';
+import { FileTransfersTable } from './FileTransfersTable';
 
 export const InterdepartmentDashboard: React.FC = () => {
   // В реальном приложении отдел должен определяться из контекста пользователя
-  // Пока используем 'technical' как пример для технической дирекции
-  const currentDepartment = 'technical';
+  // Пока используем 'financial' как пример
+  const currentDepartment = 'financial';
 
   return (
     <div className="container mx-auto p-6">
@@ -16,7 +16,7 @@ export const InterdepartmentDashboard: React.FC = () => {
         </p>
       </div>
 
-      <InterdepartmentSection currentDepartment={currentDepartment} />
+      <FileTransfersTable department={currentDepartment} />
     </div>
   );
 };
