@@ -22,9 +22,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
           {/* Main Hero Content */}
           <div className="animate-fade-in">
             <div className="flex justify-center mb-8">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-float">
-                <Shield className="w-10 h-10 text-white" />
-              </div>
+              <img 
+                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                alt="STUWA Logo" 
+                className="h-20 w-auto animate-float"
+              />
             </div>
             
             <h1 className="hero-text mb-6">
@@ -45,12 +47,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
               >
                 Начать работу
                 <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                className="neuro-btn px-8 py-4 text-lg"
-              >
-                Узнать больше
               </Button>
             </div>
           </div>
@@ -96,26 +92,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
             ))}
           </div>
 
-          {/* Portal Sections Preview */}
+          {/* Company Info */}
           <div className="glass-card p-8 rounded-3xl animate-slide-up animate-stagger-5">
-            <h2 className="text-2xl font-bold mb-6">Разделы портала</h2>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {[
-                { name: 'О нас', icon: '🏢' },
-                { name: 'Продукция', icon: '📦' },
-                { name: 'Клиенты', icon: '👥' },
-                { name: 'Развитие', icon: '📈' },
-                { name: 'Контакты', icon: '📞' }
-              ].map((section, index) => (
-                <div 
-                  key={section.name}
-                  className="p-4 rounded-xl bg-white/50 hover:bg-white/70 transition-all duration-200 cursor-pointer"
-                >
-                  <div className="text-2xl mb-2">{section.icon}</div>
-                  <p className="font-medium text-sm">{section.name}</p>
-                </div>
-              ))}
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                alt="STUWA Logo" 
+                className="h-16 w-auto"
+              />
             </div>
+            <h2 className="text-2xl font-bold mb-4">STUWA - Ваш надежный партнер</h2>
+            <p className="text-muted-foreground">
+              Корпоративная система управления документооборотом и файлообменом
+            </p>
           </div>
         </div>
       </div>

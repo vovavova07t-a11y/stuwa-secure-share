@@ -87,6 +87,13 @@ export const FinancialDashboard: React.FC = () => {
       {!selectedCategory ? (
         <div className="animate-fade-in">
           <div className="text-center mb-12">
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                alt="STUWA Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Финансовая дирекция STUWA
             </h1>
