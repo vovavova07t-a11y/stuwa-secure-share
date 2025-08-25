@@ -27,15 +27,15 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    window.document.addEventListener('keydown', handleEscape);
+    return () => window.document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
   // Блокировка прокрутки фона при открытии модального окна
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    window.document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = 'unset';
+      window.document.body.style.overflow = 'unset';
     };
   }, []);
 
