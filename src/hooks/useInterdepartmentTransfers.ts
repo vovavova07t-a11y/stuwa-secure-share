@@ -51,7 +51,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       console.log(`📁 Загружено ${data?.length || 0} переданных файлов`);
-      setTransfers((data as InterdepartmentTransfer[]) || []);
+      setTransfers((data as unknown as InterdepartmentTransfer[]) || []);
     } catch (error) {
       console.error('Ошибка при загрузке переданных файлов:', error);
       setTransfers([]);
@@ -89,9 +89,10 @@ export const useInterdepartmentTransfers = (department: string) => {
       console.log('✅ Передача файла создана:', insertData);
       
       // Добавляем новую передачу в локальное состояние
-      setTransfers(prevTransfers => [insertData as InterdepartmentTransfer, ...prevTransfers]);
+      const newTransfer = insertData as unknown as InterdepartmentTransfer;
+      setTransfers(prevTransfers => [newTransfer, ...prevTransfers]);
       
-      return insertData as InterdepartmentTransfer;
+      return newTransfer;
     } catch (error: any) {
       console.error('Ошибка создания передачи файла:', error);
       toast({
