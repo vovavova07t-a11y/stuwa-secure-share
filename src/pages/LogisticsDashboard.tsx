@@ -29,25 +29,25 @@ export default function LogisticsDashboard() {
         {/* File Management Sections */}
         <div className="grid gap-8">
           <CategoryFileSection
-            title="Отчеты и аналитика"
+            categoryTitle="Отчеты и аналитика"
             categoryId="logistics_reports"
             description="Отчеты по логистике, аналитика работы"
           />
           
           <CategoryFileSection
-            title="Клиентская база"
+            categoryTitle="Клиентская база"
             categoryId="logistics_clients"
             description="Документы и договоры с клиентами"
           />
           
           <CategoryFileSection
-            title="Транспортировка"
+            categoryTitle="Транспортировка"
             categoryId="logistics_transportation"
             description="Документы по транспортировке и доставке"
           />
           
           <CategoryFileSection
-            title="Склад и инвентарь"
+            categoryTitle="Склад и инвентарь"
             categoryId="logistics_inventory"
             description="Документы по складскому учету"
           />
@@ -62,7 +62,7 @@ export default function LogisticsDashboard() {
           <ClientsOverview />
         </div>
 
-        {/* Interdepartment Communication - Only one instance */}
+        {/* Interdepartment Communication */}
         <InterdepartmentSection currentDepartment="logistics" />
       </div>
     </div>
