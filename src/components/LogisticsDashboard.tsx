@@ -1,148 +1,249 @@
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Truck, Package, MapPin, Clock, Plus, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Truck, Package, Users, FileBarChart, ClipboardList, Building2, ArrowLeftRight } from 'lucide-react';
+import { CategoryFileSection } from '@/components/CategoryFileSection';
+import { InterdepartmentDashboard } from '@/components/interdepartment/InterdepartmentDashboard';
+
+const categories = [
+  { 
+    id: 'logistics_contracts', 
+    name: 'Договоры и контракты', 
+    icon: ClipboardList,
+    description: 'Договоры на поставку, контракты с поставщиками и логистическими компаниями'
+  },
+  { 
+    id: 'logistics_suppliers', 
+    name: 'Поставщики', 
+    icon: Building2,
+    description: 'База данных поставщиков и документооборот с ними'
+  },
+  { 
+    id: 'logistics_inventory', 
+    name: 'Складские операции', 
+    icon: Package,
+    description: 'Документы по складским операциям и управлению запасами'
+  },
+  { 
+    id: 'logistics_transportation', 
+    name: 'Транспортировка', 
+    icon: Truck,
+    description: 'Документы по доставке, транспортные накладные и логистические отчеты'
+  },
+  { 
+    id: 'logistics_clients', 
+    name: 'Клиенты', 
+    icon: Users,
+    description: 'База клиентов и документооборот с заказчиками'
+  },
+  { 
+    id: 'logistics_reports', 
+    name: 'Отчеты по логистике', 
+    icon: FileBarChart,
+    description: 'Аналитические отчеты по логистическим операциям'
+  }
+];
 
 export const LogisticsDashboard: React.FC = () => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showInterdepartment, setShowInterdepartment] = useState(false);
+
+  const getCategoryInfo = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? { name: category.name, description: category.description } : { name: 'Неизвестная категория', description: '' };
+  };
+
+  if (showInterdepartment) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="w-full lg:w-80 space-y-4">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Разделы</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => setShowInterdepartment(false)}
+                >
+                  ← Управление логистики
+                </Button>
+                {categories.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <Button
+                      key={category.id}
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        setShowInterdepartment(false);
+                      }}
+                    >
+                      <Icon className="w-4 h-4 mr-2" />
+                      {category.name}
+                    </Button>
+                  );
+                })}
+                <Button
+                  variant="default"
+                  className="w-full justify-start bg-primary text-primary-foreground"
+                  onClick={() => setShowInterdepartment(true)}
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  Межотдельский обмен
+                  <Badge className="ml-auto bg-red-500 text-white">3</Badge>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="flex-1">
+            <InterdepartmentDashboard />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Управление логистики</h1>
-        <Badge variant="outline">Активно</Badge>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Активные поставки</CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">18</div>
-            <p className="text-xs text-muted-foreground">+3 новых сегодня</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Товары на складе</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2,547</div>
-            <p className="text-xs text-muted-foreground">различных позиций</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Маршруты</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">7</div>
-            <p className="text-xs text-muted-foreground">активных направлений</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Среднее время</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2.4д</div>
-            <p className="text-xs text-muted-foreground">время доставки</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Текущие поставки</CardTitle>
-            <CardDescription>Отслеживание активных заказов</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Заказ #LG-001</p>
-                  <p className="text-sm text-muted-foreground">Москва → Санкт-Петербург</p>
-                </div>
-                <Badge variant="secondary">В пути</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Заказ #LG-002</p>
-                  <p className="text-sm text-muted-foreground">Казань → Нижний Новгород</p>
-                </div>
-                <Badge variant="outline">Подготовка</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Заказ #LG-003</p>
-                  <p className="text-sm text-muted-foreground">Екатеринбург → Челябинск</p>
-                </div>
-                <Badge variant="default">Доставлено</Badge>
-              </div>
+    <div className="container mx-auto px-4 py-6">
+      {!selectedCategory ? (
+        <div className="animate-fade-in">
+          <div className="text-center mb-12">
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                alt="STUWA Logo" 
+                className="h-16 w-auto"
+              />
             </div>
-          </CardContent>
-        </Card>
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Управление логистики STUWA
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Управление поставками, складскими операциями и логистикой
+            </p>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Быстрые действия</CardTitle>
-            <CardDescription>Основные функции логистики</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Создать новую поставку
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Package className="mr-2 h-4 w-4" />
-              Управление складом
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Truck className="mr-2 h-4 w-4" />
-              Отслеживание транспорта
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
-              Отчеты по доставкам
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categories.map((category, index) => {
+              const Icon = category.icon;
+              return (
+                <Card 
+                  key={category.id}
+                  className={`glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-${index + 1}`}
+                  onClick={() => setSelectedCategory(category.id)}
+                >
+                  <CardHeader className="text-center">
+                    <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <Icon className="w-8 h-8" />
+                    </div>
+                    <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
+                      {category.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4 text-center">
+                      {category.description}
+                    </p>
+                    <div className="text-center">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full group-hover:bg-primary/10 transition-colors"
+                      >
+                        Перейти к документам
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            
+            {/* Межотдельский обмен карточка */}
+            <Card 
+              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7 border-2 border-primary/20"
+              onClick={() => setShowInterdepartment(true)}
+            >
+              <CardHeader className="text-center">
+                <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform bg-primary/10">
+                  <ArrowLeftRight className="w-8 h-8 text-primary" />
+                </div>
+                <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
+                  Межотдельский обмен
+                  <Badge className="ml-2 bg-red-500 text-white animate-pulse">3</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <Button 
+                    variant="default" 
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Обмен файлами и документами
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <div className="animate-fade-in">
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="w-full lg:w-80 space-y-4">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">Разделы</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => setSelectedCategory('')}
+                  >
+                    ← Все разделы
+                  </Button>
+                  {categories.map((category) => {
+                    const Icon = category.icon;
+                    return (
+                      <Button
+                        key={category.id}
+                        variant={selectedCategory === category.id ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setSelectedCategory(category.id)}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {category.name}
+                      </Button>
+                    );
+                  })}
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => setShowInterdepartment(true)}
+                  >
+                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                    Межотдельский обмен
+                    <Badge className="ml-auto bg-red-500 text-white">3</Badge>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Статистика по регионам</CardTitle>
-          <CardDescription>Объемы поставок по направлениям</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium">Центральный регион</h4>
-              <p className="text-2xl font-bold text-blue-600">245</p>
-              <p className="text-sm text-muted-foreground">поставок в месяц</p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium">Северо-Запад</h4>
-              <p className="text-2xl font-bold text-green-600">189</p>
-              <p className="text-sm text-muted-foreground">поставок в месяц</p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium">Урал и Сибирь</h4>
-              <p className="text-2xl font-bold text-orange-600">156</p>
-              <p className="text-sm text-muted-foreground">поставок в месяц</p>
+            <div className="flex-1">
+              <CategoryFileSection
+                categoryId={selectedCategory}
+                categoryTitle={getCategoryInfo(selectedCategory).name}
+                description={getCategoryInfo(selectedCategory).description}
+              />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 };

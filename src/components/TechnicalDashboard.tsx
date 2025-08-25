@@ -3,46 +3,46 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Wrench, FileText, Cpu, Database, Shield, ArrowLeftRight } from 'lucide-react';
+import { Cog, FileText, Settings, Wrench, Shield, BookOpen, ArrowLeftRight } from 'lucide-react';
 import { CategoryFileSection } from '@/components/CategoryFileSection';
 import { InterdepartmentDashboard } from '@/components/interdepartment/InterdepartmentDashboard';
 
 const categories = [
   { 
-    id: 'production_development', 
-    name: 'Программа развития', 
-    icon: Settings,
-    description: 'Документы по программе развития производства и внедрения новых технологий'
-  },
-  { 
-    id: 'production_overview', 
-    name: 'Обзор продукции', 
-    icon: Wrench,
-    description: 'Обзоры и каталоги производимой продукции'
-  },
-  { 
-    id: 'production_specs', 
-    name: 'Технические характеристики', 
+    id: 'technical_specifications', 
+    name: 'Технические спецификации', 
     icon: FileText,
-    description: 'Технические спецификации и характеристики оборудования'
+    description: 'Технические характеристики продукции и оборудования'
   },
   { 
-    id: 'production_hardware', 
-    name: 'Аппаратное обеспечение', 
-    icon: Cpu,
-    description: 'Документация по аппаратному обеспечению и оборудованию'
+    id: 'technical_documentation', 
+    name: 'Техническая документация', 
+    icon: BookOpen,
+    description: 'Чертежи, схемы и техническая документация'
   },
   { 
-    id: 'production_software', 
-    name: 'Программное обеспечение', 
-    icon: Database,
-    description: 'Документация по программному обеспечению и ПО'
+    id: 'technical_equipment', 
+    name: 'Оборудование и инструменты', 
+    icon: Cog,
+    description: 'Документация по оборудованию и техническому оснащению'
   },
   { 
-    id: 'production_security', 
-    name: 'Системы безопасности', 
+    id: 'technical_maintenance', 
+    name: 'Обслуживание и ремонт', 
+    icon: Wrench,
+    description: 'Планы обслуживания, ремонтные работы и техподдержка'
+  },
+  { 
+    id: 'technical_safety', 
+    name: 'Техника безопасности', 
     icon: Shield,
-    description: 'Документы по системам безопасности и защиты'
+    description: 'Инструкции по безопасности и охране труда'
+  },
+  { 
+    id: 'technical_settings', 
+    name: 'Настройки и конфигурации', 
+    icon: Settings,
+    description: 'Конфигурационные файлы и системные настройки'
   }
 ];
 
@@ -91,12 +91,12 @@ export const TechnicalDashboard: React.FC = () => {
                 })}
                 <Button
                   variant="default"
-                  className="w-full justify-start"
+                  className="w-full justify-start bg-primary text-primary-foreground"
                   onClick={() => setShowInterdepartment(true)}
                 >
                   <ArrowLeftRight className="w-4 h-4 mr-2" />
                   Межотдельский обмен
-                  <Badge className="ml-auto bg-red-500 text-white">2</Badge>
+                  <Badge className="ml-auto bg-red-500 text-white">6</Badge>
                 </Button>
               </CardContent>
             </Card>
@@ -115,11 +115,18 @@ export const TechnicalDashboard: React.FC = () => {
       {!selectedCategory ? (
         <div className="animate-fade-in">
           <div className="text-center mb-12">
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                alt="STUWA Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Техническая дирекция STUWA
             </h1>
             <p className="text-xl text-muted-foreground">
-              Управление технической документацией и разработкой
+              Управление технической документацией и производственными процессами
             </p>
           </div>
 
@@ -159,25 +166,25 @@ export const TechnicalDashboard: React.FC = () => {
             
             {/* Межотдельский обмен карточка */}
             <Card 
-              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7"
+              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7 border-2 border-primary/20"
               onClick={() => setShowInterdepartment(true)}
             >
               <CardHeader className="text-center">
-                <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <ArrowLeftRight className="w-8 h-8" />
+                <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform bg-primary/10">
+                  <ArrowLeftRight className="w-8 h-8 text-primary" />
                 </div>
                 <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
                   Межотдельский обмен
-                  <Badge className="ml-2 bg-red-500 text-white">2</Badge>
+                  <Badge className="ml-2 bg-red-500 text-white animate-pulse">6</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <Button 
-                    variant="ghost" 
-                    className="w-full group-hover:bg-primary/10 transition-colors"
+                    variant="default" 
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                   >
-                    Обмен файлами
+                    Обмен файлами и документами
                   </Button>
                 </div>
               </CardContent>
@@ -221,14 +228,13 @@ export const TechnicalDashboard: React.FC = () => {
                   >
                     <ArrowLeftRight className="w-4 h-4 mr-2" />
                     Межотдельский обмен
-                    <Badge className="ml-auto bg-red-500 text-white">2</Badge>
+                    <Badge className="ml-auto bg-red-500 text-white">6</Badge>
                   </Button>
                 </CardContent>
               </Card>
             </div>
 
             <div className="flex-1">
-              {/* Display files for selected category */}
               <CategoryFileSection
                 categoryId={selectedCategory}
                 categoryTitle={getCategoryInfo(selectedCategory).name}

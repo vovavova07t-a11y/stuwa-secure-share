@@ -1,142 +1,249 @@
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Users, Phone, Mail, Building, Search, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Users, Phone, Mail, Building, FileText, Calendar, ArrowLeftRight } from 'lucide-react';
+import { CategoryFileSection } from '@/components/CategoryFileSection';
+import { InterdepartmentDashboard } from '@/components/interdepartment/InterdepartmentDashboard';
+
+const categories = [
+  { 
+    id: 'office_contacts', 
+    name: 'Контакты и адресная книга', 
+    icon: Users,
+    description: 'База контактов клиентов, партнеров и поставщиков'
+  },
+  { 
+    id: 'office_correspondence', 
+    name: 'Деловая переписка', 
+    icon: Mail,
+    description: 'Официальная корреспонденция и деловые письма'
+  },
+  { 
+    id: 'office_meetings', 
+    name: 'Протоколы встреч', 
+    icon: Calendar,
+    description: 'Протоколы совещаний, встреч и переговоров'
+  },
+  { 
+    id: 'office_phone_logs', 
+    name: 'Телефонные переговоры', 
+    icon: Phone,
+    description: 'Записи телефонных переговоров и звонков'
+  },
+  { 
+    id: 'office_documents', 
+    name: 'Административные документы', 
+    icon: FileText,
+    description: 'Внутренние приказы, распоряжения и служебные записки'
+  },
+  { 
+    id: 'office_facilities', 
+    name: 'Управление офисом', 
+    icon: Building,
+    description: 'Документы по содержанию и управлению офисными помещениями'
+  }
+];
 
 export const ContactsManagement: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Управление контактами</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Добавить контакт
-        </Button>
-      </div>
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showInterdepartment, setShowInterdepartment] = useState(false);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Всего контактов</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,247</div>
-            <p className="text-xs text-muted-foreground">+15 новых за неделю</p>
-          </CardContent>
-        </Card>
+  const getCategoryInfo = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? { name: category.name, description: category.description } : { name: 'Неизвестная категория', description: '' };
+  };
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Активные клиенты</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">89</div>
-            <p className="text-xs text-muted-foreground">+3 за последний месяц</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Обращения</CardTitle>
-            <Phone className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-muted-foreground">За текущий месяц</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Email кампании</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">Активных рассылок</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Поиск контактов</CardTitle>
-          <CardDescription>Найдите нужный контакт в базе данных</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex space-x-2 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Поиск по имени, компании или телефону..." className="pl-10" />
-            </div>
-            <Button>Найти</Button>
+  if (showInterdepartment) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="w-full lg:w-80 space-y-4">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Разделы</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => setShowInterdepartment(false)}
+                >
+                  ← Офис-менеджер
+                </Button>
+                {categories.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <Button
+                      key={category.id}
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        setShowInterdepartment(false);
+                      }}
+                    >
+                      <Icon className="w-4 h-4 mr-2" />
+                      {category.name}
+                    </Button>
+                  );
+                })}
+                <Button
+                  variant="default"
+                  className="w-full justify-start bg-primary text-primary-foreground"
+                  onClick={() => setShowInterdepartment(true)}
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  Межотдельский обмен
+                  <Badge className="ml-auto bg-red-500 text-white">2</Badge>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Последние контакты</CardTitle>
-            <CardDescription>Недавно добавленные в систему</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Иванов Сергей</p>
-                  <p className="text-sm text-muted-foreground">ООО "Строймонтаж"</p>
-                </div>
-                <Badge variant="secondary">Клиент</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Петрова Анна</p>
-                  <p className="text-sm text-muted-foreground">АО "Техносфера"</p>
-                </div>
-                <Badge variant="outline">Партнер</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">Козлов Дмитрий</p>
-                  <p className="text-sm text-muted-foreground">ЗАО "Металлург"</p>
-                </div>
-                <Badge variant="secondary">Поставщик</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Быстрые действия</CardTitle>
-            <CardDescription>Основные функции управления контактами</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Добавить новый контакт
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Mail className="mr-2 h-4 w-4" />
-              Создать рассылку
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Phone className="mr-2 h-4 w-4" />
-              Запланировать звонок
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Building className="mr-2 h-4 w-4" />
-              Управление компаниями
-            </Button>
-          </CardContent>
-        </Card>
+          
+          <div className="flex-1">
+            <InterdepartmentDashboard />
+          </div>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      {!selectedCategory ? (
+        <div className="animate-fade-in">
+          <div className="text-center mb-12">
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                alt="STUWA Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Офис-менеджер STUWA
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Управление контактами, корреспонденцией и административными процессами
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categories.map((category, index) => {
+              const Icon = category.icon;
+              return (
+                <Card 
+                  key={category.id}
+                  className={`glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-${index + 1}`}
+                  onClick={() => setSelectedCategory(category.id)}
+                >
+                  <CardHeader className="text-center">
+                    <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <Icon className="w-8 h-8" />
+                    </div>
+                    <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
+                      {category.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4 text-center">
+                      {category.description}
+                    </p>
+                    <div className="text-center">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full group-hover:bg-primary/10 transition-colors"
+                      >
+                        Перейти к документам
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            
+            {/* Межотдельский обмен карточка */}
+            <Card 
+              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7 border-2 border-primary/20"
+              onClick={() => setShowInterdepartment(true)}
+            >
+              <CardHeader className="text-center">
+                <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform bg-primary/10">
+                  <ArrowLeftRight className="w-8 h-8 text-primary" />
+                </div>
+                <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
+                  Межотдельский обмен
+                  <Badge className="ml-2 bg-red-500 text-white animate-pulse">2</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <Button 
+                    variant="default" 
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Обмен файлами и документами
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <div className="animate-fade-in">
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="w-full lg:w-80 space-y-4">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">Разделы</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => setSelectedCategory('')}
+                  >
+                    ← Все разделы
+                  </Button>
+                  {categories.map((category) => {
+                    const Icon = category.icon;
+                    return (
+                      <Button
+                        key={category.id}
+                        variant={selectedCategory === category.id ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setSelectedCategory(category.id)}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {category.name}
+                      </Button>
+                    );
+                  })}
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => setShowInterdepartment(true)}
+                  >
+                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                    Межотдельский обмен
+                    <Badge className="ml-auto bg-red-500 text-white">2</Badge>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex-1">
+              <CategoryFileSection
+                categoryId={selectedCategory}
+                categoryTitle={getCategoryInfo(selectedCategory).name}
+                description={getCategoryInfo(selectedCategory).description}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
