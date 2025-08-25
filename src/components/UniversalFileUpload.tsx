@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle, Download, Loader2, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -97,13 +96,9 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   };
 
   const saveFileToDatabase = async (file: File, fileUrl: string): Promise<void> => {
-    if (!user) {
-      throw new Error('Пользователь не авторизован');
-    }
-
     try {
       const { error } = await supabase
-        .from('uploaded_files')
+        .from('uploaded_files' as any)
         .insert([
           {
             file_name: file.name,
@@ -111,7 +106,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
             file_type: file.type,
             file_url: fileUrl,
             category_id: categoryId,
-            uploaded_by: user.id,
+            uploaded_by: user?.id || null,
           }
         ]);
 
@@ -151,15 +146,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList) return;
-
-    if (!user) {
-      toast({
-        title: 'Требуется авторизация',
-        description: 'Войдите в систему для загрузки файлов',
-        variant: 'destructive'
-      });
-      return;
-    }
 
     const filesToUpload: File[] = [];
     for (let i = 0; i < fileList.length; i++) {
@@ -363,18 +349,10 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
                   Максимальный размер: {formatFileSize(maxFileSize)}
                   <br />
                   {multiple ? 'Можно загружать несколько файлов' : 'Можно загружать один файл'}
-                  {!user && (
-                    <>
-                      <br />
-                      <span className="text-orange-500 font-medium">
-                        Войдите в систему для загрузки файлов
-                      </span>
-                    </>
-                  )}
                 </p>
               </div>
 
-              <Button className="btn-primary" type="button" disabled={!user}>
+              <Button className="btn-primary" type="button">
                 <Upload className="w-4 h-4 mr-2" />
                 Выбрать файлы
               </Button>

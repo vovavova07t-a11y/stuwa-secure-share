@@ -52,7 +52,7 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
       console.log(`Загрузка файлов для категории ${categoryId} из базы данных`);
       
       const { data, error } = await supabase
-        .from('uploaded_files')
+        .from('uploaded_files' as any)
         .select('*')
         .eq('category_id', categoryId)
         .order('created_at', { ascending: false });
@@ -142,18 +142,9 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
   };
 
   const handleDelete = async (file: UploadedFile) => {
-    if (!user) {
-      toast({
-        title: "Ошибка",
-        description: "Необходимо войти в систему для удаления файлов",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       const { error } = await supabase
-        .from('uploaded_files')
+        .from('uploaded_files' as any)
         .delete()
         .eq('id', file.id);
 
