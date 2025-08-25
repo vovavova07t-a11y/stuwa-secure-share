@@ -4,27 +4,61 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, TrendingUp, Users, Building, FileBarChart, UserCheck, ScrollText, ArrowLeftRight } from 'lucide-react';
-import { UniversalFileUpload } from '@/components/UniversalFileUpload';
+import { CategoryFileSection } from '@/components/CategoryFileSection';
 import { InterdepartmentDashboard } from '@/components/interdepartment/InterdepartmentDashboard';
 
 const categories = [
-  { id: 'about_debt_reports', name: 'Отчеты по задолженностям', icon: FileBarChart },
-  { id: 'about_monthly_finance', name: 'Финансовый отчет за месяц', icon: TrendingUp },
-  { id: 'about_quarterly_tax', name: 'Налоговый отчет за квартал', icon: FileText },
-  { id: 'about_annual_finance', name: 'Финансовая отчетность за год', icon: FileBarChart },
-  { id: 'about_founding_docs', name: 'Учредительные документы', icon: ScrollText },
-  { id: 'about_org_structure', name: 'Оргструктура и штатное расписание', icon: Users },
-  { id: 'about_protocols', name: 'Протоколы НС', icon: Building }
+  { 
+    id: 'about_debt_reports', 
+    name: 'Отчеты по задолженностям', 
+    icon: FileBarChart,
+    description: 'Отчеты и аналитика по дебиторской и кредиторской задолженности'
+  },
+  { 
+    id: 'about_monthly_finance', 
+    name: 'Финансовый отчет за месяц', 
+    icon: TrendingUp,
+    description: 'Ежемесячные финансовые отчеты и сводки'
+  },
+  { 
+    id: 'about_quarterly_tax', 
+    name: 'Налоговый отчет за квартал', 
+    icon: FileText,
+    description: 'Квартальные налоговые декларации и отчеты'
+  },
+  { 
+    id: 'about_annual_finance', 
+    name: 'Финансовая отчетность за год', 
+    icon: FileBarChart,
+    description: 'Годовая финансовая отчетность и баланс'
+  },
+  { 
+    id: 'about_founding_docs', 
+    name: 'Учредительные документы', 
+    icon: ScrollText,
+    description: 'Устав, учредительный договор и регистрационные документы'
+  },
+  { 
+    id: 'about_org_structure', 
+    name: 'Оргструктура и штатное расписание', 
+    icon: Users,
+    description: 'Организационная структура компании и штатное расписание'
+  },
+  { 
+    id: 'about_protocols', 
+    name: 'Протоколы НС', 
+    icon: Building,
+    description: 'Протоколы заседаний наблюдательного совета'
+  }
 ];
 
 export const FinancialDashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [showUpload, setShowUpload] = useState(false);
   const [showInterdepartment, setShowInterdepartment] = useState(false);
 
-  const getCategoryTitle = (categoryId: string) => {
+  const getCategoryInfo = (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : 'Неизвестная категория';
+    return category ? { name: category.name, description: category.description } : { name: 'Неизвестная категория', description: '' };
   };
 
   if (showInterdepartment) {
@@ -120,6 +154,9 @@ export const FinancialDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4 text-center">
+                      {category.description}
+                    </p>
                     <div className="text-center">
                       <Button 
                         variant="ghost" 
@@ -201,61 +238,15 @@ export const FinancialDashboard: React.FC = () => {
                   </Button>
                 </CardContent>
               </Card>
-
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="text-lg">Действия</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button 
-                    className="w-full btn-primary"
-                    onClick={() => setShowUpload(!showUpload)}
-                  >
-                    {showUpload ? 'Скрыть загрузку' : 'Загрузить документ'}
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setShowInterdepartment(true)}
-                  >
-                    <ArrowLeftRight className="w-4 h-4 mr-2" />
-                    Отправить в другой отдел
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
 
-            <div className="flex-1 space-y-6">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="text-2xl">
-                    {getCategoryTitle(selectedCategory)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {showUpload ? (
-                    <UniversalFileUpload
-                      title={`Загрузка документов - ${getCategoryTitle(selectedCategory)}`}
-                      categoryId={selectedCategory}
-                      allowedTypes={['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']}
-                      onFilesChange={(files) => {
-                        console.log(`Финансовые файлы для категории ${selectedCategory}:`, files);
-                      }}
-                    />
-                  ) : (
-                    <div className="text-center py-12">
-                      <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Документы не загружены</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Нажмите "Загрузить документ" чтобы добавить файлы в этот раздел
-                      </p>
-                      <Button onClick={() => setShowUpload(true)} className="btn-primary">
-                        Загрузить первый документ
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            <div className="flex-1">
+              {/* Display files for selected category */}
+              <CategoryFileSection
+                categoryId={selectedCategory}
+                categoryTitle={getCategoryInfo(selectedCategory).name}
+                description={getCategoryInfo(selectedCategory).description}
+              />
             </div>
           </div>
         </div>
