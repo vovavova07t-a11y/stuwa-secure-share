@@ -1,5 +1,5 @@
 
-import { createRoot } from 'react-dom/client';
+import React, { useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,7 +23,6 @@ import CommercialDashboard from "./pages/CommercialDashboard";
 import ContactsManagement from "./pages/ContactsManagement";
 import InterdepartmentPage from "./pages/InterdepartmentPage";
 import NotFound from "./pages/NotFound";
-import { useState } from "react";
 
 function App() {
   // Create QueryClient inside the component to avoid hook issues
