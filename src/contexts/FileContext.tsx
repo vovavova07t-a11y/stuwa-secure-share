@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 interface FileData {
   id: string;
@@ -26,7 +26,7 @@ interface FileContextType {
 
 const FileContext = createContext<FileContextType | undefined>(undefined);
 
-export const FileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [files, setFiles] = useState<Record<string, Record<string, FileData[]>>>({});
 
   const addFiles = useCallback((department: string, categoryId: string, newFiles: FileData[]) => {
@@ -111,16 +111,18 @@ export const FileProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return count;
   }, [files]);
 
+  const contextValue: FileContextType = {
+    files,
+    addFiles,
+    removeFile,
+    getFiles,
+    clearDepartmentFiles,
+    getTotalFilesCount,
+    getCategoryFilesCount
+  };
+
   return (
-    <FileContext.Provider value={{
-      files,
-      addFiles,
-      removeFile,
-      getFiles,
-      clearDepartmentFiles,
-      getTotalFilesCount,
-      getCategoryFilesCount
-    }}>
+    <FileContext.Provider value={contextValue}>
       {children}
     </FileContext.Provider>
   );
