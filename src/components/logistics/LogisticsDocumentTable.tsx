@@ -2,25 +2,25 @@
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Eye, Calendar } from 'lucide-react';
-import type { FinancialDocument } from '@/types/financial';
-import { FileTransferButton } from './interdepartment/FileTransferButton';
-import { UniversalDocumentViewer } from './UniversalDocumentViewer';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Download, Eye, Calendar, Truck } from 'lucide-react';
+import type { LogisticsDocument } from '@/types/logistics';
+import { UniversalDocumentViewer } from '../UniversalDocumentViewer';
 
-interface DocumentTableProps {
-  documents: FinancialDocument[];
+interface LogisticsDocumentTableProps {
+  documents: LogisticsDocument[];
   isLoading: boolean;
-  onView: (document: FinancialDocument) => void;
-  onDownload: (document: FinancialDocument) => void;
+  onView: (document: LogisticsDocument) => void;
+  onDownload: (document: LogisticsDocument) => void;
 }
 
-export const DocumentTable: React.FC<DocumentTableProps> = ({
+export const LogisticsDocumentTable: React.FC<LogisticsDocumentTableProps> = ({
   documents,
   isLoading,
   onView,
   onDownload
 }) => {
-  const [viewingDocument, setViewingDocument] = useState<FinancialDocument | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<LogisticsDocument | null>(null);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -40,11 +40,19 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
     });
   };
 
-  const getFileIcon = (fileType: string) => {
-    return <FileText className="w-4 h-4 text-primary" />;
+  const getPriorityBadge = (priority: string) => {
+    const priorityConfig = {
+      low: { label: 'Низкий', variant: 'outline' as const },
+      medium: { label: 'Средний', variant: 'secondary' as const },
+      high: { label: 'Высокий', variant: 'destructive' as const },
+      critical: { label: 'Критический', variant: 'destructive' as const }
+    };
+    
+    const config = priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.medium;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const handleViewDocument = (document: FinancialDocument) => {
+  const handleViewDocument = (document: LogisticsDocument) => {
     setViewingDocument(document);
     onView(document);
   };
@@ -60,7 +68,7 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
   if (!documents.length) {
     return (
       <div className="text-center py-12">
-        <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <Truck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground">Документы не найдены</p>
       </div>
     );
@@ -74,8 +82,9 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
             <TableRow>
               <TableHead className="w-8"></TableHead>
               <TableHead>Название</TableHead>
+              <TableHead>Категория</TableHead>
+              <TableHead>Приоритет</TableHead>
               <TableHead>Размер</TableHead>
-              <TableHead>Версия</TableHead>
               <TableHead>Скачиваний</TableHead>
               <TableHead>Дата создания</TableHead>
               <TableHead className="text-right">Действия</TableHead>
@@ -85,7 +94,7 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
             {documents.map((document) => (
               <TableRow key={document.id} className="hover:bg-muted/50">
                 <TableCell>
-                  {getFileIcon(document.file_type)}
+                  <FileText className="w-4 h-4 text-primary" />
                 </TableCell>
                 <TableCell>
                   <div>
@@ -96,12 +105,13 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
                     <p className="text-xs text-muted-foreground">{document.file_name}</p>
                   </div>
                 </TableCell>
-                <TableCell>{formatFileSize(document.file_size)}</TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
-                    v{document.version}
-                  </span>
+                  <Badge variant="outline">{document.category}</Badge>
                 </TableCell>
+                <TableCell>
+                  {document.priority && getPriorityBadge(document.priority)}
+                </TableCell>
+                <TableCell>{formatFileSize(document.file_size)}</TableCell>
                 <TableCell>{document.download_count}</TableCell>
                 <TableCell>
                   <div className="flex items-center text-sm text-muted-foreground">
@@ -127,16 +137,6 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
                     >
                       <Download className="w-4 h-4" />
                     </Button>
-                    <FileTransferButton
-                      file={{
-                        id: document.id,
-                        name: document.file_name || document.title,
-                        url: document.file_url || '',
-                        size: document.file_size,
-                        type: document.file_type || ''
-                      }}
-                      currentDepartment="financial"
-                    />
                   </div>
                 </TableCell>
               </TableRow>

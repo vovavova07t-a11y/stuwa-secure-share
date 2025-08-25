@@ -1,10 +1,10 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Eye, Calendar, Heart, Star, Printer, Clock } from 'lucide-react';
 import type { TechnicalDocument } from '@/types/technical';
+import { UniversalDocumentViewer } from './UniversalDocumentViewer';
 
 interface TechnicalDocumentTableProps {
   documents: TechnicalDocument[];
@@ -23,6 +23,8 @@ export const TechnicalDocumentTable: React.FC<TechnicalDocumentTableProps> = ({
   favorites,
   onToggleFavorite
 }) => {
+  const [viewingDocument, setViewingDocument] = useState<TechnicalDocument | null>(null);
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -69,6 +71,11 @@ export const TechnicalDocumentTable: React.FC<TechnicalDocumentTableProps> = ({
     return colors[category as keyof typeof colors] || 'text-gray-600 bg-gray-50';
   };
 
+  const handleViewDocument = (document: TechnicalDocument) => {
+    setViewingDocument(document);
+    onView(document);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -87,113 +94,122 @@ export const TechnicalDocumentTable: React.FC<TechnicalDocumentTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-8"></TableHead>
-            <TableHead>Название</TableHead>
-            <TableHead>Статус</TableHead>
-            <TableHead>Размер</TableHead>
-            <TableHead>Версия</TableHead>
-            <TableHead>Скачиваний</TableHead>
-            <TableHead>Дата создания</TableHead>
-            <TableHead className="text-right">Действия</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {documents.map((document) => (
-            <TableRow key={document.id} className="hover:bg-muted/50">
-              <TableCell>
-                {getFileIcon(document.file_type)}
-              </TableCell>
-              <TableCell>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-medium">{document.title}</p>
-                    {document.print_ready && (
-                      <div title="Готов к печати">
-                        <Printer className="w-3 h-3 text-green-600" />
-                      </div>
-                    )}
-                    {favorites.has(document.id) && (
-                      <Heart className="w-3 h-3 fill-red-500 text-red-500" />
-                    )}
-                  </div>
-                  {document.description && (
-                    <p className="text-sm text-muted-foreground mb-1">{document.description}</p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground">{document.file_name}</p>
-                    {document.tags && document.tags.length > 0 && (
-                      <div className="flex gap-1">
-                        {document.tags.slice(0, 3).map((tag, index) => (
-                          <Badge key={index} variant="outline" className="text-xs px-1 py-0">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                {getStatusBadge(document.status)}
-              </TableCell>
-              <TableCell>{formatFileSize(document.file_size)}</TableCell>
-              <TableCell>
-                <Badge variant="secondary" className="text-xs">
-                  v{document.version}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <span>{document.download_count}</span>
-                  {document.last_downloaded_at && (
-                    <div title="Последнее скачивание">
-                      <Clock className="w-3 h-3 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {formatDate(document.created_at)}
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onToggleFavorite(document.id)}
-                    className="hover:bg-primary/10"
-                  >
-                    <Heart className={`w-4 h-4 ${favorites.has(document.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onView(document)}
-                    className="hover:bg-primary/10"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDownload(document)}
-                    className="hover:bg-primary/10"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </div>
-              </TableCell>
+    <>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8"></TableHead>
+              <TableHead>Название</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead>Размер</TableHead>
+              <TableHead>Версия</TableHead>
+              <TableHead>Скачиваний</TableHead>
+              <TableHead>Дата создания</TableHead>
+              <TableHead className="text-right">Действия</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {documents.map((document) => (
+              <TableRow key={document.id} className="hover:bg-muted/50">
+                <TableCell>
+                  {getFileIcon(document.file_type)}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium">{document.title}</p>
+                      {document.print_ready && (
+                        <div title="Готов к печати">
+                          <Printer className="w-3 h-3 text-green-600" />
+                        </div>
+                      )}
+                      {favorites.has(document.id) && (
+                        <Heart className="w-3 h-3 fill-red-500 text-red-500" />
+                      )}
+                    </div>
+                    {document.description && (
+                      <p className="text-sm text-muted-foreground mb-1">{document.description}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">{document.file_name}</p>
+                      {document.tags && document.tags.length > 0 && (
+                        <div className="flex gap-1">
+                          {document.tags.slice(0, 3).map((tag, index) => (
+                            <Badge key={index} variant="outline" className="text-xs px-1 py-0">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {getStatusBadge(document.status)}
+                </TableCell>
+                <TableCell>{formatFileSize(document.file_size)}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="text-xs">
+                    v{document.version}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <span>{document.download_count}</span>
+                    {document.last_downloaded_at && (
+                      <div title="Последнее скачивание">
+                        <Clock className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Calendar className="w-3 h-3 mr-1" />
+                    {formatDate(document.created_at)}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onToggleFavorite(document.id)}
+                      className="hover:bg-primary/10"
+                    >
+                      <Heart className={`w-4 h-4 ${favorites.has(document.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewDocument(document)}
+                      className="hover:bg-primary/10"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDownload(document)}
+                      className="hover:bg-primary/10"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {viewingDocument && (
+        <UniversalDocumentViewer
+          document={viewingDocument}
+          onClose={() => setViewingDocument(null)}
+        />
+      )}
+    </>
   );
 };

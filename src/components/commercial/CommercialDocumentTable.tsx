@@ -2,25 +2,25 @@
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Eye, Calendar } from 'lucide-react';
-import type { FinancialDocument } from '@/types/financial';
-import { FileTransferButton } from './interdepartment/FileTransferButton';
-import { UniversalDocumentViewer } from './UniversalDocumentViewer';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Download, Eye, Calendar, Briefcase, Users } from 'lucide-react';
+import type { CommercialDocument } from '@/types/logistics';
+import { UniversalDocumentViewer } from '../UniversalDocumentViewer';
 
-interface DocumentTableProps {
-  documents: FinancialDocument[];
+interface CommercialDocumentTableProps {
+  documents: CommercialDocument[];
   isLoading: boolean;
-  onView: (document: FinancialDocument) => void;
-  onDownload: (document: FinancialDocument) => void;
+  onView: (document: CommercialDocument) => void;
+  onDownload: (document: CommercialDocument) => void;
 }
 
-export const DocumentTable: React.FC<DocumentTableProps> = ({
+export const CommercialDocumentTable: React.FC<CommercialDocumentTableProps> = ({
   documents,
   isLoading,
   onView,
   onDownload
 }) => {
-  const [viewingDocument, setViewingDocument] = useState<FinancialDocument | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<CommercialDocument | null>(null);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -40,11 +40,20 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
     });
   };
 
-  const getFileIcon = (fileType: string) => {
-    return <FileText className="w-4 h-4 text-primary" />;
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      active: { label: 'Активный', variant: 'default' as const },
+      draft: { label: 'Черновик', variant: 'secondary' as const },
+      archived: { label: 'Архив', variant: 'outline' as const },
+      approved: { label: 'Утвержден', variant: 'default' as const },
+      pending: { label: 'На рассмотрении', variant: 'secondary' as const }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const handleViewDocument = (document: FinancialDocument) => {
+  const handleViewDocument = (document: CommercialDocument) => {
     setViewingDocument(document);
     onView(document);
   };
@@ -60,7 +69,7 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
   if (!documents.length) {
     return (
       <div className="text-center py-12">
-        <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground">Документы не найдены</p>
       </div>
     );
@@ -74,8 +83,9 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
             <TableRow>
               <TableHead className="w-8"></TableHead>
               <TableHead>Название</TableHead>
+              <TableHead>Категория</TableHead>
+              <TableHead>Статус</TableHead>
               <TableHead>Размер</TableHead>
-              <TableHead>Версия</TableHead>
               <TableHead>Скачиваний</TableHead>
               <TableHead>Дата создания</TableHead>
               <TableHead className="text-right">Действия</TableHead>
@@ -85,7 +95,12 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
             {documents.map((document) => (
               <TableRow key={document.id} className="hover:bg-muted/50">
                 <TableCell>
-                  {getFileIcon(document.file_type)}
+                  <div className="flex items-center gap-1">
+                    <FileText className="w-4 h-4 text-primary" />
+                    {document.client_related && (
+                      <Users className="w-3 h-3 text-blue-500" title="Связан с клиентом" />
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div>
@@ -93,15 +108,27 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
                     {document.description && (
                       <p className="text-sm text-muted-foreground">{document.description}</p>
                     )}
-                    <p className="text-xs text-muted-foreground">{document.file_name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">{document.file_name}</p>
+                      {document.tags && document.tags.length > 0 && (
+                        <div className="flex gap-1">
+                          {document.tags.slice(0, 2).map((tag, index) => (
+                            <Badge key={index} variant="outline" className="text-xs px-1 py-0">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </TableCell>
-                <TableCell>{formatFileSize(document.file_size)}</TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
-                    v{document.version}
-                  </span>
+                  <Badge variant="outline">{document.category}</Badge>
                 </TableCell>
+                <TableCell>
+                  {getStatusBadge(document.status)}
+                </TableCell>
+                <TableCell>{formatFileSize(document.file_size)}</TableCell>
                 <TableCell>{document.download_count}</TableCell>
                 <TableCell>
                   <div className="flex items-center text-sm text-muted-foreground">
@@ -127,16 +154,6 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({
                     >
                       <Download className="w-4 h-4" />
                     </Button>
-                    <FileTransferButton
-                      file={{
-                        id: document.id,
-                        name: document.file_name || document.title,
-                        url: document.file_url || '',
-                        size: document.file_size,
-                        type: document.file_type || ''
-                      }}
-                      currentDepartment="financial"
-                    />
                   </div>
                 </TableCell>
               </TableRow>
