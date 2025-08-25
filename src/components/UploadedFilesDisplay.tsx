@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,7 +51,7 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
       console.log(`Загрузка файлов для категории ${categoryId} из базы данных`);
       
       const { data, error } = await supabase
-        .from('uploaded_files' as any)
+        .from('uploaded_files')
         .select('*')
         .eq('category_id', categoryId)
         .order('created_at', { ascending: false });
@@ -144,7 +143,7 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
   const handleDelete = async (file: UploadedFile) => {
     try {
       const { error } = await supabase
-        .from('uploaded_files' as any)
+        .from('uploaded_files')
         .delete()
         .eq('id', file.id);
 

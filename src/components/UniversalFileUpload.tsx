@@ -74,20 +74,29 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${categoryId}/${fileName}`;
 
+      console.log('Загружаем файл в Supabase Storage:', filePath);
+
       // Загружаем файл в Supabase Storage
       const { data, error } = await supabase.storage
         .from('documents')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (error) {
+        console.error('Ошибка загрузки в Storage:', error);
         throw error;
       }
+
+      console.log('Файл успешно загружен в Storage:', data);
 
       // Получаем публичный URL файла
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
 
+      console.log('Публичный URL файла:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Ошибка загрузки файла в Supabase:', error);
@@ -97,8 +106,17 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const saveFileToDatabase = async (file: File, fileUrl: string): Promise<void> => {
     try {
-      const { error } = await supabase
-        .from('uploaded_files' as any)
+      console.log('Сохраняем информацию о файле в БД:', {
+        file_name: file.name,
+        file_size: file.size,
+        file_type: file.type,
+        file_url: fileUrl,
+        category_id: categoryId,
+        uploaded_by: user?.id || null,
+      });
+
+      const { data, error } = await supabase
+        .from('uploaded_files')
         .insert([
           {
             file_name: file.name,
@@ -108,11 +126,15 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
             category_id: categoryId,
             uploaded_by: user?.id || null,
           }
-        ]);
+        ])
+        .select();
 
       if (error) {
+        console.error('Ошибка сохранения в БД:', error);
         throw error;
       }
+
+      console.log('Файл успешно сохранен в БД:', data);
     } catch (error) {
       console.error('Ошибка сохранения файла в базу данных:', error);
       throw error;
@@ -175,6 +197,8 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       const originalFile = filesToUpload[i];
 
       try {
+        console.log('Начинаем загрузку файла:', originalFile.name);
+
         // Симулируем прогресс загрузки
         await simulateUploadProgress(uploadedFile.id);
 
