@@ -55,61 +55,6 @@ export const TechnicalDashboard: React.FC = () => {
     return category ? { name: category.name, description: category.description } : { name: 'Неизвестная категория', description: '' };
   };
 
-  if (showInterdepartment) {
-    return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="w-full lg:w-80 space-y-4">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="text-lg">Разделы</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => setShowInterdepartment(false)}
-                >
-                  ← Техническая дирекция
-                </Button>
-                {categories.map((category) => {
-                  const Icon = category.icon;
-                  return (
-                    <Button
-                      key={category.id}
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedCategory(category.id);
-                        setShowInterdepartment(false);
-                      }}
-                    >
-                      <Icon className="w-4 h-4 mr-2" />
-                      {category.name}
-                    </Button>
-                  );
-                })}
-                <Button
-                  variant="default"
-                  className="w-full justify-start bg-primary text-primary-foreground"
-                  onClick={() => setShowInterdepartment(true)}
-                >
-                  <ArrowLeftRight className="w-4 h-4 mr-2" />
-                  Межотдельский обмен
-                  <Badge className="ml-auto bg-red-500 text-white">6</Badge>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="flex-1">
-            <InterdepartmentDashboard />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-4 py-6">
       {!selectedCategory ? (
@@ -189,6 +134,55 @@ export const TechnicalDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      ) : showInterdepartment ? (
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="w-full lg:w-80 space-y-4">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Разделы</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => setShowInterdepartment(false)}
+                >
+                  ← Техническая дирекция
+                </Button>
+                {categories.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <Button
+                      key={category.id}
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        setShowInterdepartment(false);
+                      }}
+                    >
+                      <Icon className="w-4 h-4 mr-2" />
+                      {category.name}
+                    </Button>
+                  );
+                })}
+                <Button
+                  variant="default"
+                  className="w-full justify-start bg-primary text-primary-foreground"
+                  onClick={() => setShowInterdepartment(true)}
+                >
+                  <ArrowLeftRight className="w-4 h-4 mr-2" />
+                  Межотдельский обмен
+                  <Badge className="ml-auto bg-red-500 text-white">6</Badge>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="flex-1">
+            <InterdepartmentDashboard />
           </div>
         </div>
       ) : (
