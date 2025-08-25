@@ -16,6 +16,10 @@ export interface FileData {
   storage_path?: string;
 }
 
+// Use the constants directly from the client file
+const SUPABASE_URL = "https://cevdbplhmncqbyuzchhj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldmRicGxobW5jcWJ5dXpjaGhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTMzNDEsImV4cCI6MjA1ODMyOTM0MX0.Vj7N9OOr4oDJtfgo1WsF32Hc46VkG1oh0bC7gz6d7Kw";
+
 export const useSupabaseFiles = (department: string, categoryId: string) => {
   const [files, setFiles] = useState<FileData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,10 +31,10 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       setIsLoading(true);
       
       // Используем прямой HTTP запрос к Supabase REST API
-      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/files?department=eq.${department}&category_id=eq.${categoryId}&order=created_at.desc`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/files?department=eq.${department}&category_id=eq.${categoryId}&order=created_at.desc`, {
         headers: {
-          'apikey': supabase.supabaseKey,
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
           'Content-Type': 'application/json',
         },
       });
@@ -91,11 +95,11 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         uploaded_by: (await supabase.auth.getUser()).data.user?.id
       };
 
-      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/files`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/files`, {
         method: 'POST',
         headers: {
-          'apikey': supabase.supabaseKey,
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
@@ -148,11 +152,11 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       }
 
       // Удаляем запись из базы данных через HTTP запрос
-      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/files?id=eq.${fileId}`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/files?id=eq.${fileId}`, {
         method: 'DELETE',
         headers: {
-          'apikey': supabase.supabaseKey,
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
           'Content-Type': 'application/json',
         }
       });
