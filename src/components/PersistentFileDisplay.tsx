@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -402,14 +401,22 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
               <div className="flex gap-2">
                 <Button
                   variant="destructive"
-                  onClick={() => handleDeleteFile(showDeleteConfirm)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDeleteFile(showDeleteConfirm);
+                  }}
                   className="flex-1"
                 >
                   Удалить
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => setShowDeleteConfirm(null)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowDeleteConfirm(null);
+                  }}
                   className="flex-1"
                 >
                   Отмена
