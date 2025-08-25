@@ -63,12 +63,12 @@ export const FinancialDashboard: React.FC = () => {
                 })}
                 <Button
                   variant="default"
-                  className="w-full justify-start"
+                  className="w-full justify-start bg-primary text-primary-foreground"
                   onClick={() => setShowInterdepartment(true)}
                 >
                   <ArrowLeftRight className="w-4 h-4 mr-2" />
                   Межотдельский обмен
-                  <Badge className="ml-auto bg-red-500 text-white">3</Badge>
+                  <Badge className="ml-auto bg-red-500 text-white">5</Badge>
                 </Button>
               </CardContent>
             </Card>
@@ -135,25 +135,25 @@ export const FinancialDashboard: React.FC = () => {
             
             {/* Межотдельский обмен карточка */}
             <Card 
-              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-8"
+              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-8 border-2 border-primary/20"
               onClick={() => setShowInterdepartment(true)}
             >
               <CardHeader className="text-center">
-                <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <ArrowLeftRight className="w-8 h-8" />
+                <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform bg-primary/10">
+                  <ArrowLeftRight className="w-8 h-8 text-primary" />
                 </div>
                 <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
                   Межотдельский обмен
-                  <Badge className="ml-2 bg-red-500 text-white">3</Badge>
+                  <Badge className="ml-2 bg-red-500 text-white animate-pulse">5</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <Button 
-                    variant="ghost" 
-                    className="w-full group-hover:bg-primary/10 transition-colors"
+                    variant="default" 
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                   >
-                    Обмен файлами
+                    Обмен файлами и документами
                   </Button>
                 </div>
               </CardContent>
@@ -197,7 +197,7 @@ export const FinancialDashboard: React.FC = () => {
                   >
                     <ArrowLeftRight className="w-4 h-4 mr-2" />
                     Межотдельский обмен
-                    <Badge className="ml-auto bg-red-500 text-white">3</Badge>
+                    <Badge className="ml-auto bg-red-500 text-white">5</Badge>
                   </Button>
                 </CardContent>
               </Card>

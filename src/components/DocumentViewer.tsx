@@ -1,184 +1,133 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
+import { X, Download, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Download, FileText, Calendar, User, Eye } from 'lucide-react';
-import type { FinancialDocument } from '@/types/financial';
+
+interface FinancialDocument {
+  id: string;
+  title: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  category: string;
+}
 
 interface DocumentViewerProps {
   document: FinancialDocument;
   onClose: () => void;
+  onDelete?: () => void;
+  onSendToOtherDepartment?: (document: FinancialDocument) => void;
 }
 
 export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   document,
-  onClose
+  onClose,
+  onDelete,
+  onSendToOtherDepartment
 }) => {
-  // Обработчик клавиши Escape
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        console.log('🔒 Закрытие просмотрщика по Escape');
-        onClose();
-      }
-    };
-
-    window.document.addEventListener('keydown', handleEscape);
-    return () => window.document.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
-
-  // Блокировка прокрутки фона при открытии модального окна
-  useEffect(() => {
-    window.document.body.style.overflow = 'hidden';
-    return () => {
-      window.document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const handleDownload = () => {
-    const link = window.document.createElement('a');
-    link.href = document.file_url;
-    link.download = document.file_name;
-    window.document.body.appendChild(link);
-    link.click();
-    window.document.body.removeChild(link);
+    window.open(document.file_url, '_blank');
   };
 
-  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      console.log('🔒 Закрытие просмотрщика по клику на backdrop');
-      onClose();
+  const handleSend = () => {
+    if (onSendToOtherDepartment) {
+      onSendToOtherDepartment(document);
     }
   };
 
-  const isPDF = document.file_type === 'application/pdf';
-  const isImage = document.file_type.startsWith('image/');
-
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4"
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="document-viewer-title"
-    >
-      <Card className="glass-card w-full max-w-6xl h-[90vh] flex flex-col animate-scale-in">
-        <CardHeader className="flex flex-row items-center justify-between border-b">
-          <div className="flex items-center space-x-3">
-            <FileText className="w-6 h-6 text-primary" />
-            <div>
-              <CardTitle id="document-viewer-title" className="text-lg">{document.title}</CardTitle>
-              <p className="text-sm text-muted-foreground">{document.file_name}</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={handleDownload}>
-              <Download className="w-4 h-4 mr-2" />
-              Скачать
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onClose}
-              className="hover:bg-destructive/10 hover:text-destructive"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="flex-1 p-0 flex">
-          {/* Document Info Sidebar */}
-          <div className="w-80 border-r bg-muted/20 p-6 space-y-6">
-            <div>
-              <h3 className="font-semibold mb-3">Информация о документе</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-4 h-4 text-muted-foreground" />
-                  <span>{formatFileSize(document.file_size)}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Eye className="w-4 h-4 text-muted-foreground" />
-                  <span>{document.download_count} скачиваний</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>{formatDate(document.created_at)}</span>
-                </div>
-              </div>
-            </div>
-
-            {document.description && (
-              <div>
-                <h3 className="font-semibold mb-3">Описание</h3>
-                <p className="text-sm text-muted-foreground">{document.description}</p>
-              </div>
-            )}
-
-            <div>
-              <h3 className="font-semibold mb-3">Версия</h3>
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary/10 text-primary">
-                v{document.version}
-              </span>
-            </div>
-          </div>
-
-          {/* Document Preview */}
-          <div className="flex-1 p-6">
-            {isPDF ? (
-              <iframe
-                src={document.file_url}
-                className="w-full h-full rounded-lg border"
-                title={document.title}
-              />
-            ) : isImage ? (
-              <div className="flex items-center justify-center h-full">
-                <img
-                  src={document.file_url}
-                  alt={document.title}
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Предварительный просмотр недоступен</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Для просмотра этого типа файла скачайте его на компьютер
-                  </p>
-                  <Button onClick={handleDownload} className="btn-primary">
-                    <Download className="w-4 h-4 mr-2" />
-                    Скачать файл
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-        
-        <div className="p-4 border-t bg-muted/20 text-center text-xs text-muted-foreground">
-          💡 Нажмите Escape или кликните вне окна для закрытия
+    <Card className="w-full max-w-4xl mx-auto mt-6">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl">{document.title}</CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose}
+            className="hover:bg-gray-100"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-      </Card>
-    </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Информация о файле */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium">Имя файла:</span> {document.file_name}
+            </div>
+            <div>
+              <span className="font-medium">Тип:</span> {document.file_type}
+            </div>
+            <div>
+              <span className="font-medium">Размер:</span> {Math.round(document.file_size / 1024)} KB
+            </div>
+            <div>
+              <span className="font-medium">Категория:</span> {document.category}
+            </div>
+          </div>
+        </div>
+
+        {/* Встроенный просмотр документа */}
+        <div className="border rounded-lg overflow-hidden" style={{ height: '500px' }}>
+          {document.file_type === 'application/pdf' ? (
+            <iframe
+              src={document.file_url}
+              className="w-full h-full"
+              title={document.title}
+            />
+          ) : document.file_type.startsWith('image/') ? (
+            <img
+              src={document.file_url}
+              alt={document.title}
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full bg-gray-50">
+              <div className="text-center">
+                <div className="text-4xl mb-4">📄</div>
+                <p className="text-gray-600">Предварительный просмотр недоступен</p>
+                <p className="text-sm text-gray-500">Нажмите "Скачать" для открытия файла</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Действия с документом */}
+        <div className="flex gap-2 justify-end">
+          <Button 
+            variant="outline" 
+            onClick={handleDownload}
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Скачать
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={handleSend}
+            className="flex items-center gap-2"
+          >
+            <Send className="w-4 h-4" />
+            Отправить в другой отдел
+          </Button>
+          
+          {onDelete && (
+            <Button 
+              variant="destructive" 
+              onClick={onDelete}
+              size="sm"
+            >
+              Удалить
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
