@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useFileContext } from '@/contexts/FileContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,14 +11,18 @@ import { getCurrentDepartmentFromPath } from './interdepartment/utils/department
 
 interface PersistentFileDisplayProps {
   categoryId: string;
+  categoryTitle?: string;
   title?: string;
   showUploadSection?: boolean;
+  onSendToOtherDepartment?: (file: any) => void;
 }
 
 export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   categoryId,
+  categoryTitle,
   title,
-  showUploadSection = false
+  showUploadSection = false,
+  onSendToOtherDepartment
 }) => {
   const { getFiles, removeFile } = useFileContext();
   const files = getFiles(categoryId);
@@ -79,12 +82,14 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
     );
   }
 
+  const displayTitle = categoryTitle || title;
+
   return (
     <div className="space-y-4">
-      {title && (
+      {displayTitle && (
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          {title}
+          {displayTitle}
           {files.length > 0 && (
             <Badge variant="secondary">
               {files.length} файл{files.length === 1 ? '' : files.length < 5 ? 'а' : 'ов'}
@@ -148,6 +153,9 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                         type: file.file_type
                       }}
                       currentDepartment={currentDepartment}
+                      onSuccess={() => {
+                        onSendToOtherDepartment?.(file);
+                      }}
                     />
 
                     {showDeleteConfirm === file.id ? (
