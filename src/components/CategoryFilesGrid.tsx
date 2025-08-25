@@ -49,6 +49,8 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
   const { toast } = useToast();
 
   const currentDepartment = getCurrentDepartmentFromPath();
+  
+  // Используем хук с принудительным обновлением через key компонента
   const { files, isLoading, deleteFile } = useSupabaseFiles(currentDepartment, categoryId);
 
   // Filter and sort files
@@ -106,6 +108,8 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
     }
   };
 
+  console.log(`🔍 CategoryFilesGrid рендерится для категории ${categoryId}, файлов: ${files.length}`);
+
   if (isLoading) {
     return (
       <Card className="glass-card">
@@ -123,7 +127,14 @@ export const CategoryFilesGrid: React.FC<CategoryFilesGridProps> = ({
       <Card className="glass-card">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">{categoryTitle}</CardTitle>
+            <CardTitle className="text-xl">
+              {categoryTitle}
+              {files.length > 0 && (
+                <span className="ml-2 text-sm text-green-600 font-normal">
+                  ({files.length} файл{files.length === 1 ? '' : files.length < 5 ? 'а' : 'ов'})
+                </span>
+              )}
+            </CardTitle>
             {showUploadButton && (
               <Button onClick={onUploadClick} className="btn-primary">
                 <Upload className="w-4 h-4 mr-2" />

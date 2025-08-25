@@ -17,6 +17,14 @@ export const CategoryFileSection: React.FC<CategoryFileSectionProps> = ({
   description
 }) => {
   const [showUpload, setShowUpload] = React.useState(false);
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+
+  // Функция для обновления списка файлов после загрузки
+  const handleFilesUploaded = () => {
+    setRefreshTrigger(prev => prev + 1);
+    // Скрываем область загрузки через 2 секунды после успешной загрузки
+    setTimeout(() => setShowUpload(false), 2000);
+  };
 
   return (
     <div className="space-y-6">
@@ -35,8 +43,9 @@ export const CategoryFileSection: React.FC<CategoryFileSectionProps> = ({
         </Card>
       )}
 
-      {/* Files Grid - Always visible */}
+      {/* Files Grid - Always visible with refresh trigger */}
       <CategoryFilesGrid
+        key={refreshTrigger} // Принудительно обновляем компонент при изменении refreshTrigger
         categoryId={categoryId}
         categoryTitle={categoryTitle}
         onUploadClick={() => setShowUpload(!showUpload)}
@@ -57,9 +66,9 @@ export const CategoryFileSection: React.FC<CategoryFileSectionProps> = ({
               multiple={true}
               onFilesChange={(files) => {
                 console.log(`Файлы обновлены в категории ${categoryId}:`, files.length);
-                // Close upload area after successful upload
+                // Обновляем список файлов после успешной загрузки
                 if (files.some(f => f.status === 'success')) {
-                  setTimeout(() => setShowUpload(false), 2000);
+                  handleFilesUploaded();
                 }
               }}
             />

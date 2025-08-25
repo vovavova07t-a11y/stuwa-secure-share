@@ -20,7 +20,7 @@ export interface FileData {
 const SUPABASE_URL = "https://cevdbplhmncqbyuzchhj.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldmRicGxobW5jcWJ5dXpjaGhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTMzNDEsImV4cCI6MjA1ODMyOTM0MX0.Vj7N9OOr4oDJtfgo1WsF32Hc46VkG1oh0bC7gz6d7Kw";
 
-export const useSupabaseFiles = (department: string, categoryId: string) => {
+export const useSupabaseFiles = (department: string, categoryId: string, refreshKey?: number) => {
   const [files, setFiles] = useState<FileData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -29,6 +29,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
   const loadFiles = async () => {
     try {
       setIsLoading(true);
+      console.log(`🔄 Загрузка файлов для отдела: ${department}, категории: ${categoryId}`);
       
       // Используем прямой HTTP запрос к Supabase REST API
       const response = await fetch(`${SUPABASE_URL}/rest/v1/files?department=eq.${department}&category_id=eq.${categoryId}&order=created_at.desc`, {
@@ -44,7 +45,8 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       }
 
       const data: FileData[] = await response.json();
-      console.log(`📁 Загружено ${data?.length || 0} файлов из базы данных`);
+      console.log(`📁 Загружено ${data?.length || 0} файлов из базы данных для категории ${categoryId}`);
+      console.log('📋 Файлы:', data?.map(f => f.file_name) || []);
       setFiles(data || []);
     } catch (error) {
       console.error('Ошибка при загрузке файлов:', error);
@@ -115,7 +117,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
       console.log('✅ Файл успешно сохранен в базу данных');
       
-      // Обновляем локальный список файлов
+      // Автоматически обновляем локальный список файлов
       await loadFiles();
       
       return fileData;
@@ -165,7 +167,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Обновляем локальный список файлов
+      // Автоматически обновляем локальный список файлов
       await loadFiles();
       
       toast({
@@ -182,10 +184,10 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
     }
   };
 
-  // Загружаем файлы при первом рендере
+  // Загружаем файлы при первом рендере и при изменении refreshKey
   useEffect(() => {
     loadFiles();
-  }, [department, categoryId]);
+  }, [department, categoryId, refreshKey]);
 
   return {
     files,
