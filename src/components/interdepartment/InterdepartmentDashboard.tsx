@@ -1,13 +1,11 @@
 
 import React from 'react';
 import { InterdepartmentSection } from './InterdepartmentSection';
-import { FileTransfersTable } from './FileTransfersTable';
-import { NotificationCenter } from './NotificationCenter';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getCurrentDepartmentFromPath } from './utils/departmentUtils';
 
 export const InterdepartmentDashboard: React.FC = () => {
-  const currentDepartment = getCurrentDepartmentFromPath();
+  // В реальном приложении отдел должен определяться из контекста пользователя
+  // Пока используем 'technical' как пример для технической дирекции
+  const currentDepartment = 'technical';
 
   return (
     <div className="container mx-auto p-6">
@@ -18,25 +16,7 @@ export const InterdepartmentDashboard: React.FC = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="documents" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="documents">Документы</TabsTrigger>
-          <TabsTrigger value="files">Файлообмен</TabsTrigger>
-          <TabsTrigger value="notifications">Уведомления</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="documents" className="mt-6">
-          <InterdepartmentSection currentDepartment={currentDepartment} />
-        </TabsContent>
-
-        <TabsContent value="files" className="mt-6">
-          <FileTransfersTable />
-        </TabsContent>
-
-        <TabsContent value="notifications" className="mt-6">
-          <NotificationCenter department={currentDepartment} />
-        </TabsContent>
-      </Tabs>
+      <InterdepartmentSection currentDepartment={currentDepartment} />
     </div>
   );
 };
