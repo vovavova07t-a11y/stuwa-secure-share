@@ -38,31 +38,41 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    const loadStoredFiles = () => {
-      try {
-        const storedFiles = localStorage.getItem(`files_${categoryId}`);
-        if (storedFiles) {
-          const parsedFiles = JSON.parse(storedFiles);
-          const validFiles = parsedFiles.filter((file: any) => 
+  const loadStoredFiles = useCallback(() => {
+    try {
+      const storedFiles = localStorage.getItem(`files_${categoryId}`);
+      if (storedFiles) {
+        const parsedFiles = JSON.parse(storedFiles);
+        const validFiles = parsedFiles
+          .filter((file: any) => 
             file && 
             file.fileName && 
             file.id && 
             typeof file.fileName === 'string' &&
             file.fileName !== '' &&
             file.categoryId === categoryId
-          );
-          setUploadedFiles(validFiles);
-          console.log(`Загружены файлы для категории ${categoryId}:`, validFiles);
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки сохраненных файлов:', error);
-        localStorage.removeItem(`files_${categoryId}`);
+          )
+          .map((file: any) => ({
+            ...file,
+            uploadedAt: typeof file.uploadedAt === 'string' 
+              ? new Date(file.uploadedAt) 
+              : file.uploadedAt?.value?.iso 
+                ? new Date(file.uploadedAt.value.iso)
+                : new Date(file.uploadedAt)
+          }));
+        
+        setUploadedFiles(validFiles);
+        console.log(`Загружены файлы для категории ${categoryId}:`, validFiles);
       }
-    };
-
-    loadStoredFiles();
+    } catch (error) {
+      console.error('Ошибка загрузки сохраненных файлов:', error);
+      localStorage.removeItem(`files_${categoryId}`);
+    }
   }, [categoryId]);
+
+  React.useEffect(() => {
+    loadStoredFiles();
+  }, [loadStoredFiles]);
 
   const saveFilesToStorage = useCallback((files: UploadedFile[]) => {
     try {
@@ -74,8 +84,14 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         file.fileName !== ''
       );
       
-      localStorage.setItem(`files_${categoryId}`, JSON.stringify(validFiles));
-      console.log(`Сохранены файлы для категории ${categoryId}:`, validFiles);
+      // Сохраняем файлы с правильным форматом даты
+      const filesToSave = validFiles.map(file => ({
+        ...file,
+        uploadedAt: file.uploadedAt.toISOString()
+      }));
+      
+      localStorage.setItem(`files_${categoryId}`, JSON.stringify(filesToSave));
+      console.log(`Сохранены файлы для категории ${categoryId}:`, filesToSave);
       
       // Отправляем событие об обновлении файлов
       window.dispatchEvent(new Event('filesUpdated'));
@@ -265,12 +281,12 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const downloadFile = (uploadedFile: UploadedFile) => {
     if (uploadedFile.fileUrl) {
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = uploadedFile.fileUrl;
       link.download = uploadedFile.fileName;
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
     }
   };
 

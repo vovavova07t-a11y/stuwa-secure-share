@@ -41,45 +41,78 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
   const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
   const [showViewer, setShowViewer] = useState(false);
 
+  const loadFiles = React.useCallback(() => {
+    try {
+      const storedFiles = localStorage.getItem(`files_${categoryId}`);
+      console.log(`Загрузка файлов для категории ${categoryId}:`, storedFiles);
+      
+      if (storedFiles) {
+        const parsedFiles = JSON.parse(storedFiles);
+        console.log(`Распарсенные файлы:`, parsedFiles);
+        
+        const validFiles = parsedFiles
+          .filter((file: any) => {
+            const isValid = file && 
+              file.fileName && 
+              file.id && 
+              typeof file.fileName === 'string' &&
+              file.fileName !== '' &&
+              file.categoryId === categoryId &&
+              file.status === 'success';
+            
+            if (!isValid) {
+              console.log(`Невалидный файл:`, file);
+            }
+            return isValid;
+          })
+          .map((file: any) => ({
+            ...file,
+            uploadedAt: typeof file.uploadedAt === 'string' 
+              ? new Date(file.uploadedAt) 
+              : file.uploadedAt?.value?.iso 
+                ? new Date(file.uploadedAt.value.iso)
+                : new Date(file.uploadedAt)
+          }));
+        
+        console.log(`Валидные файлы для категории ${categoryId}:`, validFiles);
+        setFiles(validFiles);
+      } else {
+        console.log(`Нет сохраненных файлов для категории ${categoryId}`);
+        setFiles([]);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки файлов:', error);
+      setFiles([]);
+    }
+  }, [categoryId]);
+
   useEffect(() => {
-    const loadFiles = () => {
-      try {
-        const storedFiles = localStorage.getItem(`files_${categoryId}`);
-        if (storedFiles) {
-          const parsedFiles = JSON.parse(storedFiles);
-          const validFiles = parsedFiles.filter((file: any) => 
-            file && 
-            file.fileName && 
-            file.id && 
-            typeof file.fileName === 'string' &&
-            file.fileName !== '' &&
-            file.categoryId === categoryId &&
-            file.status === 'success'
-          );
-          setFiles(validFiles);
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки файлов:', error);
+    loadFiles();
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `files_${categoryId}` || e.key === null) {
+        loadFiles();
       }
     };
 
-    loadFiles();
-    
-    // Обновляем список при изменениях в localStorage
-    const handleStorageChange = () => {
+    const handleCustomEvent = () => {
       loadFiles();
     };
 
+    // Слушаем изменения localStorage
     window.addEventListener('storage', handleStorageChange);
-    
-    // Также слушаем кастомное событие для обновлений в том же окне
-    window.addEventListener('filesUpdated', handleStorageChange);
+    // Слушаем кастомные события обновления файлов
+    window.addEventListener('filesUpdated', handleCustomEvent);
+
+    // Также проверяем файлы через интервал для надежности
+    const interval = setInterval(loadFiles, 2000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('filesUpdated', handleStorageChange);
+      window.removeEventListener('filesUpdated', handleCustomEvent);
+      clearInterval(interval);
     };
-  }, [categoryId]);
+  }, [loadFiles]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -118,12 +151,12 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
 
   const handleDownload = (file: UploadedFile) => {
     if (file.fileUrl) {
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = file.fileUrl;
       link.download = file.fileName;
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
     }
   };
 
@@ -140,7 +173,6 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
         }
         
         localStorage.setItem(`files_${categoryId}`, JSON.stringify(updatedFiles));
-        setFiles(updatedFiles.filter((f: UploadedFile) => f.status === 'success'));
         
         // Отправляем событие об обновлении
         window.dispatchEvent(new Event('filesUpdated'));
@@ -148,11 +180,16 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
         if (onFileDelete) {
           onFileDelete(file.id);
         }
+        
+        // Перезагружаем файлы
+        loadFiles();
       }
     } catch (error) {
       console.error('Ошибка удаления файла:', error);
     }
   };
+
+  console.log(`Компонент UploadedFilesDisplay для категории ${categoryId}, файлов: ${files.length}`, files);
 
   if (files.length === 0) {
     return (
