@@ -26,16 +26,20 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   onSendToOtherDepartment
 }) => {
   const { getFiles, removeFile } = useFileContext();
-  const files = getFiles(categoryId);
+  const currentDepartment = getCurrentDepartmentFromPath();
+  const files = getFiles(currentDepartment, categoryId);
   const [viewingDocument, setViewingDocument] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const currentDepartment = getCurrentDepartmentFromPath();
+
+  console.log(`🔍 PersistentFileDisplay: Отдел=${currentDepartment}, Категория=${categoryId}, Файлов=${files.length}`);
 
   const handleViewDocument = (file: any) => {
+    console.log('👁️ Открытие документа для просмотра:', file.file_name);
     setViewingDocument(file);
   };
 
   const handleCloseViewer = () => {
+    console.log('❌ Закрытие просмотра документа');
     setViewingDocument(null);
   };
 
@@ -44,9 +48,9 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   };
 
   const confirmDelete = (fileId: string) => {
-    removeFile(categoryId, fileId);
+    console.log(`🗑️ Подтверждено удаление файла: ${fileId}`);
+    removeFile(currentDepartment, categoryId, fileId);
     setShowDeleteConfirm(null);
-    console.log(`🗑️ Файл ${fileId} удален из категории ${categoryId}`);
   };
 
   const cancelDelete = () => {
@@ -70,14 +74,33 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   };
 
   const handleDownload = (file: any) => {
-    const link = document.createElement('a');
-    link.href = file.file_url;
-    link.download = file.file_name;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    console.log('⬇️ СКАЧИВАНИЕ файла:', file.file_name);
+    console.log('📄 Оригинальный File объект:', file.file);
+    
+    if (file.file instanceof File) {
+      // Используем оригинальный File объект для скачивания
+      const url = URL.createObjectURL(file.file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.file_name; // Оригинальное имя файла
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ Файл скачан с оригинальным именем:', file.file_name);
+    } else {
+      console.error('❌ Нет оригинального File объекта для скачивания');
+      // Fallback на blob URL
+      const link = document.createElement('a');
+      link.href = file.file_url;
+      link.download = file.file_name;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (viewingDocument) {
@@ -107,6 +130,9 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
               {files.length} файл{files.length === 1 ? '' : files.length < 5 ? 'а' : 'ов'}
             </Badge>
           )}
+          <span className="text-xs text-muted-foreground">
+            ({currentDepartment}/{categoryId})
+          </span>
         </h3>
       )}
 
@@ -116,6 +142,9 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
             <FileText className="w-16 h-16 text-gray-400 mb-4" />
             <p className="text-gray-500 text-center">
               {showUploadSection ? 'Файлы появятся здесь после загрузки' : 'Нет загруженных файлов'}
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              Отдел: {currentDepartment} • Категория: {categoryId}
             </p>
           </CardContent>
         </Card>
@@ -134,6 +163,9 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                       <p className="text-xs text-gray-500">
                         {formatFileSize(file.file_size)} • {new Date(file.uploaded_at).toLocaleDateString('ru-RU')}
                       </p>
+                      <p className="text-xs text-blue-500">
+                        {file.file instanceof File ? '💾 Локальный файл' : '🔗 URL файл'} • ID: {file.id.slice(0, 8)}...
+                      </p>
                     </div>
                   </div>
 
@@ -143,6 +175,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                       size="sm"
                       onClick={() => handleViewDocument(file)}
                       className="hover:bg-primary/10"
+                      title="Открыть для просмотра"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -151,7 +184,8 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDownload(file)}
-                      className="hover:bg-primary/10"
+                      className="hover:bg-green-100 text-green-600"
+                      title="Скачать файл"
                     >
                       <Download className="w-4 h-4" />
                     </Button>
@@ -193,6 +227,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                         size="sm"
                         onClick={() => handleDeleteDocument(file.id)}
                         className="hover:bg-red-100"
+                        title="Удалить файл"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

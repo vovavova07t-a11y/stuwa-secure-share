@@ -12,6 +12,7 @@ interface TechnicalDocument {
   file_type: string;
   file_size: number;
   category: string;
+  file?: File; // Добавляем оригинальный File объект
 }
 
 interface TechnicalDocumentViewerProps {
@@ -28,14 +29,31 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
   onSendToOtherDepartment
 }) => {
   const handleDownload = () => {
-    const link = window.document.createElement('a');
-    link.href = doc.file_url;
-    link.download = doc.file_name;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    window.document.body.appendChild(link);
-    link.click();
-    window.document.body.removeChild(link);
+    console.log('⬇️ TechnicalDocumentViewer: Скачивание файла:', doc.file_name);
+    
+    if (doc.file instanceof File) {
+      // Используем оригинальный File объект
+      const url = URL.createObjectURL(doc.file);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = doc.file_name;
+      link.style.display = 'none';
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log('✅ Файл скачан через File объект');
+    } else {
+      // Fallback на URL
+      const link = window.document.createElement('a');
+      link.href = doc.file_url;
+      link.download = doc.file_name;
+      link.style.display = 'none';
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      console.log('✅ Файл скачан через URL');
+    }
   };
 
   const handleSend = () => {
@@ -76,6 +94,12 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
             <div>
               <span className="font-medium">Категория:</span> {doc.category}
             </div>
+            <div className="col-span-2">
+              <span className="font-medium">Статус:</span> 
+              <span className="ml-2 text-green-600">
+                {doc.file instanceof File ? '💾 Локальный файл' : '🔗 URL файл'}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -99,6 +123,9 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
                 <div className="text-4xl mb-4">📄</div>
                 <p className="text-gray-600">Предварительный просмотр недоступен</p>
                 <p className="text-sm text-gray-500">Нажмите "Скачать" для открытия файла</p>
+                <p className="text-xs text-blue-500 mt-2">
+                  {doc.file instanceof File ? 'Файл сохранен локально' : 'Файл по внешней ссылке'}
+                </p>
               </div>
             </div>
           )}
@@ -109,7 +136,7 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
           <Button 
             variant="outline" 
             onClick={handleDownload}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700"
           >
             <Download className="w-4 h-4" />
             Скачать
