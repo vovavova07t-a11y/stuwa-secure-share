@@ -15,7 +15,7 @@ interface FileTransfer {
   comment?: string;
 }
 
-interface FileTransfersTableProps {
+export interface FileTransfersTableProps {
   department: string;
 }
 
