@@ -21,47 +21,35 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Загрузка файлов из базы данных
+  // Загрузка файлов из базы данных с использованием прямого HTTP запроса
   const loadFiles = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .rpc('get_files_by_department_and_category', {
-          p_department: department,
-          p_category_id: categoryId
-        });
+      
+      // Используем прямой HTTP запрос к Supabase REST API
+      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/files?department=eq.${department}&category_id=eq.${categoryId}&order=created_at.desc`, {
+        headers: {
+          'apikey': supabase.supabaseKey,
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) {
-        console.error('Ошибка загрузки файлов:', error);
-        toast({
-          title: 'Ошибка',
-          description: 'Не удалось загрузить файлы',
-          variant: 'destructive'
-        });
-        return;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      const data: FileData[] = await response.json();
       console.log(`📁 Загружено ${data?.length || 0} файлов из базы данных`);
       setFiles(data || []);
     } catch (error) {
       console.error('Ошибка при загрузке файлов:', error);
-      // Если функция не существует, попробуем прямой запрос
-      try {
-        const { data: directData, error: directError } = await supabase
-          .from('files')
-          .select('*')
-          .eq('department', department)
-          .eq('category_id', categoryId)
-          .order('created_at', { ascending: false });
-
-        if (directError) throw directError;
-        
-        console.log(`📁 Загружено ${directData?.length || 0} файлов напрямую из таблицы`);
-        setFiles(directData as FileData[] || []);
-      } catch (directFetchError) {
-        console.error('Ошибка прямого запроса:', directFetchError);
-        setFiles([]);
-      }
+      setFiles([]);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить файлы',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +78,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         .from('files')
         .getPublicUrl(fileName);
 
-      // Сохраняем информацию о файле в базу данных через RPC или прямую вставку
+      // Сохраняем информацию о файле в базу данных через прямой HTTP запрос
       const fileData = {
         id: fileId,
         file_name: file.name,
@@ -103,29 +91,25 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         uploaded_by: (await supabase.auth.getUser()).data.user?.id
       };
 
-      try {
-        // Пробуем использовать RPC функцию
-        const { data: rpcData, error: rpcError } = await supabase
-          .rpc('insert_file', fileData);
+      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/files`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabase.supabaseKey,
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(fileData)
+      });
 
-        if (rpcError) throw rpcError;
-        console.log('✅ Файл успешно сохранен через RPC');
-      } catch (rpcError) {
-        // Если RPC не работает, используем прямую вставку
-        const { data: insertData, error: insertError } = await supabase
-          .from('files')
-          .insert(fileData)
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Ошибка сохранения в базу данных:', insertError);
-          // Удаляем файл из Storage если не удалось сохранить в БД
-          await supabase.storage.from('files').remove([fileName]);
-          throw insertError;
-        }
-        console.log('✅ Файл успешно сохранен через прямую вставку');
+      if (!response.ok) {
+        console.error('Ошибка сохранения в базу данных');
+        // Удаляем файл из Storage если не удалось сохранить в БД
+        await supabase.storage.from('files').remove([fileName]);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      console.log('✅ Файл успешно сохранен в базу данных');
       
       // Обновляем локальный список файлов
       await loadFiles();
@@ -163,13 +147,19 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         }
       }
 
-      // Удаляем запись из базы данных
-      const { error: dbError } = await supabase
-        .from('files')
-        .delete()
-        .eq('id', fileId);
+      // Удаляем запись из базы данных через HTTP запрос
+      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/files?id=eq.${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': supabase.supabaseKey,
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Content-Type': 'application/json',
+        }
+      });
 
-      if (dbError) throw dbError;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       // Обновляем локальный список файлов
       await loadFiles();

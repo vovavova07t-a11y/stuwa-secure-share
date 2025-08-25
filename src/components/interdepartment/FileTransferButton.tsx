@@ -5,26 +5,28 @@ import { Send } from 'lucide-react';
 import { FileTransferModal } from './FileTransferModal';
 
 interface FileTransferButtonProps {
-  file: {
+  file?: {
     id: string;
     name: string;
     url: string;
     size: number;
     type: string;
   };
-  currentDepartment: string;
+  currentDepartment?: string;
   onSuccess?: () => void;
 }
 
 export const FileTransferButton: React.FC<FileTransferButtonProps> = ({
   file,
-  currentDepartment,
+  currentDepartment = '',
   onSuccess
 }) => {
   const [showModal, setShowModal] = useState(false);
 
   const handleClick = () => {
-    console.log('Нажата кнопка отправки файла:', file.name);
+    if (file) {
+      console.log('Нажата кнопка отправки файла:', file.name);
+    }
     setShowModal(true);
   };
 
@@ -34,10 +36,28 @@ export const FileTransferButton: React.FC<FileTransferButtonProps> = ({
   };
 
   const handleSuccess = () => {
-    console.log('Файл успешно отправлен:', file.name);
+    if (file) {
+      console.log('Файл успешно отправлен:', file.name);
+    }
     onSuccess?.();
     setShowModal(false);
   };
+
+  // Если файл не передан, показываем простую кнопку
+  if (!file) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleClick}
+        className="hover:bg-primary/10 text-primary"
+        title="Отправить файл в другой отдел"
+      >
+        <Send className="w-4 h-4" />
+        Отправить файл
+      </Button>
+    );
+  }
 
   return (
     <>

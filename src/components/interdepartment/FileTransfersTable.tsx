@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FileTransferButton } from './FileTransferButton';
 import { Download, Eye, Clock, CheckCircle } from 'lucide-react';
 
 interface FileTransfersTableProps {
@@ -89,7 +88,9 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Передача файлов</h2>
-        <FileTransferButton />
+        <Button>
+          Отправить файл
+        </Button>
       </div>
 
       <Card>
