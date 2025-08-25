@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -32,12 +31,12 @@ export const UniversalDocumentViewer: React.FC<UniversalDocumentViewerProps> = (
   const [rotation, setRotation] = React.useState(0);
 
   const handleDownload = () => {
-    const link = document.createElement('a');
+    const link = window.document.createElement('a');
     link.href = document.file_url;
     link.download = document.file_name || document.title;
-    document.body.appendChild(link);
+    window.document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    window.document.body.removeChild(link);
   };
 
   const getFileExtension = (fileName: string) => {
