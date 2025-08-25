@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,17 +13,19 @@ import {
   File
 } from 'lucide-react';
 import { UniversalDocumentViewer } from './UniversalDocumentViewer';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
   id: string;
-  fileName: string;
-  fileSize: number;
-  fileType: string;
-  status: 'uploading' | 'success' | 'error';
-  progress: number;
-  uploadedAt: Date;
-  categoryId: string;
-  fileUrl?: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  file_url: string;
+  category_id: string;
+  uploaded_by?: string;
+  created_at: string;
 }
 
 interface UploadedFilesDisplayProps {
@@ -39,83 +42,58 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
   const [showViewer, setShowViewer] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const loadFiles = React.useCallback(() => {
+  const loadFiles = React.useCallback(async () => {
     try {
-      const storedFiles = localStorage.getItem(`files_${categoryId}`);
-      console.log(`Загрузка файлов для категории ${categoryId}:`, storedFiles);
+      setLoading(true);
+      console.log(`Загрузка файлов для категории ${categoryId} из базы данных`);
       
-      if (storedFiles) {
-        const parsedFiles = JSON.parse(storedFiles);
-        console.log(`Распарсенные файлы:`, parsedFiles);
-        
-        const validFiles = parsedFiles
-          .filter((file: any) => {
-            const isValid = file && 
-              file.fileName && 
-              file.id && 
-              typeof file.fileName === 'string' &&
-              file.fileName !== '' &&
-              file.categoryId === categoryId &&
-              file.status === 'success';
-            
-            if (!isValid) {
-              console.log(`Невалидный файл:`, file);
-            }
-            return isValid;
-          })
-          .map((file: any) => ({
-            ...file,
-            uploadedAt: typeof file.uploadedAt === 'string' 
-              ? new Date(file.uploadedAt) 
-              : file.uploadedAt instanceof Date
-                ? file.uploadedAt
-                : new Date()
-          }));
-        
-        console.log(`Валидные файлы для категории ${categoryId}:`, validFiles);
-        setFiles(validFiles);
-      } else {
-        console.log(`Нет сохраненных файлов для категории ${categoryId}`);
-        setFiles([]);
+      const { data, error } = await supabase
+        .from('uploaded_files')
+        .select('*')
+        .eq('category_id', categoryId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Ошибка загрузки файлов из базы данных:', error);
+        return;
       }
+
+      console.log(`Загружены файлы из БД для категории ${categoryId}:`, data);
+      setFiles(data || []);
     } catch (error) {
-      console.error('Ошибка загрузки файлов:', error);
-      setFiles([]);
+      console.error('Ошибка при загрузке файлов:', error);
+    } finally {
+      setLoading(false);
     }
   }, [categoryId]);
 
   useEffect(() => {
-    // Загружаем файлы при монтировании
     loadFiles();
-    
-    // Создаем обработчик для событий localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `files_${categoryId}` || e.key === null) {
-        console.log(`Storage changed for ${categoryId}`, e);
-        loadFiles();
-      }
-    };
 
-    // Создаем обработчик для кастомных событий
-    const handleFilesUpdated = (e: CustomEvent) => {
-      console.log(`Files updated event for ${categoryId}`, e.detail);
-      loadFiles();
-    };
-
-    // Добавляем слушатели
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('filesUpdated', handleFilesUpdated as EventListener);
-
-    // Дополнительно проверяем файлы через небольшие интервалы
-    const interval = setInterval(() => {
-      loadFiles();
-    }, 1000);
+    // Подписываемся на изменения в таблице uploaded_files
+    const subscription = supabase
+      .channel('uploaded_files_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'uploaded_files',
+          filter: `category_id=eq.${categoryId}`,
+        },
+        (payload) => {
+          console.log('Получено изменение в таблице uploaded_files:', payload);
+          loadFiles(); // Перезагружаем файлы при любом изменении
+        }
+      )
+      .subscribe();
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('filesUpdated', handleFilesUpdated as EventListener);
-      clearInterval(interval);
+      subscription.unsubscribe();
     };
   }, [loadFiles]);
 
@@ -127,8 +105,8 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleString('ru-RU', {
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -155,46 +133,70 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
   };
 
   const handleDownload = (file: UploadedFile) => {
-    if (file.fileUrl) {
-      const link = window.document.createElement('a');
-      link.href = file.fileUrl;
-      link.download = file.fileName;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-    }
+    const link = window.document.createElement('a');
+    link.href = file.file_url;
+    link.download = file.file_name;
+    window.document.body.appendChild(link);
+    link.click();
+    window.document.body.removeChild(link);
   };
 
-  const handleDelete = (file: UploadedFile) => {
+  const handleDelete = async (file: UploadedFile) => {
+    if (!user) {
+      toast({
+        title: "Ошибка",
+        description: "Необходимо войти в систему для удаления файлов",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      const storedFiles = localStorage.getItem(`files_${categoryId}`);
-      if (storedFiles) {
-        const parsedFiles = JSON.parse(storedFiles);
-        const updatedFiles = parsedFiles.filter((f: UploadedFile) => f.id !== file.id);
-        
-        // Освобождаем URL объект
-        if (file.fileUrl) {
-          URL.revokeObjectURL(file.fileUrl);
-        }
-        
-        localStorage.setItem(`files_${categoryId}`, JSON.stringify(updatedFiles));
-        
-        // Отправляем событие об обновлении
-        window.dispatchEvent(new CustomEvent('filesUpdated', { detail: { categoryId } }));
-        
-        if (onFileDelete) {
-          onFileDelete(file.id);
-        }
-        
-        // Перезагружаем файлы
-        loadFiles();
+      const { error } = await supabase
+        .from('uploaded_files')
+        .delete()
+        .eq('id', file.id);
+
+      if (error) {
+        console.error('Ошибка удаления файла:', error);
+        toast({
+          title: "Ошибка",
+          description: "Не удалось удалить файл",
+          variant: "destructive"
+        });
+        return;
       }
+
+      toast({
+        title: "Успех",
+        description: "Файл успешно удален"
+      });
+
+      if (onFileDelete) {
+        onFileDelete(file.id);
+      }
+      
+      // Файлы обновятся автоматически через подписку
     } catch (error) {
       console.error('Ошибка удаления файла:', error);
+      toast({
+        title: "Ошибка",
+        description: "Произошла ошибка при удалении файла",
+        variant: "destructive"
+      });
     }
   };
 
-  console.log(`Компонент UploadedFilesDisplay для категории ${categoryId}, файлов: ${files.length}`, files);
+  if (loading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+          <p className="text-sm text-muted-foreground">Загрузка документов...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (files.length === 0) {
     return (
@@ -227,15 +229,15 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
               <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-4 flex-1">
                   <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    {getFileIcon(file.fileName)}
+                    {getFileIcon(file.file_name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">{file.fileName}</h4>
+                    <h4 className="font-medium truncate">{file.file_name}</h4>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{formatFileSize(file.fileSize)}</span>
+                      <span>{formatFileSize(file.file_size)}</span>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {formatDate(file.uploadedAt)}
+                        {formatDate(file.created_at)}
                       </div>
                     </div>
                   </div>
@@ -243,7 +245,7 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
                 
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">
-                    {file.fileType.split('/')[1]?.toUpperCase() || 'FILE'}
+                    {file.file_type.split('/')[1]?.toUpperCase() || 'FILE'}
                   </Badge>
                   
                   <Button
@@ -266,15 +268,17 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
                     <Download className="w-4 h-4" />
                   </Button>
                   
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(file)}
-                    className="hover:bg-destructive/10 text-destructive"
-                    title="Удалить"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {(user?.id === file.uploaded_by || user?.email === 'edikkim20@gmail.com') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(file)}
+                      className="hover:bg-destructive/10 text-destructive"
+                      title="Удалить"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -292,12 +296,12 @@ export const UploadedFilesDisplay: React.FC<UploadedFilesDisplayProps> = ({
           }}
           document={{
             id: selectedFile.id,
-            title: selectedFile.fileName,
-            file_name: selectedFile.fileName,
-            file_url: selectedFile.fileUrl || '',
-            file_type: selectedFile.fileType,
-            file_size: selectedFile.fileSize,
-            created_at: selectedFile.uploadedAt.toISOString(),
+            title: selectedFile.file_name,
+            file_name: selectedFile.file_name,
+            file_url: selectedFile.file_url,
+            file_type: selectedFile.file_type,
+            file_size: selectedFile.file_size,
+            created_at: selectedFile.created_at,
             version: '1.0',
             download_count: 0,
             description: ''
