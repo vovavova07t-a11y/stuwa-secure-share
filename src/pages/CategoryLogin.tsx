@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +18,6 @@ const CategoryLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  // Define all credentials with their routes
   const loginCredentials = [
     {
       username: 'fin_admin',
@@ -192,11 +190,23 @@ const CategoryLogin = () => {
         </div>
       </section>
 
-      {/* Right column: decorative background */}
+      {/* Right column: decorative background with image */}
       <section className="hidden md:block flex-1 relative p-4">
-        <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-gray-900/40 backdrop-blur-xl border border-white/10">
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-white/80 max-w-md">
+        <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-gray-900/40 backdrop-blur-xl border border-white/10 overflow-hidden">
+          <div className="h-full flex items-center justify-center relative">
+            {/* Background image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center opacity-30"
+              style={{
+                backgroundImage: 'url(/lovable-uploads/18ea2e4a-c4d5-4b35-bf70-41f218f791c9.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(1px)'
+              }}
+            />
+            
+            {/* Overlay content */}
+            <div className="relative z-10 text-center text-white/90 max-w-md p-8 bg-black/20 rounded-2xl backdrop-blur-sm">
               <Shield className="w-24 h-24 mx-auto mb-6 text-blue-400 animate-float" />
               <h2 className="text-2xl font-bold mb-4">Система управления STUWA</h2>
               <p className="text-lg leading-relaxed">
