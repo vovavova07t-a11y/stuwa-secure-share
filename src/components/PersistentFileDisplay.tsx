@@ -48,11 +48,9 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Загрузка файлов при монтировании компонента
   useEffect(() => {
     loadFiles();
     
-    // Подписка на изменения в реальном времени
     const subscription = supabase
       .channel(`files_${categoryId}`)
       .on(
@@ -78,7 +76,6 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
     try {
       setLoading(true);
       
-      // Загружаем файлы из таблицы documents
       const { data, error } = await supabase
         .from('documents')
         .select('*')
@@ -86,11 +83,10 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Ошибка загрузки файлов:', error);
+        console.error('Error loading files:', error);
         throw error;
       }
 
-      // Преобразуем данные в нужный формат
       const transformedData: FileData[] = data?.map(doc => ({
         id: doc.id,
         file_name: doc.file_name || doc.title || 'Безымянный файл',
@@ -102,16 +98,14 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         uploaded_by: doc.created_by
       })) || [];
 
-      console.log(`Загружено файлов для категории ${categoryId}:`, transformedData.length);
+      console.log(`Loaded ${transformedData.length} files for category ${categoryId}`);
       setFiles(transformedData);
 
-      // Также проверяем localStorage для совместимости
       const localFiles = localStorage.getItem(`files_${categoryId}`);
-      if (localFiles) {
+      if (localFiles && transformedData.length === 0) {
         try {
           const parsedLocalFiles = JSON.parse(localFiles);
-          if (Array.isArray(parsedLocalFiles) && parsedLocalFiles.length > 0 && transformedData.length === 0) {
-            // Если в базе нет файлов, но есть в localStorage, показываем их
+          if (Array.isArray(parsedLocalFiles) && parsedLocalFiles.length > 0) {
             const localFilesData = parsedLocalFiles.map((f: any) => ({
               id: f.id,
               file_name: f.file?.name || f.file_name || 'Файл',
@@ -124,11 +118,11 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
             setFiles(localFilesData);
           }
         } catch (e) {
-          console.error('Ошибка парсинга localStorage:', e);
+          console.error('Error parsing localStorage:', e);
         }
       }
     } catch (error) {
-      console.error('Ошибка при загрузке файлов:', error);
+      console.error('Error loading files:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить файлы",
@@ -224,21 +218,18 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
 
   const handleDeleteFile = async (fileId: string) => {
     try {
-      // Удаляем из таблицы documents
       const { error } = await supabase
         .from('documents')
         .delete()
         .eq('id', fileId);
 
       if (error) {
-        console.error('Ошибка удаления файла:', error);
+        console.error('Error deleting file:', error);
         throw error;
       }
 
-      // Обновляем локальное состояние
       setFiles(prev => prev.filter(f => f.id !== fileId));
       
-      // Очищаем localStorage
       const localFiles = localStorage.getItem(`files_${categoryId}`);
       if (localFiles) {
         try {
@@ -246,7 +237,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
           const updatedFiles = parsedFiles.filter((f: any) => f.id !== fileId);
           localStorage.setItem(`files_${categoryId}`, JSON.stringify(updatedFiles));
         } catch (e) {
-          console.error('Ошибка обновления localStorage:', e);
+          console.error('Error updating localStorage:', e);
         }
       }
 
@@ -255,7 +246,7 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         description: "Файл успешно удален",
       });
     } catch (error) {
-      console.error('Ошибка при удалении файла:', error);
+      console.error('Error deleting file:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось удалить файл",
@@ -320,12 +311,10 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
               <Card key={file.id} className="glass-card hover:shadow-lg transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex flex-col items-center space-y-3">
-                    {/* Иконка файла */}
                     <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center">
                       {getFileIcon(file.file_type, file.file_name)}
                     </div>
                     
-                    {/* Информация о файле */}
                     <div className="text-center space-y-1 w-full">
                       <p className="font-medium text-sm truncate" title={file.file_name}>
                         {file.file_name}
@@ -340,7 +329,6 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                       </div>
                     </div>
 
-                    {/* Статусы и теги */}
                     <div className="flex flex-wrap gap-1 justify-center">
                       {canViewInline(file.file_type, file.file_name) && (
                         <Badge variant="secondary" className="text-xs">
@@ -349,7 +337,6 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
                       )}
                     </div>
 
-                    {/* Кнопки действий */}
                     <div className="flex flex-wrap gap-1 w-full">
                       {canViewInline(file.file_type, file.file_name) && (
                         <Button
@@ -401,7 +388,6 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         </CardContent>
       </Card>
 
-      {/* Модальное окно подтверждения удаления */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <Card className="glass-card w-full max-w-md">
@@ -434,7 +420,6 @@ export const PersistentFileDisplay: React.FC<PersistentFileDisplayProps> = ({
         </div>
       )}
 
-      {/* Просмотрщик документов */}
       {showViewer && selectedFile && (
         <DocumentViewer
           document={selectedFile}
