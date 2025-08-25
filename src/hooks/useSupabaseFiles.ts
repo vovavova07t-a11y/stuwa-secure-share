@@ -24,28 +24,34 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Загрузка файлов из базы данных
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ФАЙЛОВ
   const loadFiles = async () => {
     try {
       setIsLoading(true);
       console.log(`🔄 Загрузка файлов для отдела: ${department}, категории: ${categoryId}`);
       
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/files?department=eq.${department}&category_id=eq.${categoryId}&order=created_at.desc`, {
-        headers: {
-          'apikey': SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const { data, error } = await supabase
+        .from('files')
+        .select('*')
+        .eq('department', department)
+        .eq('category_id', categoryId)
+        .order('created_at', { ascending: false });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        console.error('Ошибка загрузки файлов из Supabase:', error);
+        throw error;
       }
 
-      const data: FileData[] = await response.json();
       console.log(`📁 Загружено ${data?.length || 0} файлов из базы данных для категории ${categoryId}`);
       console.log('📋 Файлы:', data?.map(f => f.file_name) || []);
-      setFiles(data || []);
+      
+      // Обеспечиваем, что все файлы имеют корректные URL
+      const filesWithUrls = (data || []).map(file => ({
+        ...file,
+        file_url: file.file_url || `${SUPABASE_URL}/storage/v1/object/public/files/${file.storage_path}`
+      }));
+      
+      setFiles(filesWithUrls);
     } catch (error) {
       console.error('Ошибка при загрузке файлов:', error);
       setFiles([]);
@@ -59,7 +65,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
     }
   };
 
-  // Сохранение файла в Supabase
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ФАЙЛА
   const saveFile = async (file: File, categoryId: string, department: string) => {
     try {
       const fileId = crypto.randomUUID();
@@ -70,17 +76,24 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       // Загружаем файл в Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error('Ошибка загрузки в Storage:', uploadError);
         throw uploadError;
       }
 
+      console.log('✅ Файл загружен в Storage:', uploadData);
+
       // Получаем публичный URL
       const { data: urlData } = supabase.storage
         .from('files')
         .getPublicUrl(fileName);
+
+      console.log('🔗 Публичный URL получен:', urlData.publicUrl);
 
       // Сохраняем информацию о файле в базу данных
       const fileData = {
@@ -95,33 +108,37 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         uploaded_by: (await supabase.auth.getUser()).data.user?.id
       };
 
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/files`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify(fileData)
-      });
+      const { data: insertData, error: insertError } = await supabase
+        .from('files')
+        .insert(fileData)
+        .select()
+        .single();
 
-      if (!response.ok) {
-        console.error('Ошибка сохранения в базу данных');
+      if (insertError) {
+        console.error('Ошибка сохранения в базу данных:', insertError);
+        // Удаляем файл из Storage в случае ошибки
         await supabase.storage.from('files').remove([fileName]);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw insertError;
       }
 
-      console.log('✅ Файл успешно сохранен в базу данных');
+      console.log('✅ Файл успешно сохранен в базу данных:', insertData);
       
-      return fileData;
+      // Добавляем новый файл в локальное состояние
+      setFiles(prevFiles => [insertData, ...prevFiles]);
+      
+      return insertData;
     } catch (error) {
       console.error('Ошибка сохранения файла:', error);
+      toast({
+        title: 'Ошибка загрузки',
+        description: `Не удалось загрузить файл: ${error.message}`,
+        variant: 'destructive'
+      });
       throw error;
     }
   };
 
-  // Удаление файла
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ УДАЛЕНИЯ ФАЙЛА
   const deleteFile = async (fileId: string) => {
     try {
       const fileToDelete = files.find(f => f.id === fileId);
@@ -129,6 +146,8 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       if (!fileToDelete) {
         throw new Error('Файл не найден');
       }
+
+      console.log('🗑️ Удаление файла:', fileToDelete.file_name);
 
       // Удаляем файл из Storage
       if (fileToDelete.storage_path) {
@@ -138,34 +157,47 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
         if (storageError) {
           console.error('Ошибка удаления из Storage:', storageError);
+        } else {
+          console.log('✅ Файл удален из Storage');
         }
       }
 
       // Удаляем запись из базы данных
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/files?id=eq.${fileId}`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-          'Content-Type': 'application/json',
-        }
-      });
+      const { error: deleteError } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', fileId);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (deleteError) {
+        console.error('Ошибка удаления из базы данных:', deleteError);
+        throw deleteError;
       }
+
+      console.log('✅ Файл удален из базы данных');
 
       // Обновляем локальное состояние
       setFiles(prev => prev.filter(f => f.id !== fileId));
+      
+      toast({
+        title: 'Файл удален',
+        description: `Файл "${fileToDelete.file_name}" успешно удален`
+      });
     } catch (error) {
       console.error('Ошибка удаления файла:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить файл',
+        variant: 'destructive'
+      });
       throw error;
     }
   };
 
-  // Загружаем файлы при первом рендере
+  // Загружаем файлы при изменении department или categoryId
   useEffect(() => {
-    loadFiles();
+    if (department && categoryId) {
+      loadFiles();
+    }
   }, [department, categoryId]);
 
   return {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,13 +14,15 @@ import {
   FileType,
   MoreVertical,
   Calendar,
-  HardDrive
+  HardDrive,
+  X
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatFileSize } from '@/utils/fileUtils';
 import { FileData } from '@/hooks/useSupabaseFiles';
 import { FileTransferModal } from './interdepartment/FileTransferModal';
 import { getCurrentDepartmentFromPath } from './interdepartment/utils/departmentUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface FileCardProps {
   file: FileData;
@@ -60,7 +63,7 @@ export const FileCard: React.FC<FileCardProps> = ({
   onSend,
   onDelete
 }) => {
-  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   
   const currentDepartment = getCurrentDepartmentFromPath();
@@ -78,28 +81,107 @@ export const FileCard: React.FC<FileCardProps> = ({
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '') || fileType?.startsWith('image/');
   };
 
-  const handleView = () => {
-    if (isImage(file.file_name, file.file_type)) {
-      setIsImagePreviewOpen(true);
-    } else {
-      window.open(file.file_url, '_blank');
-    }
-    onView?.(file);
+  const isPDF = (fileName: string, fileType?: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    return extension === 'pdf' || fileType?.includes('pdf');
   };
 
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = file.file_url;
-    link.download = file.file_name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    onDownload?.(file);
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
+  const handleDownload = async () => {
+    try {
+      console.log('⬇️ Скачивание файла:', file.file_name);
+      
+      // Получаем файл с правильными заголовками для принудительного скачивания
+      const response = await fetch(file.file_url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Ошибка загрузки файла');
+      }
+      
+      const blob = await response.blob();
+      
+      // Создаем URL для blob
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Создаем временную ссылку для скачивания
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = file.file_name; // Используем оригинальное имя файла
+      link.style.display = 'none';
+      
+      // Добавляем в DOM, кликаем и удаляем
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Освобождаем память
+      window.URL.revokeObjectURL(blobUrl);
+      
+      console.log('✅ Файл успешно скачан:', file.file_name);
+      onDownload?.(file);
+    } catch (error) {
+      console.error('❌ Ошибка при скачивании файла:', error);
+      // Fallback - открываем файл в новой вкладке
+      window.open(file.file_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОСМОТРА
+  const handleView = () => {
+    console.log('👁️ Открытие файла для просмотра:', file.file_name);
+    setIsViewerOpen(true);
+    onView?.(file);
   };
 
   const handleSendToOtherDepartment = () => {
     setShowTransferModal(true);
     onSend?.(file);
+  };
+
+  const renderFileViewer = () => {
+    if (isPDF(file.file_name, file.file_type)) {
+      return (
+        <div className="w-full h-[70vh]">
+          <iframe
+            src={file.file_url}
+            className="w-full h-full border-0"
+            title={file.file_name}
+          />
+        </div>
+      );
+    }
+    
+    if (isImage(file.file_name, file.file_type)) {
+      return (
+        <div className="w-full h-[70vh] flex items-center justify-center">
+          <img 
+            src={file.file_url} 
+            alt={file.file_name}
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      );
+    }
+    
+    // Для других типов файлов показываем информацию и кнопку скачивания
+    return (
+      <div className="w-full h-[70vh] flex flex-col items-center justify-center bg-gray-50">
+        <div className="text-center">
+          {getFileIcon(file.file_name, file.file_type)}
+          <h3 className="text-lg font-medium mt-4 mb-2">{file.file_name}</h3>
+          <p className="text-gray-600 mb-4">Предварительный просмотр недоступен</p>
+          <Button onClick={handleDownload} className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            Скачать файл
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -196,30 +278,37 @@ export const FileCard: React.FC<FileCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Image Preview Modal */}
-      {isImagePreviewOpen && isImage(file.file_name, file.file_type) && (
-        <div 
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => setIsImagePreviewOpen(false)}
-        >
-          <div className="relative max-w-4xl max-h-full">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute -top-10 right-0 text-white hover:text-white hover:bg-white/10"
-              onClick={() => setIsImagePreviewOpen(false)}
-            >
-              ✕
-            </Button>
-            <img 
-              src={file.file_url} 
-              alt={file.file_name}
-              className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
+      {/* File Viewer Modal */}
+      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg font-semibold truncate pr-4">
+                {file.file_name}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Скачать
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsViewerOpen(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+          {renderFileViewer()}
+        </DialogContent>
+      </Dialog>
 
       {/* File Transfer Modal */}
       {showTransferModal && (

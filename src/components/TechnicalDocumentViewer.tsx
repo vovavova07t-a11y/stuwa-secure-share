@@ -12,7 +12,7 @@ interface TechnicalDocument {
   file_type: string;
   file_size: number;
   category: string;
-  file?: File; // Добавляем оригинальный File объект
+  file?: File;
 }
 
 interface TechnicalDocumentViewerProps {
@@ -28,31 +28,54 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
   onDelete,
   onSendToOtherDepartment
 }) => {
-  const handleDownload = () => {
-    console.log('⬇️ TechnicalDocumentViewer: Скачивание файла:', doc.file_name);
-    
-    if (doc.file instanceof File) {
-      // Используем оригинальный File объект
-      const url = URL.createObjectURL(doc.file);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = doc.file_name;
-      link.style.display = 'none';
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      console.log('✅ Файл скачан через File объект');
-    } else {
-      // Fallback на URL
-      const link = window.document.createElement('a');
-      link.href = doc.file_url;
-      link.download = doc.file_name;
-      link.style.display = 'none';
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-      console.log('✅ Файл скачан через URL');
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
+  const handleDownload = async () => {
+    try {
+      console.log('⬇️ TechnicalDocumentViewer: Скачивание файла:', doc.file_name);
+      
+      if (doc.file instanceof File) {
+        // Если есть оригинальный File объект
+        const url = URL.createObjectURL(doc.file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.file_name;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log('✅ Файл скачан через File объект');
+      } else {
+        // Скачивание через URL с правильными заголовками
+        const response = await fetch(doc.file_url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Ошибка загрузки файла');
+        }
+        
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = doc.file_name;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.URL.revokeObjectURL(blobUrl);
+        console.log('✅ Файл скачан через URL');
+      }
+    } catch (error) {
+      console.error('❌ Ошибка при скачивании:', error);
+      // Fallback - открываем в новой вкладке
+      window.open(doc.file_url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -97,7 +120,7 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
             <div className="col-span-2">
               <span className="font-medium">Статус:</span> 
               <span className="ml-2 text-green-600">
-                {doc.file instanceof File ? '💾 Локальный файл' : '🔗 URL файл'}
+                {doc.file instanceof File ? '💾 Локальный файл' : '🔗 Supabase файл'}
               </span>
             </div>
           </div>
@@ -123,9 +146,13 @@ export const TechnicalDocumentViewer: React.FC<TechnicalDocumentViewerProps> = (
                 <div className="text-4xl mb-4">📄</div>
                 <p className="text-gray-600">Предварительный просмотр недоступен</p>
                 <p className="text-sm text-gray-500">Нажмите "Скачать" для открытия файла</p>
-                <p className="text-xs text-blue-500 mt-2">
-                  {doc.file instanceof File ? 'Файл сохранен локально' : 'Файл по внешней ссылке'}
-                </p>
+                <Button 
+                  className="mt-4"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Скачать файл
+                </Button>
               </div>
             </div>
           )}
