@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PersistentFileDisplay } from './PersistentFileDisplay';
+import { useFileContext } from '@/contexts/FileContext';
 
 interface UploadedFile {
   id: string;
@@ -37,6 +38,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
   const [showUploadArea, setShowUploadArea] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { addFiles, getCategoryFilesCount } = useFileContext();
 
   const validateFile = (file: File): boolean => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -66,29 +68,26 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
   const uploadToSupabase = async (file: File, fileId: string): Promise<void> => {
     try {
-      console.log('Начинаем загрузку файла:', file.name);
+      console.log('🚀 Начинаем загрузку файла в Supabase:', file.name);
       
-      // Загружаем файл в Supabase Storage
       const fileName = `${categoryId}/${fileId}_${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
         .upload(fileName, file);
 
       if (uploadError) {
-        console.error('Ошибка загрузки в Storage:', uploadError);
+        console.error('❌ Ошибка загрузки в Storage:', uploadError);
         throw uploadError;
       }
 
-      console.log('Файл загружен в Storage:', uploadData);
+      console.log('✅ Файл загружен в Storage:', uploadData);
 
-      // Получаем публичную ссылку
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(fileName);
 
-      console.log('Публичная ссылка:', publicUrl);
+      console.log('🔗 Получена публичная ссылка:', publicUrl);
 
-      // Сохраняем метаданные в таблицу documents (используем существующую)
       const { data: dbData, error: dbError } = await supabase
         .from('documents')
         .insert({
@@ -106,14 +105,29 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
         .single();
 
       if (dbError) {
-        console.error('Ошибка сохранения в БД (documents):', dbError);
+        console.error('❌ Ошибка сохранения в БД:', dbError);
         throw dbError;
       }
 
-      console.log('Метаданные сохранены в БД:', dbData);
+      console.log('📊 Метаданные сохранены в БД:', dbData);
+
+      // Добавляем в глобальное состояние
+      const newFileData = {
+        id: fileId,
+        file_name: file.name,
+        file_url: publicUrl,
+        file_type: file.type,
+        file_size: file.size,
+        category_id: categoryId,
+        uploaded_at: new Date().toISOString(),
+        uploaded_by: 'current_user'
+      };
+
+      addFiles(categoryId, [newFileData]);
+      console.log('✅ Файл добавлен в глобальное состояние');
 
     } catch (error) {
-      console.error('Ошибка при загрузке в Supabase:', error);
+      console.error('❌ Ошибка при загрузке в Supabase:', error);
       throw error;
     }
   };
@@ -169,7 +183,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
     for (const uploadedFile of newFiles) {
       try {
-        // Загружаем в Supabase
         await uploadToSupabase(uploadedFile.file, uploadedFile.id);
         await simulateUpload(uploadedFile.id);
         
@@ -178,7 +191,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
           description: `${uploadedFile.file.name} успешно загружен в "${title}"`
         });
       } catch (error) {
-        console.error('Ошибка загрузки файла:', error);
+        console.error('❌ Ошибка загрузки файла:', error);
         setUploadedFiles(prev => prev.map(f => 
           f.id === uploadedFile.id 
             ? { ...f, status: 'error' as const }
@@ -195,7 +208,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     if (onFilesChange) {
       onFilesChange(uploadedFiles);
     }
-  }, [maxFileSize, allowedTypes, toast, onFilesChange, uploadedFiles, categoryId, title]);
+  }, [maxFileSize, allowedTypes, toast, onFilesChange, uploadedFiles, categoryId, title, addFiles]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -260,32 +273,31 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     fileInputRef.current?.click();
   };
 
+  const currentFilesCount = getCategoryFilesCount(categoryId);
+
   return (
     <div className="space-y-6">
-      {/* ПОСТОЯННОЕ ОТОБРАЖЕНИЕ ЗАГРУЖЕННЫХ ФАЙЛОВ */}
       <PersistentFileDisplay 
         categoryId={categoryId}
         categoryTitle={title}
         onSendToOtherDepartment={(file) => {
           toast({
             title: "Отправка файла",
-            description: `Файл ${file.file_name} отправлен в другой отдел`,
+            description: `Файл ${file.file_name} отправлен в другий отдел`,
           });
         }}
       />
 
-      {/* КНОПКА ДЛЯ ПОКАЗА/СКРЫТИЯ ОБЛАСТИ ЗАГРУЗКИ */}
       <div className="flex justify-center">
         <Button 
           onClick={() => setShowUploadArea(!showUploadArea)}
           className="btn-primary"
         >
           <Upload className="w-4 h-4 mr-2" />
-          {showUploadArea ? 'Скрыть загрузку' : 'Загрузить новые файлы'}
+          {showUploadArea ? 'Скрыть загрузку' : `Загрузить новые файлы${currentFilesCount > 0 ? ` (${currentFilesCount})` : ''}`}
         </Button>
       </div>
 
-      {/* ОБЛАСТЬ ЗАГРУЗКИ (ПОКАЗЫВАЕТСЯ ПО КНОПКЕ) */}
       {showUploadArea && (
         <Card className="glass-card">
           <CardHeader>
@@ -293,6 +305,11 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
               <Upload className="w-5 h-5" />
               {title}
               <span className="text-xs text-muted-foreground">({categoryId})</span>
+              {currentFilesCount > 0 && (
+                <span className="text-xs text-green-600">
+                  • {currentFilesCount} файл{currentFilesCount > 1 ? (currentFilesCount > 4 ? 'ов' : 'а') : ''} в памяти
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -342,7 +359,6 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
               </div>
             </div>
 
-            {/* ПРОЦЕСС ЗАГРУЗКИ */}
             {uploadedFiles.length > 0 && (
               <div className="mt-6 space-y-3">
                 <h4 className="font-semibold">Загружаемые файлы:</h4>
