@@ -23,7 +23,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
-import Navigation from '@/components/Navigation';
+import { Navigation } from '@/components/Navigation';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie } from 'recharts';
 
 const ExecutiveDashboard = () => {
