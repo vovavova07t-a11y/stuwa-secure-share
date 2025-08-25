@@ -7,9 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Send, Clock, AlertTriangle, Zap } from 'lucide-react';
+import { useInterdepartmentTransfers } from '@/hooks/useInterdepartmentTransfers';
 
 interface FileTransferModalProps {
   isOpen: boolean;
@@ -40,15 +40,6 @@ const PRIORITY_OPTIONS = [
   { value: 'urgent', label: 'Срочно', color: 'bg-red-100 text-red-800', icon: Zap }
 ];
 
-// Получаем демо-пользователя
-const getDemoUser = (department: string) => {
-  return {
-    id: `demo-user-${department}`,
-    email: `${department}@stuwa.com`,
-    department: department
-  };
-};
-
 export const FileTransferModal: React.FC<FileTransferModalProps> = ({
   isOpen,
   onClose,
@@ -62,6 +53,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
   const [deadline, setDeadline] = useState('');
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
+  const { createTransfer } = useInterdepartmentTransfers(currentDepartment);
 
   const handleDepartmentToggle = (department: string) => {
     if (department === currentDepartment) return;
@@ -87,10 +79,6 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
 
     setSending(true);
     try {
-      // Используем демо-пользователя
-      const demoUser = getDemoUser(currentDepartment);
-      console.log('Отправка файла от демо-пользователя:', demoUser);
-
       // Отправляем файл в каждый выбранный отдел
       for (const department of selectedDepartments) {
         const transferData = {
@@ -100,7 +88,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
           file_type: file.type,
           sender_department: currentDepartment,
           receiver_department: department,
-          sender_id: demoUser.id,
+          sender_id: 'demo-user', // В реальном приложении здесь будет ID пользователя
           priority,
           status: 'sent',
           message: message || null,
@@ -111,26 +99,14 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
               department: currentDepartment,
               action: 'sent',
               timestamp: new Date().toISOString(),
-              user_id: demoUser.id
+              user_id: 'demo-user'
             }
           ]
         };
 
-        console.log('Данные передачи файла:', transferData);
+        console.log('Отправка файла в отдел:', department, transferData);
 
-        try {
-          const { error } = await (supabase as any)
-            .from('interdepartment_file_transfers')
-            .insert([transferData]);
-
-          if (error) {
-            console.error('Database error for department', department, ':', error);
-            // В демо-режиме продолжаем, даже если есть ошибка базы данных
-          }
-        } catch (dbError) {
-          console.error('Database connection error:', dbError);
-          // В демо-режиме игнорируем ошибки базы данных
-        }
+        await createTransfer(transferData);
       }
 
       toast({
@@ -142,13 +118,11 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error sending file:', error);
-      // В демо-режиме все равно показываем успех
       toast({
-        title: "Успех",
-        description: `Файл отправлен в ${selectedDepartments.length} отдел(а) (демо-режим)`,
+        title: "Ошибка",
+        description: "Не удалось отправить файл",
+        variant: "destructive",
       });
-      onSuccess?.();
-      onClose();
     } finally {
       setSending(false);
     }
