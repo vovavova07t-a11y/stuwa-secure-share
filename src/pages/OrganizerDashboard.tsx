@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,10 @@ import {
   Filter
 } from 'lucide-react';
 import { CategoryFileSection } from '@/components/CategoryFileSection';
+import { OrganizerStats } from '@/components/OrganizerStats';
+import { OrganizerViewBanner } from '@/components/OrganizerViewBanner';
+import { OrganizerSearchPanel } from '@/components/OrganizerSearchPanel';
+import { OrganizerBreadcrumbs } from '@/components/OrganizerBreadcrumbs';
 import { useToast } from '@/hooks/use-toast';
 
 type OrganizerSection = 'organizers' | 'financial' | 'technical' | 'logistics' | 'commercial' | 'contacts';
@@ -92,30 +97,97 @@ const OrganizerDashboard = () => {
     }
   }, [activeSection, isViewOnlySection]);
 
+  const getBreadcrumbs = () => {
+    const items = [
+      {
+        label: 'Организаторы',
+        onClick: activeSection !== 'organizers' ? () => setActiveSection('organizers') : undefined,
+        isActive: activeSection === 'organizers'
+      }
+    ];
+
+    if (isViewOnlySection) {
+      const currentDept = departmentSections.find(d => d.id === activeSection);
+      if (currentDept) {
+        items.push({
+          label: currentDept.title,
+          isActive: true
+        });
+      }
+    }
+
+    return items;
+  };
+
   const renderOrganizerSection = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {organizerCategories.map((category) => {
-          const IconComponent = category.icon;
-          return (
-            <Card key={category.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-3 text-lg">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <IconComponent className="w-5 h-5 text-primary" />
+      {/* Статистика и дашборд */}
+      <OrganizerStats />
+
+      {/* Панель поиска */}
+      <OrganizerSearchPanel />
+
+      {/* Быстрый доступ к отделам */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Быстрый доступ к отделам</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {departmentSections.map((section) => {
+            const IconComponent = section.icon;
+            return (
+              <Card 
+                key={section.id} 
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => setActiveSection(section.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2 rounded-lg ${section.color}`}>
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <Badge variant="outline" className="gap-1">
+                      <Eye className="w-3 h-3" />
+                      Просмотр
+                    </Badge>
                   </div>
-                  {category.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CategoryFileSection
-                  categoryId={category.id}
-                  categoryTitle={category.title}
-                />
-              </CardContent>
-            </Card>
-          );
-        })}
+                  <div className="space-y-1">
+                    <h4 className="font-medium">{section.title}</h4>
+                    <p className="text-sm text-muted-foreground">{section.subtitle}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Собственные категории организаторов */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Категории организаторов</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {organizerCategories.map((category) => {
+            const IconComponent = category.icon;
+            return (
+              <Card key={category.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <IconComponent className="w-5 h-5 text-primary" />
+                    </div>
+                    {category.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CategoryFileSection
+                    categoryId={category.id}
+                    categoryTitle={category.title}
+                    department="organizers"
+                    isOrganizerView={false}
+                  />
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -124,7 +196,7 @@ const OrganizerDashboard = () => {
     const currentDept = departmentSections.find(d => d.id === activeSection);
     if (!currentDept) return null;
 
-    // Категории для каждого отдела (упрощенный список)
+    // Категории для каждого отдела
     const departmentCategories = {
       financial: [
         { id: 'reports', title: 'Финансовые отчеты' },
@@ -162,20 +234,12 @@ const OrganizerDashboard = () => {
 
     return (
       <div className="space-y-6">
-        {/* Индикатор режима просмотра */}
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Eye className="w-5 h-5 text-amber-600" />
-              <div>
-                <p className="font-semibold text-amber-800">Режим просмотра</p>
-                <p className="text-sm text-amber-700">
-                  Вы просматриваете файлы отдела "{currentDept.title}". Доступны только просмотр и скачивание.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Баннер режима просмотра */}
+        <OrganizerViewBanner
+          departmentTitle={currentDept.title}
+          departmentSubtitle={currentDept.subtitle}
+          onBackToOrganizers={() => setActiveSection('organizers')}
+        />
 
         {/* Категории отдела */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -197,6 +261,8 @@ const OrganizerDashboard = () => {
                 <CategoryFileSection
                   categoryId={category.id}
                   categoryTitle={category.title}
+                  department={activeSection}
+                  isOrganizerView={true}
                 />
               </CardContent>
             </Card>
@@ -232,6 +298,11 @@ const OrganizerDashboard = () => {
                 Режим просмотра
               </Badge>
             )}
+          </div>
+          
+          {/* Хлебные крошки */}
+          <div className="mt-4">
+            <OrganizerBreadcrumbs items={getBreadcrumbs()} />
           </div>
         </div>
       </div>
