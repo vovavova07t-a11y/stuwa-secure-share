@@ -77,69 +77,46 @@ export const OrganizerRealStats: React.FC = () => {
           let lastUpdate = 'Нет данных';
           
           try {
-            // For financial department, try to get data from financial_documents
-            if (config.department === 'financial') {
-              const { data, error } = await supabase
-                .from('financial_documents')
-                .select('id, created_at, updated_at')
-                .eq('status', 'active');
+            // Use articles table for all departments
+            const { data, error } = await supabase
+              .from('articles')
+              .select('id, created_at, updated_at')
+              .eq('status', 'published')
+              .eq('category', config.department);
+            
+            if (error) {
+              console.error(`Error fetching data for ${config.department}:`, error);
+              fileCount = 0;
+              lastUpdate = 'Ошибка загрузки';
+            } else if (data && data.length > 0) {
+              fileCount = data.length;
               
-              if (!error && data) {
-                fileCount = data.length;
-                if (data.length > 0) {
-                  const sortedFiles = [...data].sort((a, b) => {
-                    const dateA = new Date(a.updated_at || a.created_at).getTime();
-                    const dateB = new Date(b.updated_at || b.created_at).getTime();
-                    return dateB - dateA;
-                  });
-                  
-                  const lastFileDate = new Date(sortedFiles[0].updated_at || sortedFiles[0].created_at);
-                  const now = new Date();
-                  const diffTime = Math.abs(now.getTime() - lastFileDate.getTime());
-                  const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-                  
-                  if (diffHours < 24) {
-                    lastUpdate = `${diffHours} час${diffHours === 1 ? '' : diffHours < 5 ? 'а' : 'ов'} назад`;
-                  } else {
-                    const diffDays = Math.ceil(diffHours / 24);
-                    lastUpdate = `${diffDays} ${diffDays === 1 ? 'день' : diffDays < 5 ? 'дня' : 'дней'} назад`;
-                  }
+              // Sort by updated_at or created_at
+              const sortedFiles = [...data].sort((a, b) => {
+                const dateA = new Date(a.updated_at || a.created_at).getTime();
+                const dateB = new Date(b.updated_at || b.created_at).getTime();
+                return dateB - dateA;
+              });
+              
+              if (sortedFiles.length > 0) {
+                const lastFileDate = new Date(sortedFiles[0].updated_at || sortedFiles[0].created_at);
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - lastFileDate.getTime());
+                const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+                
+                if (diffHours < 24) {
+                  lastUpdate = `${diffHours} час${diffHours === 1 ? '' : diffHours < 5 ? 'а' : 'ов'} назад`;
+                } else {
+                  const diffDays = Math.ceil(diffHours / 24);
+                  lastUpdate = `${diffDays} ${diffDays === 1 ? 'день' : diffDays < 5 ? 'дня' : 'дней'} назад`;
                 }
               }
-            }
-            // For other departments, try to get data from articles
-            else {
-              const { data, error } = await supabase
-                .from('articles')
-                .select('id, created_at, updated_at')
-                .eq('status', 'published')
-                .eq('category', config.department);
-              
-              if (!error && data) {
-                fileCount = data.length;
-                if (data.length > 0) {
-                  const sortedFiles = [...data].sort((a, b) => {
-                    const dateA = new Date(a.updated_at || a.created_at).getTime();
-                    const dateB = new Date(b.updated_at || b.created_at).getTime();
-                    return dateB - dateA;
-                  });
-                  
-                  const lastFileDate = new Date(sortedFiles[0].updated_at || sortedFiles[0].created_at);
-                  const now = new Date();
-                  const diffTime = Math.abs(now.getTime() - lastFileDate.getTime());
-                  const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-                  
-                  if (diffHours < 24) {
-                    lastUpdate = `${diffHours} час${diffHours === 1 ? '' : diffHours < 5 ? 'а' : 'ов'} назад`;
-                  } else {
-                    const diffDays = Math.ceil(diffHours / 24);
-                    lastUpdate = `${diffDays} ${diffDays === 1 ? 'день' : diffDays < 5 ? 'дня' : 'дней'} назад`;
-                  }
-                }
-              }
+            } else {
+              fileCount = 0;
+              lastUpdate = 'Нет файлов';
             }
           } catch (error) {
-            console.error(`Ошибка при загрузке данных для ${config.department}:`, error);
+            console.error(`Error loading data for ${config.department}:`, error);
             fileCount = 0;
             lastUpdate = 'Ошибка загрузки';
           }
@@ -147,7 +124,7 @@ export const OrganizerRealStats: React.FC = () => {
           return {
             ...config,
             fileCount,
-            lastUpdate: fileCount > 0 ? lastUpdate : 'Нет файлов'
+            lastUpdate
           };
         });
 
@@ -155,7 +132,7 @@ export const OrganizerRealStats: React.FC = () => {
         setStats(results);
         setTotalFiles(results.reduce((sum, dept) => sum + dept.fileCount, 0));
       } catch (error) {
-        console.error('Ошибка при загрузке статистики:', error);
+        console.error('Error loading statistics:', error);
         // Set default values in case of error
         setStats(departmentConfig.map(config => ({
           ...config,
