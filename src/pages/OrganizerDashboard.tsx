@@ -6,22 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Shield, 
   Eye, 
-  Calendar,
-  FileText,
-  Users,
-  BarChart3,
-  ArrowLeftRight,
   Building2,
   Cog,
   Truck,
   TrendingUp,
-  Phone,
-  Download,
-  Search,
-  Filter
+  Phone
 } from 'lucide-react';
 import { CategoryFileSection } from '@/components/CategoryFileSection';
-import { OrganizerStats } from '@/components/OrganizerStats';
+import { OrganizerRealStats } from '@/components/OrganizerRealStats';
 import { OrganizerViewBanner } from '@/components/OrganizerViewBanner';
 import { OrganizerSearchPanel } from '@/components/OrganizerSearchPanel';
 import { OrganizerBreadcrumbs } from '@/components/OrganizerBreadcrumbs';
@@ -33,14 +25,6 @@ const OrganizerDashboard = () => {
   const [activeSection, setActiveSection] = useState<OrganizerSection>('organizers');
   const [organizerName, setOrganizerName] = useState('STUWA Organizer');
   const { toast } = useToast();
-
-  const organizerCategories = [
-    { id: 'event-plans', title: 'Планы мероприятий', icon: Calendar },
-    { id: 'documentation', title: 'Документооборот', icon: FileText },
-    { id: 'coordination', title: 'Координация отделов', icon: Users },
-    { id: 'reports', title: 'Отчеты по организации', icon: BarChart3 },
-    { id: 'interdepartment', title: 'Межотдельский обмен', icon: ArrowLeftRight }
-  ];
 
   const departmentSections = [
     { 
@@ -84,7 +68,6 @@ const OrganizerDashboard = () => {
 
   const logOrganizerActivity = async (actionType: string, department: string, category?: string, fileName?: string) => {
     try {
-      // В реальном приложении здесь будет вызов API для логирования
       console.log('Organizer activity:', { actionType, department, category, fileName });
     } catch (error) {
       console.error('Failed to log organizer activity:', error);
@@ -122,73 +105,10 @@ const OrganizerDashboard = () => {
   const renderOrganizerSection = () => (
     <div className="space-y-6">
       {/* Статистика и дашборд */}
-      <OrganizerStats />
+      <OrganizerRealStats />
 
       {/* Панель поиска */}
       <OrganizerSearchPanel />
-
-      {/* Быстрый доступ к отделам */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Быстрый доступ к отделам</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {departmentSections.map((section) => {
-            const IconComponent = section.icon;
-            return (
-              <Card 
-                key={section.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => setActiveSection(section.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`p-2 rounded-lg ${section.color}`}>
-                      <IconComponent className="w-5 h-5" />
-                    </div>
-                    <Badge variant="outline" className="gap-1">
-                      <Eye className="w-3 h-3" />
-                      Просмотр
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-medium">{section.title}</h4>
-                    <p className="text-sm text-muted-foreground">{section.subtitle}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Собственные категории организаторов */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Категории организаторов</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {organizerCategories.map((category) => {
-            const IconComponent = category.icon;
-            return (
-              <Card key={category.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-3 text-lg">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <IconComponent className="w-5 h-5 text-primary" />
-                    </div>
-                    {category.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CategoryFileSection
-                    categoryId={category.id}
-                    categoryTitle={category.title}
-                    department="organizers"
-                    isOrganizerView={false}
-                  />
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 
@@ -244,28 +164,13 @@ const OrganizerDashboard = () => {
         {/* Категории отдела */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {categories.map((category) => (
-            <Card key={category.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                    {category.title}
-                  </span>
-                  <Badge variant="outline" className="gap-1">
-                    <Eye className="w-3 h-3" />
-                    Просмотр
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CategoryFileSection
-                  categoryId={category.id}
-                  categoryTitle={category.title}
-                  department={activeSection}
-                  isOrganizerView={true}
-                />
-              </CardContent>
-            </Card>
+            <CategoryFileSection
+              key={category.id}
+              categoryId={category.id}
+              categoryTitle={category.title}
+              department={activeSection}
+              isOrganizerView={true}
+            />
           ))}
         </div>
       </div>
@@ -348,27 +253,6 @@ const OrganizerDashboard = () => {
                     </Button>
                   );
                 })}
-              </CardContent>
-            </Card>
-
-            {/* Статистика активности */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Сегодняшняя активность</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Просмотров</span>
-                  <Badge variant="outline">12</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Скачиваний</span>
-                  <Badge variant="outline">7</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Разделов посещено</span>
-                  <Badge variant="outline">4</Badge>
-                </div>
               </CardContent>
             </Card>
           </div>
