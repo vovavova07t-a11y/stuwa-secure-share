@@ -24,6 +24,12 @@ interface DepartmentStats {
   color: string;
 }
 
+interface FileRow {
+  id: string;
+  uploaded_at: string | null;
+  created_at: string | null;
+}
+
 export const OrganizerRealStats: React.FC = () => {
   const [stats, setStats] = useState<DepartmentStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,13 +96,13 @@ export const OrganizerRealStats: React.FC = () => {
           let lastUpdate = 'Нет файлов';
           
           if (data && data.length > 0) {
-            const sortedFiles = data.sort((a, b) => {
-              const dateA = new Date(a.uploaded_at || a.created_at).getTime();
-              const dateB = new Date(b.uploaded_at || b.created_at).getTime();
+            const sortedFiles = [...data].sort((a: FileRow, b: FileRow) => {
+              const dateA = new Date(a.uploaded_at || a.created_at || '').getTime();
+              const dateB = new Date(b.uploaded_at || b.created_at || '').getTime();
               return dateB - dateA;
             });
             
-            const lastFileDate = new Date(sortedFiles[0].uploaded_at || sortedFiles[0].created_at);
+            const lastFileDate = new Date(sortedFiles[0].uploaded_at || sortedFiles[0].created_at || '');
             const now = new Date();
             const diffTime = Math.abs(now.getTime() - lastFileDate.getTime());
             const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
@@ -170,7 +176,7 @@ export const OrganizerRealStats: React.FC = () => {
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-orange-600">
-                {Math.round((stats.filter(s => s.fileCount > 0).length / stats.length) * 100)}%
+                {stats.length > 0 ? Math.round((stats.filter(s => s.fileCount > 0).length / stats.length) * 100) : 0}%
               </div>
               <div className="text-sm text-muted-foreground">Заполненность</div>
             </div>
