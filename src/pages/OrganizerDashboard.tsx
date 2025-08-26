@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ import {
   FileText,
   Users,
   BarChart3,
-  Exchange,
+  ArrowLeftRight,
   Building2,
   Cog,
   Truck,
@@ -35,7 +34,7 @@ const OrganizerDashboard = () => {
     { id: 'documentation', title: 'Документооборот', icon: FileText },
     { id: 'coordination', title: 'Координация отделов', icon: Users },
     { id: 'reports', title: 'Отчеты по организации', icon: BarChart3 },
-    { id: 'interdepartment', title: 'Межотдельский обмен', icon: Exchange }
+    { id: 'interdepartment', title: 'Межотдельский обмен', icon: ArrowLeftRight }
   ];
 
   const departmentSections = [
