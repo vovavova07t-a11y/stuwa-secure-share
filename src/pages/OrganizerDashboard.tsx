@@ -94,6 +94,7 @@ const OrganizerDashboard = () => {
       if (currentDept) {
         items.push({
           label: currentDept.title,
+          onClick: undefined, // Make onClick optional for active items
           isActive: true
         });
       }
