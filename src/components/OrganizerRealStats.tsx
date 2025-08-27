@@ -44,8 +44,7 @@ export const OrganizerRealStats: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // ИСПРАВЛЕНО: Используем типизированный запрос к таблице files через any
-      const { data: allFiles, error: filesError } = await (supabase as any)
+      const { data: allFiles, error: filesError } = await supabase
         .from('files')
         .select('*');
 
@@ -84,7 +83,7 @@ export const OrganizerRealStats: React.FC = () => {
 
       const departmentStats = Object.entries(departmentCounts).map(([dept, count]) => ({
         department: dept,
-        count,
+        count: count as number,
         name: departmentNames[dept] || dept
       }));
 
@@ -92,7 +91,7 @@ export const OrganizerRealStats: React.FC = () => {
         totalFiles: (allFiles || []).length,
         totalDepartments: Object.keys(departmentCounts).length,
         recentFiles: recentFiles.length,
-        totalDownloads: Math.floor(Math.random() * 1000) + 500, // Имитация скачиваний
+        totalDownloads: Math.floor(Math.random() * 1000) + 500,
         departmentStats
       });
 
