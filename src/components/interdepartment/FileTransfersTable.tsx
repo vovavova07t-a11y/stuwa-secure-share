@@ -19,8 +19,6 @@ import {
   Building2,
   ArrowRight,
   RefreshCw,
-  X,
-  Check,
   Trash2
 } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
@@ -38,48 +36,34 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { toast } = useToast();
   
-  // ИСПРАВЛЕННАЯ ЛОГИКА - ПРАВИЛЬНАЯ ИЗОЛЯЦИЯ ФАЙЛОВ ПО ОТДЕЛАМ
-  const incomingFiles = getIncomingTransfers(); // Только файлы присланные В данный отдел
-  const outgoingFiles = getOutgoingTransfers(); // Только файлы отправленные ИЗ данного отдела
+  const incomingFiles = getIncomingTransfers();
+  const outgoingFiles = getOutgoingTransfers();
 
-  console.log(`📋 ИСПРАВЛЕННАЯ логика для отдела ${department}:`, {
-    входящие_файлы: incomingFiles.length,
-    отправленные_файлы: outgoingFiles.length,
-    всего_в_системе: transfers.length
+  console.log(`📋 Файлы для отдела ${department}:`, {
+    входящие: incomingFiles.length,
+    исходящие: outgoingFiles.length,
+    всего: transfers.length
   });
-
-  // ИСПРАВЛЕННЫЕ ДАННЫЕ ДЛЯ ДЕБАГА
-  console.log('📥 ВХОДЯЩИЕ файлы (присланные В этот отдел):', incomingFiles.map(f => ({
-    файл: f.file_name,
-    от: f.sender_department,
-    к: f.receiver_department,
-    статус: f.status
-  })));
-  
-  console.log('📤 ОТПРАВЛЕННЫЕ файлы (отправленные ИЗ этого отдела):', outgoingFiles.map(f => ({
-    файл: f.file_name,
-    от: f.sender_department,
-    к: f.receiver_department,
-    статус: f.status
-  })));
 
   // ИСПРАВЛЕННАЯ ФУНКЦИЯ - ОТМЕТИТЬ КАК ПРОСМОТРЕННЫЙ
   const handleMarkAsViewed = async (transfer: any, checked: boolean) => {
     try {
-      console.log('✅ Отмечаем документ как просмотренный:', transfer.file_name, 'checked:', checked);
+      console.log(`✅ Изменение статуса файла ${transfer.file_name}:`, {
+        текущий_статус: transfer.status,
+        новый_статус: checked ? 'viewed' : 'sent',
+        файл_id: transfer.id
+      });
       
-      const newStatus = checked ? 'viewed' : 'delivered';
+      const newStatus = checked ? 'viewed' : 'sent';
       await updateTransferStatus(transfer.id, newStatus);
       
       toast({
-        title: checked ? 'Документ отмечен' : 'Отметка снята',
-        description: checked 
-          ? `Документ "${transfer.file_name}" отмечен как просмотренный`
-          : `С документа "${transfer.file_name}" снята отметка о просмотре`
+        title: checked ? 'Документ отмечен как просмотренный' : 'Отметка о просмотре снята',
+        description: `Статус документа "${transfer.file_name}" изменен`
       });
       
     } catch (error) {
-      console.error('❌ Ошибка при отметке документа:', error);
+      console.error('❌ Ошибка при изменении статуса документа:', error);
       toast({
         title: 'Ошибка',
         description: 'Не удалось изменить статус документа',
@@ -88,16 +72,30 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     }
   };
 
-  // НОВАЯ ФУНКЦИЯ - УДАЛЕНИЕ ДОКУМЕНТА
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ - УДАЛЕНИЕ ДОКУМЕНТА
   const handleDeleteTransfer = async (transfer: any) => {
-    if (!confirm(`Вы уверены, что хотите удалить документ "${transfer.file_name}"? Это действие нельзя отменить.`)) {
+    const confirmMessage = `Вы уверены, что хотите удалить документ "${transfer.file_name}"? Это действие нельзя отменить.`;
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
+      console.log(`🗑️ Удаление документа: ${transfer.file_name} (ID: ${transfer.id})`);
       await deleteTransfer(transfer.id);
+      
+      toast({
+        title: 'Документ удален',
+        description: `Документ "${transfer.file_name}" успешно удален`
+      });
+      
     } catch (error) {
       console.error('❌ Ошибка при удалении документа:', error);
+      toast({
+        title: 'Ошибка удаления',
+        description: 'Не удалось удалить документ',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -157,19 +155,16 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     return names[dept] || dept;
   };
 
-  // УЛУЧШЕННАЯ ФУНКЦИЯ ПРОСМОТРА ФАЙЛОВ
   const handleQuickView = (transfer: any) => {
-    console.log('🚀 Открытие файла в улучшенном просмотрщике:', transfer.file_name);
-    
+    console.log('🚀 Открытие файла в просмотрщике:', transfer.file_name);
     setSelectedFile(transfer);
     setIsViewerOpen(true);
     
-    // Автоматически обновляем статус на просмотренный для входящих файлов
     if (transfer.receiver_department === department && 
         (transfer.status === 'sent' || transfer.status === 'delivered')) {
       setTimeout(() => {
         updateTransferStatus(transfer.id, 'viewed');
-      }, 2000); // Через 2 секунды просмотра помечаем как просмотренный
+      }, 2000);
     }
   };
 
@@ -210,7 +205,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
   };
 
   const handleRefresh = () => {
-    console.log('🔄 Принудительное обновление списка файлов...');
+    console.log('🔄 Обновление списка файлов...');
     loadTransfers();
   };
 
@@ -218,7 +213,6 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     <div key={transfer.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1">
-          {/* УЛУЧШЕННАЯ КНОПКА ГАЛОЧКИ - только для входящих файлов */}
           {isIncoming && (
             <div className="flex flex-col items-center gap-1">
               <Checkbox
@@ -281,7 +275,6 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
               <Download className="w-3 h-3" />
             </Button>
 
-            {/* КНОПКА УДАЛЕНИЯ - только для отправленных файлов */}
             {!isIncoming && (
               <Button
                 size="sm"
@@ -346,10 +339,9 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
             <TabsContent value="incoming" className="mt-4">
               {incomingFiles.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="text-sm text-gray-600 mb-3 flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-600" />
+                  <div className="text-sm text-gray-600 mb-3">
                     📥 Файлы, полученные отделом "{getDepartmentName(department)}" от других отделов.
-                    <span className="text-xs text-gray-500">Отметьте галочкой просмотренные документы</span>
+                    <span className="block text-xs text-gray-500 mt-1">Отметьте галочкой просмотренные документы</span>
                   </div>
                   {incomingFiles.map(transfer => renderTransferRow(transfer, true))}
                 </div>
@@ -367,10 +359,9 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
             <TabsContent value="outgoing" className="mt-4">
               {outgoingFiles.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="text-sm text-gray-600 mb-3 flex items-center gap-2">
-                    <Trash2 className="w-4 h-4 text-red-600" />
+                  <div className="text-sm text-gray-600 mb-3">
                     📤 Файлы, отправленные отделом "{getDepartmentName(department)}" в другие отделы.
-                    <span className="text-xs text-gray-500">Нажмите на корзину для удаления документа</span>
+                    <span className="block text-xs text-gray-500 mt-1">Нажмите на корзину для удаления документа</span>
                   </div>
                   {outgoingFiles.map(transfer => renderTransferRow(transfer, false))}
                 </div>
@@ -388,7 +379,6 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
         </CardContent>
       </Card>
 
-      {/* УЛУЧШЕННЫЙ ПРОСМОТРЩИК ФАЙЛОВ */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
           <DialogHeader className="sr-only">
