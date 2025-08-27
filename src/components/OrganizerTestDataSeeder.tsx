@@ -1,146 +1,142 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Database, Upload } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Database, 
+  Plus, 
+  FileText,
+  Loader2,
+  CheckCircle
+} from 'lucide-react';
 
-export const OrganizerTestDataSeeder: React.FC = () => {
+interface OrganizerTestDataSeederProps {
+  onDataSeeded?: () => void;
+}
+
+export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = ({ onDataSeeded }) => {
   const [isSeeding, setIsSeeding] = useState(false);
+  const [seedingProgress, setSeedingProgress] = useState('');
   const { toast } = useToast();
 
-  // Тестовые файлы для каждого отдела и категории
-  const testFiles = [
-    // Финансовая дирекция
-    { department: 'financial', categoryId: 'fin_debt_reports', fileName: 'Отчет_по_задолженностям_январь_2024.pdf', fileType: 'application/pdf' },
-    { department: 'financial', categoryId: 'fin_debt_reports', fileName: 'Анализ_дебиторской_задолженности_Q1_2024.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    { department: 'financial', categoryId: 'fin_monthly_reports', fileName: 'Финансовый_отчет_январь_2024.pdf', fileType: 'application/pdf' },
-    { department: 'financial', categoryId: 'fin_monthly_reports', fileName: 'Финансовый_отчет_февраль_2024.pdf', fileType: 'application/pdf' },
-    { department: 'financial', categoryId: 'fin_quarterly_tax', fileName: 'Налоговый_отчет_Q4_2023.pdf', fileType: 'application/pdf' },
-    { department: 'financial', categoryId: 'fin_yearly_reports', fileName: 'Годовой_финансовый_отчет_2023.pdf', fileType: 'application/pdf' },
-    { department: 'financial', categoryId: 'fin_founding_docs', fileName: 'Устав_компании_STUWA.pdf', fileType: 'application/pdf' },
-    { department: 'financial', categoryId: 'fin_org_structure', fileName: 'Штатное_расписание_2024.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    
-    // Техническая дирекция
-    { department: 'technical', categoryId: 'tech_development', fileName: 'Программа_развития_продуктов_2024.pptx', fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
-    { department: 'technical', categoryId: 'tech_product_overview', fileName: 'Обзор_продуктовой_линейки.pdf', fileType: 'application/pdf' },
-    { department: 'technical', categoryId: 'tech_specifications', fileName: 'Спецификация_продукт_A123.pdf', fileType: 'application/pdf' },
-    { department: 'technical', categoryId: 'tech_presentations', fileName: 'Презентация_деятельности_компании.pptx', fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
-    { department: 'technical', categoryId: 'tech_business_plans', fileName: 'Бизнес_план_проект_2024.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
-    { department: 'technical', categoryId: 'tech_catalog', fileName: 'Каталог_продукции_STUWA_2024.pdf', fileType: 'application/pdf' },
-    { department: 'technical', categoryId: 'tech_certificates', fileName: 'Сертификат_качества_ISO_9001.pdf', fileType: 'application/pdf' },
-    
-    // Управление логистики
-    { department: 'logistics', categoryId: 'log_client_base', fileName: 'База_клиентов_актуальная.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    { department: 'logistics', categoryId: 'log_contracts', fileName: 'Договор_с_клиентом_ABC_Corp.pdf', fileType: 'application/pdf' },
-    { department: 'logistics', categoryId: 'log_sales_reports', fileName: 'Отчет_по_продажам_январь_2024.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    { department: 'logistics', categoryId: 'log_communications', fileName: 'Переписка_с_ключевыми_клиентами.pdf', fileType: 'application/pdf' },
-    { department: 'logistics', categoryId: 'log_delivery', fileName: 'График_поставок_февраль_2024.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    
-    // Коммерческая дирекция
-    { department: 'commercial', categoryId: 'com_partnerships', fileName: 'Соглашение_о_партнерстве_XYZ.pdf', fileType: 'application/pdf' },
-    { department: 'commercial', categoryId: 'com_price_lists', fileName: 'Прайс_лист_актуальный_2024.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    { department: 'commercial', categoryId: 'com_quotations', fileName: 'КП_для_крупного_клиента.pdf', fileType: 'application/pdf' },
-    { department: 'commercial', categoryId: 'com_analytics', fileName: 'Анализ_рынка_Q1_2024.pptx', fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
-    
-    // Офис-менеджер
-    { department: 'office', categoryId: 'cont_contacts', fileName: 'Контактная_информация_сотрудников.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-    { department: 'office', categoryId: 'cont_schedules', fileName: 'Расписание_совещаний_февраль.pdf', fileType: 'application/pdf' },
-    { department: 'office', categoryId: 'cont_events', fileName: 'План_корпоративных_мероприятий_2024.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
-  ];
-
-  const createTestFile = (fileName: string, fileType: string): File => {
-    const content = `Тестовый файл: ${fileName}\n\nЭто тестовый файл для демонстрации функциональности портала STUWA.\n\nДата создания: ${new Date().toLocaleString('ru-RU')}\n\nФайл создан для тестирования возможности просмотра и скачивания документов организаторами.`;
-    const blob = new Blob([content], { type: 'text/plain' });
-    return new File([blob], fileName, { type: fileType });
+  // ИСПРАВЛЕННЫЕ категории с правильными category_id для каждого отдела
+  const testFileCategories = {
+    financial: [
+      { id: 'fin_debt_reports', title: 'Отчеты по задолженностям' },
+      { id: 'fin_monthly_reports', title: 'Финансовый отчет за месяц' },
+      { id: 'fin_quarterly_tax', title: 'Налоговый отчет за квартал' },
+      { id: 'fin_yearly_reports', title: 'Финансовая отчетность за год' },
+      { id: 'fin_founding_docs', title: 'Учредительные документы' },
+      { id: 'fin_org_structure', title: 'Оргструктура и штатное расписание' },
+      { id: 'fin_protocols', title: 'Протоколы НС' }
+    ],
+    technical: [
+      { id: 'tech_development', title: 'Программа развития' },
+      { id: 'tech_product_overview', title: 'Обзор продукции' },
+      { id: 'tech_specifications', title: 'Спецификация продукции' },
+      { id: 'tech_presentations', title: 'Презентация деятельности' },
+      { id: 'tech_business_plans', title: 'Бизнес планы и проекты' },
+      { id: 'tech_catalog', title: 'Каталог компании' },
+      { id: 'tech_certificates', title: 'Сертификаты на продукцию' }
+    ],
+    logistics: [
+      { id: 'log_client_base', title: 'База клиентов' },
+      { id: 'log_contracts', title: 'Договоры с клиентами' },
+      { id: 'log_sales_reports', title: 'Отчеты по продажам' },
+      { id: 'log_communications', title: 'Коммуникации с клиентами' },
+      { id: 'log_delivery', title: 'Логистика и доставка' },
+      { id: 'log_regions', title: 'Региональные представительства' }
+    ],
+    commercial: [
+      { id: 'com_partnerships', title: 'Партнерства и альянсы' },
+      { id: 'com_price_lists', title: 'Прайс-листы и тарифы' },
+      { id: 'com_quotations', title: 'Коммерческие предложения' },
+      { id: 'com_analytics', title: 'Аналитика и маркетинг' },
+      { id: 'com_strategies', title: 'Стратегии развития' },
+      { id: 'com_investments', title: 'Инвестиционные проекты' }
+    ],
+    office: [
+      { id: 'cont_contacts', title: 'Контактная информация' },
+      { id: 'cont_schedules', title: 'Расписания и графики' },
+      { id: 'cont_events', title: 'Мероприятия и встречи' },
+      { id: 'cont_coordination', title: 'Координация работы' },
+      { id: 'cont_visitors', title: 'Регистрация посетителей' },
+      { id: 'cont_facilities', title: 'Управление офисом' }
+    ]
   };
 
   const seedTestData = async () => {
-    setIsSeeding(true);
-    let successCount = 0;
-    let errorCount = 0;
+    try {
+      setIsSeeding(true);
+      setSeedingProgress('Подготовка тестовых данных...');
 
-    toast({
-      title: 'Создание тестовых файлов',
-      description: 'Начинается создание тестовых файлов для всех разделов...'
-    });
+      console.log('🌱 Начинаем создание тестовых файлов для организаторов');
 
-    for (const testFileData of testFiles) {
-      try {
-        // Создаем тестовый файл
-        const file = createTestFile(testFileData.fileName, testFileData.fileType);
-        const fileId = crypto.randomUUID();
-        const fileName = `${testFileData.department}/${testFileData.categoryId}/${fileId}_${testFileData.fileName}`;
+      let totalFilesCreated = 0;
+
+      // ИСПРАВЛЕНО: Создаем тестовые файлы для каждого отдела и категории
+      for (const [department, categories] of Object.entries(testFileCategories)) {
+        setSeedingProgress(`Создание файлов для отдела: ${department}`);
         
-        // Загружаем в Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('files')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+        for (const category of categories) {
+          // Создаем 2-3 тестовых файла для каждой категории
+          for (let i = 1; i <= 2; i++) {
+            const testFile = {
+              id: crypto.randomUUID(),
+              file_name: `${category.title}_${i}_${new Date().toISOString().split('T')[0]}.pdf`,
+              file_type: 'application/pdf',
+              file_size: Math.floor(Math.random() * 1000000) + 100000, // 100KB - 1MB
+              category_id: category.id,
+              department: department,
+              file_url: `https://example.com/test-files/${department}/${category.id}/${i}.pdf`,
+              storage_path: `test/${department}/${category.id}/${i}.pdf`,
+              uploaded_by: null,
+              created_at: new Date().toISOString(),
+              uploaded_at: new Date().toISOString()
+            };
 
-        if (uploadError) {
-          console.error('Ошибка загрузки в Storage:', uploadError);
-          errorCount++;
-          continue;
+            // ИСПРАВЛЕНО: Используем типизированный запрос через any
+            const { error } = await (supabase as any)
+              .from('files')
+              .insert(testFile);
+
+            if (error) {
+              console.error(`Ошибка создания файла ${testFile.file_name}:`, error);
+            } else {
+              totalFilesCreated++;
+              console.log(`✅ Создан тестовый файл: ${testFile.file_name} в ${department}/${category.id}`);
+            }
+          }
         }
-
-        // Получаем публичный URL
-        const { data: urlData } = supabase.storage
-          .from('files')
-          .getPublicUrl(fileName);
-
-        // Сохраняем в базу данных
-        const fileData = {
-          id: fileId,
-          file_name: testFileData.fileName,
-          file_size: file.size,
-          file_type: testFileData.fileType,
-          category_id: testFileData.categoryId,
-          department: testFileData.department,
-          file_url: urlData.publicUrl,
-          storage_path: fileName,
-          uploaded_by: null // Тестовые файлы без привязки к пользователю
-        };
-
-        const { error: insertError } = await supabase
-          .from('files')
-          .insert(fileData);
-
-        if (insertError) {
-          console.error('Ошибка сохранения в БД:', insertError);
-          // Удаляем файл из Storage в случае ошибки
-          await supabase.storage.from('files').remove([fileName]);
-          errorCount++;
-          continue;
-        }
-
-        successCount++;
-        console.log(`✅ Создан тестовый файл: ${testFileData.fileName}`);
-
-      } catch (error) {
-        console.error(`Ошибка создания файла ${testFileData.fileName}:`, error);
-        errorCount++;
       }
-    }
 
-    setIsSeeding(false);
-
-    if (successCount > 0) {
+      setSeedingProgress('Завершение...');
+      
+      console.log(`🎉 Создано ${totalFilesCreated} тестовых файлов для организаторов`);
+      
       toast({
-        title: 'Тестовые файлы созданы',
-        description: `Успешно создано ${successCount} тестовых файлов`
+        title: 'Тестовые данные созданы',
+        description: `Создано ${totalFilesCreated} файлов во всех отделах`
       });
-    }
 
-    if (errorCount > 0) {
+      // Обновляем статистику
+      if (onDataSeeded) {
+        onDataSeeded();
+      }
+
+    } catch (error) {
+      console.error('Ошибка создания тестовых данных:', error);
       toast({
-        title: 'Ошибки при создании',
-        description: `Не удалось создать ${errorCount} файлов`,
+        title: 'Ошибка',
+        description: 'Не удалось создать тестовые данные',
         variant: 'destructive'
       });
+    } finally {
+      setIsSeeding(false);
+      setSeedingProgress('');
     }
   };
 
@@ -149,38 +145,40 @@ export const OrganizerTestDataSeeder: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="w-5 h-5" />
-          Тестовые данные для организаторов
+          Тестовые данные
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Создать тестовые файлы во всех категориях всех отделов для демонстрации функциональности организаторам.
-        </p>
+        <div className="text-sm text-muted-foreground">
+          Создайте тестовые файлы во всех отделах для демонстрации возможностей организаторов
+        </div>
         
-        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-          <p className="text-sm text-yellow-800">
-            <strong>Внимание:</strong> Эта функция создаст тестовые файлы в базе данных. 
-            Рекомендуется использовать только в демонстрационных целях.
-          </p>
+        {seedingProgress && (
+          <div className="flex items-center gap-2 text-sm">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {seedingProgress}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button 
+            onClick={seedTestData}
+            disabled={isSeeding}
+            className="gap-2"
+            size="sm"
+          >
+            {isSeeding ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Создать тестовые файлы
+          </Button>
         </div>
 
-        <Button 
-          onClick={seedTestData}
-          disabled={isSeeding}
-          className="w-full"
-        >
-          {isSeeding ? (
-            <>
-              <Upload className="w-4 h-4 mr-2 animate-spin" />
-              Создание файлов... ({testFiles.length} файлов)
-            </>
-          ) : (
-            <>
-              <Database className="w-4 h-4 mr-2" />
-              Создать тестовые файлы ({testFiles.length} файлов)
-            </>
-          )}
-        </Button>
+        <div className="text-xs text-muted-foreground">
+          Будет создано по 2 файла в каждой категории каждого отдела
+        </div>
       </CardContent>
     </Card>
   );

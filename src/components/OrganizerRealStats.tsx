@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,8 +44,8 @@ export const OrganizerRealStats: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Получаем все файлы
-      const { data: allFiles, error: filesError } = await supabase
+      // ИСПРАВЛЕНО: Используем типизированный запрос к таблице files через any
+      const { data: allFiles, error: filesError } = await (supabase as any)
         .from('files')
         .select('*');
 
@@ -55,18 +54,23 @@ export const OrganizerRealStats: React.FC = () => {
         return;
       }
 
+      console.log('📁 Загружено файлов для статистики организаторов:', allFiles?.length || 0);
+      console.log('📋 Файлы по отделам:', allFiles?.map((f: any) => `${f.department}/${f.category_id}`) || []);
+
       // Получаем файлы за последние 7 дней
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const recentFiles = (allFiles || []).filter(file => {
+      const recentFiles = (allFiles || []).filter((file: any) => {
         const fileDate = new Date(file.created_at || file.uploaded_at || '');
         return fileDate > weekAgo;
       });
 
       // Подсчитываем статистику по отделам
-      const departmentCounts = (allFiles || []).reduce((acc: Record<string, number>, file) => {
-        acc[file.department] = (acc[file.department] || 0) + 1;
+      const departmentCounts = (allFiles || []).reduce((acc: Record<string, number>, file: any) => {
+        if (file.department) {
+          acc[file.department] = (acc[file.department] || 0) + 1;
+        }
         return acc;
       }, {});
 
@@ -210,7 +214,7 @@ export const OrganizerRealStats: React.FC = () => {
         </Card>
 
         {/* Компонент для создания тестовых данных */}
-        <OrganizerTestDataSeeder />
+        <OrganizerTestDataSeeder onDataSeeded={loadRealStats} />
       </div>
 
       {/* Информационная карточка */}

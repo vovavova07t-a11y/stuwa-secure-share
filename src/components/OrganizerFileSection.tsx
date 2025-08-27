@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileCard } from './FileCard';
-import { useSupabaseFiles } from '@/hooks/useSupabaseFiles';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Search,
   SortAsc,
@@ -13,7 +13,8 @@ import {
   Download,
   Eye,
   Grid3X3,
-  List
+  List,
+  Loader2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -42,12 +43,49 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [files, setFiles] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // ИСПРАВЛЕНО: Используем реальные файлы из базы данных по department и categoryId
-  const { files, isLoading, loadFiles } = useSupabaseFiles(department, categoryId);
+  // ИСПРАВЛЕНО: Загружаем реальные файлы из базы данных
+  React.useEffect(() => {
+    loadRealFiles();
+  }, [department, categoryId]);
 
-  console.log(`📋 OrganizerFileSection: Загружены файлы для отдела ${department}, категория ${categoryId}:`, files);
+  const loadRealFiles = async () => {
+    try {
+      setIsLoading(true);
+      console.log(`🔄 Организатор загружает файлы для отдела: ${department}, категории: ${categoryId}`);
+      
+      // ИСПРАВЛЕНО: Используем типизированный запрос к таблице files
+      const { data, error } = await (supabase as any)
+        .from('files')
+        .select('*')
+        .eq('department', department)
+        .eq('category_id', categoryId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Ошибка загрузки файлов из Supabase:', error);
+        throw error;
+      }
+
+      console.log(`📁 Организатор загрузил ${data?.length || 0} файлов из категории ${categoryId}`);
+      console.log('📋 Файлы:', data?.map((f: any) => f.file_name) || []);
+      
+      setFiles(data || []);
+    } catch (error) {
+      console.error('Ошибка при загрузке файлов:', error);
+      setFiles([]);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить файлы',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Фильтрация и сортировка файлов
   const filteredAndSortedFiles = React.useMemo(() => {
@@ -60,7 +98,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         case 'name':
           return a.file_name.localeCompare(b.file_name);
         case 'date':
-          return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
+          return new Date(b.uploaded_at || b.created_at).getTime() - new Date(a.uploaded_at || a.created_at).getTime();
         case 'size':
           return b.file_size - a.file_size;
         case 'type':
@@ -85,45 +123,8 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         category: categoryId
       });
 
-      // Принудительное скачивание файла
-      const response = await fetch(file.file_url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = file.file_name;
-      link.style.display = 'none';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      window.URL.revokeObjectURL(blobUrl);
-      
-      // Логирование скачивания организатором
-      console.log('✅ Файл успешно скачан организатором:', file.file_name);
-      
-      toast({
-        title: 'Файл скачан',
-        description: `${file.file_name} успешно скачан`
-      });
-      
-    } catch (error) {
-      console.error('❌ Ошибка при скачивании файла организатором:', error);
-      
-      // Fallback: попытка через прямую ссылку
-      try {
+      // Если есть прямая ссылка на файл, используем её
+      if (file.file_url) {
         const link = document.createElement('a');
         link.href = file.file_url;
         link.download = file.file_name;
@@ -133,18 +134,23 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         link.click();
         document.body.removeChild(link);
         
+        console.log('✅ Файл успешно скачан организатором:', file.file_name);
+        
         toast({
           title: 'Файл скачан',
           description: `${file.file_name} открыт для скачивания`
         });
-      } catch (fallbackError) {
-        console.error('❌ Fallback скачивание тоже не сработало:', fallbackError);
-        toast({
-          title: 'Ошибка скачивания',
-          description: 'Не удалось скачать файл',
-          variant: 'destructive'
-        });
+      } else {
+        throw new Error('URL файла не найден');
       }
+      
+    } catch (error) {
+      console.error('❌ Ошибка при скачивании файла организатором:', error);
+      toast({
+        title: 'Ошибка скачивания',
+        description: 'Не удалось скачать файл',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -180,7 +186,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       <Card className="glass-card">
         <CardContent className="p-6">
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         </CardContent>
       </Card>
