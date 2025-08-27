@@ -20,7 +20,8 @@ import {
   ArrowRight,
   RefreshCw,
   X,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -32,7 +33,7 @@ interface FileTransfersTableProps {
 }
 
 export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ department }) => {
-  const { transfers, isLoading, getIncomingTransfers, getOutgoingTransfers, updateTransferStatus, loadTransfers } = useInterdepartmentTransfers(department);
+  const { transfers, isLoading, getIncomingTransfers, getOutgoingTransfers, updateTransferStatus, deleteTransfer, loadTransfers } = useInterdepartmentTransfers(department);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { toast } = useToast();
@@ -84,6 +85,19 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
         description: 'Не удалось изменить статус документа',
         variant: 'destructive'
       });
+    }
+  };
+
+  // НОВАЯ ФУНКЦИЯ - УДАЛЕНИЕ ДОКУМЕНТА
+  const handleDeleteTransfer = async (transfer: any) => {
+    if (!confirm(`Вы уверены, что хотите удалить документ "${transfer.file_name}"? Это действие нельзя отменить.`)) {
+      return;
+    }
+
+    try {
+      await deleteTransfer(transfer.id);
+    } catch (error) {
+      console.error('❌ Ошибка при удалении документа:', error);
     }
   };
 
@@ -266,6 +280,18 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
             >
               <Download className="w-3 h-3" />
             </Button>
+
+            {/* КНОПКА УДАЛЕНИЯ - только для отправленных файлов */}
+            {!isIncoming && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDeleteTransfer(transfer)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -341,8 +367,10 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
             <TabsContent value="outgoing" className="mt-4">
               {outgoingFiles.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="text-sm text-gray-600 mb-3">
-                    📤 Файлы, отправленные отделом "{getDepartmentName(department)}" в другие отделы:
+                  <div className="text-sm text-gray-600 mb-3 flex items-center gap-2">
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                    📤 Файлы, отправленные отделом "{getDepartmentName(department)}" в другие отделы.
+                    <span className="text-xs text-gray-500">Нажмите на корзину для удаления документа</span>
                   </div>
                   {outgoingFiles.map(transfer => renderTransferRow(transfer, false))}
                 </div>

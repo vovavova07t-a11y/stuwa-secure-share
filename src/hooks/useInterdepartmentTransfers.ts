@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -174,7 +175,7 @@ export const useInterdepartmentTransfers = (department: string) => {
         status
       };
 
-      // Добавляем соответствующую временную метку без updated_at
+      // Добавляем соответствующую временную метку
       if (status === 'viewed') {
         updateData.viewed_at = new Date().toISOString();
       } else if (status === 'processed') {
@@ -223,6 +224,42 @@ export const useInterdepartmentTransfers = (department: string) => {
     }
   };
 
+  // НОВАЯ ФУНКЦИЯ: Удаление передачи
+  const deleteTransfer = async (transferId: string) => {
+    try {
+      console.log(`🗑️ Удаление передачи файла ${transferId}`);
+      
+      const { error } = await supabase
+        .from('interdepartment_file_transfers' as any)
+        .delete()
+        .eq('id', transferId);
+
+      if (error) {
+        console.error('❌ Ошибка удаления передачи:', error);
+        throw error;
+      }
+
+      console.log('✅ Передача успешно удалена');
+
+      // Обновляем локальное состояние
+      setTransfers(prev => prev.filter(transfer => transfer.id !== transferId));
+      
+      toast({
+        title: 'Документ удален',
+        description: 'Передача файла успешно удалена'
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Ошибка удаления передачи:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить передачу файла',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   const getStatusLabel = (status: string): string => {
     const statusLabels: Record<string, string> = {
       sent: 'Отправлено',
@@ -254,6 +291,7 @@ export const useInterdepartmentTransfers = (department: string) => {
     loadTransfers,
     createTransfer,
     updateTransferStatus,
+    deleteTransfer, // НОВАЯ ФУНКЦИЯ
     getIncomingTransfers,
     getOutgoingTransfers
   };
