@@ -15,7 +15,8 @@ import {
   MoreVertical,
   Calendar,
   HardDrive,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatFileSize } from '@/utils/fileUtils';
@@ -86,12 +87,58 @@ export const FileCard: React.FC<FileCardProps> = ({
     return extension === 'pdf' || fileType?.includes('pdf');
   };
 
+  const isDocument = (fileName: string, fileType?: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    return ['doc', 'docx', 'xls', 'xlsx', 'txt', 'rtf'].includes(extension || '') || 
+           fileType?.includes('word') || fileType?.includes('sheet') || fileType?.includes('text');
+  };
+
+  // КРИТИЧЕСКИ ИСПРАВЛЕННАЯ ФУНКЦИЯ БЫСТРОГО ОТКРЫТИЯ
+  const handleQuickOpen = async () => {
+    try {
+      console.log('🚀 БЫСТРОЕ открытие файла:', file.file_name);
+      
+      // Для PDF - мгновенное открытие в новой вкладке
+      if (isPDF(file.file_name, file.file_type)) {
+        console.log('📄 Открываем PDF в новой вкладке');
+        window.open(file.file_url, '_blank', 'noopener,noreferrer');
+        onView?.(file);
+        return;
+      }
+
+      // Для изображений - мгновенное открытие в новой вкладке
+      if (isImage(file.file_name, file.file_type)) {
+        console.log('🖼️ Открываем изображение в новой вкладке');
+        window.open(file.file_url, '_blank', 'noopener,noreferrer');
+        onView?.(file);
+        return;
+      }
+
+      // Для документов - показываем в модальном окне или открываем в новой вкладке
+      if (isDocument(file.file_name, file.file_type)) {
+        console.log('📝 Открываем документ в новой вкладке');
+        window.open(file.file_url, '_blank', 'noopener,noreferrer');
+        onView?.(file);
+        return;
+      }
+
+      // Для остальных файлов - показываем превью в модальном окне
+      console.log('👁️ Показываем превью в модальном окне');
+      setIsViewerOpen(true);
+      onView?.(file);
+      
+    } catch (error) {
+      console.error('❌ Ошибка быстрого открытия:', error);
+      // Fallback - всегда пытаемся открыть в новой вкладке
+      window.open(file.file_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   // ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
   const handleDownload = async () => {
     try {
       console.log('⬇️ Скачивание файла:', file.file_name);
       
-      // Получаем файл с правильными заголовками для принудительного скачивания
       const response = await fetch(file.file_url, {
         method: 'GET',
         headers: {
@@ -104,38 +151,25 @@ export const FileCard: React.FC<FileCardProps> = ({
       }
       
       const blob = await response.blob();
-      
-      // Создаем URL для blob
       const blobUrl = window.URL.createObjectURL(blob);
       
-      // Создаем временную ссылку для скачивания
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = file.file_name; // Используем оригинальное имя файла
+      link.download = file.file_name;
       link.style.display = 'none';
       
-      // Добавляем в DOM, кликаем и удаляем
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Освобождаем память
       window.URL.revokeObjectURL(blobUrl);
       
       console.log('✅ Файл успешно скачан:', file.file_name);
       onDownload?.(file);
     } catch (error) {
       console.error('❌ Ошибка при скачивании файла:', error);
-      // Fallback - открываем файл в новой вкладке
       window.open(file.file_url, '_blank', 'noopener,noreferrer');
     }
-  };
-
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОСМОТРА
-  const handleView = () => {
-    console.log('👁️ Открытие файла для просмотра:', file.file_name);
-    setIsViewerOpen(true);
-    onView?.(file);
   };
 
   const handleSendToOtherDepartment = () => {
@@ -168,17 +202,26 @@ export const FileCard: React.FC<FileCardProps> = ({
       );
     }
     
-    // Для других типов файлов показываем информацию и кнопку скачивания
     return (
       <div className="w-full h-[70vh] flex flex-col items-center justify-center bg-gray-50">
         <div className="text-center">
           {getFileIcon(file.file_name, file.file_type)}
           <h3 className="text-lg font-medium mt-4 mb-2">{file.file_name}</h3>
           <p className="text-gray-600 mb-4">Предварительный просмотр недоступен</p>
-          <Button onClick={handleDownload} className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Скачать файл
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleDownload} className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Скачать файл
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => window.open(file.file_url, '_blank')} 
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Открыть в новой вкладке
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -205,7 +248,7 @@ export const FileCard: React.FC<FileCardProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleView}>
+                    <DropdownMenuItem onClick={handleQuickOpen}>
                       <Eye className="w-4 h-4 mr-2" />
                       Открыть
                     </DropdownMenuItem>
@@ -251,7 +294,7 @@ export const FileCard: React.FC<FileCardProps> = ({
                 variant="outline" 
                 size="sm" 
                 className="flex-1 text-xs"
-                onClick={handleView}
+                onClick={handleQuickOpen}
               >
                 <Eye className="w-3 h-3 mr-1" />
                 Открыть

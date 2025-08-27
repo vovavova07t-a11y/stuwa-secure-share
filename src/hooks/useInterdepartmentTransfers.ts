@@ -32,13 +32,15 @@ export const useInterdepartmentTransfers = (department: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ - ТОЛЬКО ФАЙЛЫ ДАННОГО ОТДЕЛА
   const loadTransfers = async () => {
     if (!department) return;
     
     try {
       setIsLoading(true);
-      console.log(`🔄 Загрузка переданных файлов для отдела: ${department}`);
+      console.log(`🔄 Загрузка файлов ТОЛЬКО для отдела: ${department}`);
       
+      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: каждый отдел видит ТОЛЬКО свои файлы
       const { data, error } = await supabase
         .from('interdepartment_file_transfers' as any)
         .select('*')
@@ -50,8 +52,19 @@ export const useInterdepartmentTransfers = (department: string) => {
         throw error;
       }
 
-      console.log(`📁 Загружено ${data?.length || 0} переданных файлов`);
-      setTransfers((data as unknown as InterdepartmentTransfer[]) || []);
+      console.log(`📁 Для отдела ${department} загружено ${data?.length || 0} файлов`);
+      
+      // Фильтруем файлы по типу для правильного отображения
+      const departmentTransfers = (data as unknown as InterdepartmentTransfer[]) || [];
+      
+      // ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ ИЗОЛЯЦИИ ОТДЕЛОВ
+      const incomingFiles = departmentTransfers.filter(t => t.receiver_department === department);
+      const outgoingFiles = departmentTransfers.filter(t => t.sender_department === department);
+      
+      console.log(`📥 Входящие файлы для ${department}:`, incomingFiles.length);
+      console.log(`📤 Отправленные файлы из ${department}:`, outgoingFiles.length);
+      
+      setTransfers(departmentTransfers);
     } catch (error) {
       console.error('Ошибка при загрузке переданных файлов:', error);
       setTransfers([]);
@@ -65,9 +78,23 @@ export const useInterdepartmentTransfers = (department: string) => {
     }
   };
 
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ВХОДЯЩИХ ФАЙЛОВ - ТОЛЬКО ДЛЯ ДАННОГО ОТДЕЛА
+  const getIncomingTransfers = () => {
+    return transfers.filter(transfer => transfer.receiver_department === department);
+  };
+
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ОТПРАВЛЕННЫХ ФАЙЛОВ - ТОЛЬКО ИЗ ДАННОГО ОТДЕЛА  
+  const getOutgoingTransfers = () => {
+    return transfers.filter(transfer => transfer.sender_department === department);
+  };
+
   const createTransfer = async (transferData: Partial<InterdepartmentTransfer>): Promise<InterdepartmentTransfer> => {
     try {
-      console.log('📤 Создание передачи файла:', transferData.file_name);
+      console.log('📤 Создание передачи файла:', {
+        file: transferData.file_name,
+        from: transferData.sender_department,
+        to: transferData.receiver_department
+      });
 
       // Убираем sender_id если он равен "demo-user" или не является валидным UUID
       const cleanTransferData = { ...transferData };
@@ -86,7 +113,7 @@ export const useInterdepartmentTransfers = (department: string) => {
         throw insertError;
       }
 
-      console.log('✅ Передача файла создана:', insertData);
+      console.log('✅ Передача файла создана успешно');
       
       // Добавляем новую передачу в локальное состояние
       const newTransfer = insertData as unknown as InterdepartmentTransfer;
@@ -181,6 +208,8 @@ export const useInterdepartmentTransfers = (department: string) => {
     isLoading,
     loadTransfers,
     createTransfer,
-    updateTransferStatus
+    updateTransferStatus,
+    getIncomingTransfers,
+    getOutgoingTransfers
   };
 };

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Download, Send } from 'lucide-react';
+import { X, Download, Send, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -28,13 +28,18 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   onDelete,
   onSendToOtherDepartment
 }) => {
-  // ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
+  // КРИТИЧЕСКИ ИСПРАВЛЕННАЯ ФУНКЦИЯ БЫСТРОГО ОТКРЫТИЯ
+  const handleQuickOpen = () => {
+    console.log('🚀 БЫСТРОЕ открытие документа в новой вкладке:', doc.file_name);
+    window.open(doc.file_url, '_blank', 'noopener,noreferrer');
+  };
+
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
   const handleDownload = async () => {
     try {
-      console.log('⬇️ DocumentViewer: Принудительное скачивание файла:', doc.file_name);
+      console.log('⬇️ DocumentViewer: Скачивание файла:', doc.file_name);
       
       if (doc.file instanceof File) {
-        // Если есть оригинальный File объект - создаем blob URL
         const url = URL.createObjectURL(doc.file);
         const link = document.createElement('a');
         link.href = url;
@@ -48,7 +53,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         return;
       }
 
-      // Для файлов из Supabase - принудительное скачивание через fetch
       const response = await fetch(doc.file_url, {
         method: 'GET',
         headers: {
@@ -60,31 +64,24 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // Получаем blob данные
       const blob = await response.blob();
-      
-      // Создаем URL для blob
       const blobUrl = window.URL.createObjectURL(blob);
       
-      // Создаем временную ссылку для принудительного скачивания
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = doc.file_name; // Сохраняем оригинальное имя файла
+      link.download = doc.file_name;
       link.style.display = 'none';
       
-      // Добавляем в DOM, кликаем и сразу удаляем
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Освобождаем память
       window.URL.revokeObjectURL(blobUrl);
       console.log('✅ Файл успешно скачан через fetch:', doc.file_name);
       
     } catch (error) {
       console.error('❌ Ошибка при скачивании:', error);
       
-      // Если fetch не сработал, пытаемся через прямую ссылку с download атрибутом
       try {
         const link = document.createElement('a');
         link.href = doc.file_url;
@@ -98,7 +95,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         console.log('✅ Файл скачан через прямую ссылку');
       } catch (fallbackError) {
         console.error('❌ Fallback тоже не сработал:', fallbackError);
-        // В крайнем случае открываем в новой вкладке
         window.open(doc.file_url, '_blank', 'noopener,noreferrer');
       }
     }
@@ -109,6 +105,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       onSendToOtherDepartment(doc);
     }
   };
+
+  const isPDF = doc.file_type === 'application/pdf' || doc.file_name.toLowerCase().endsWith('.pdf');
+  const isImage = doc.file_type?.startsWith('image/') || 
+                  ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(doc.file_name.split('.').pop()?.toLowerCase() || '');
 
   return (
     <Card className="w-full max-w-4xl mx-auto mt-6">
@@ -153,13 +153,13 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
         {/* Встроенный просмотр документа */}
         <div className="border rounded-lg overflow-hidden" style={{ height: '500px' }}>
-          {doc.file_type === 'application/pdf' ? (
+          {isPDF ? (
             <iframe
               src={doc.file_url}
               className="w-full h-full"
               title={doc.title}
             />
-          ) : doc.file_type.startsWith('image/') ? (
+          ) : isImage ? (
             <img
               src={doc.file_url}
               alt={doc.title}
@@ -169,15 +169,25 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             <div className="flex items-center justify-center h-full bg-gray-50">
               <div className="text-center">
                 <div className="text-4xl mb-4">📄</div>
-                <p className="text-gray-600">Предварительный просмотр недоступен</p>
-                <p className="text-sm text-gray-500">Нажмите "Скачать" для сохранения файла</p>
-                <Button 
-                  className="mt-4"
-                  onClick={handleDownload}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Скачать файл
-                </Button>
+                <p className="text-gray-600 mb-4">Предварительный просмотр недоступен</p>
+                <p className="text-sm text-gray-500 mb-4">Выберите действие с файлом:</p>
+                <div className="flex gap-2 justify-center">
+                  <Button 
+                    onClick={handleQuickOpen}
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Открыть в новой вкладке
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={handleDownload}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Скачать файл
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -185,6 +195,15 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
         {/* Действия с документом */}
         <div className="flex gap-2 justify-end">
+          <Button 
+            variant="outline"
+            onClick={handleQuickOpen}
+            className="flex items-center gap-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Открыть в новой вкладке
+          </Button>
+          
           <Button 
             variant="outline" 
             onClick={handleDownload}
