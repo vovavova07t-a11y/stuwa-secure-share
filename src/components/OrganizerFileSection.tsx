@@ -44,7 +44,10 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const { toast } = useToast();
 
+  // ИСПРАВЛЕНО: Используем реальные файлы из базы данных по department и categoryId
   const { files, isLoading, loadFiles } = useSupabaseFiles(department, categoryId);
+
+  console.log(`📋 OrganizerFileSection: Загружены файлы для отдела ${department}, категория ${categoryId}:`, files);
 
   // Фильтрация и сортировка файлов
   const filteredAndSortedFiles = React.useMemo(() => {
@@ -72,45 +75,103 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     return filtered;
   }, [files, searchQuery, sortBy]);
 
-  const logOrganizerDownload = async (file: any) => {
-    try {
-      // Логирование скачивания организатором
-      console.log('Organizer download:', {
-        department,
-        category: categoryId,
-        fileName: file.file_name,
-        fileId: file.id
-      });
-      
-      toast({
-        title: 'Файл скачан',
-        description: `${file.file_name} - действие зарегистрировано`
-      });
-    } catch (error) {
-      console.error('Failed to log organizer download:', error);
-    }
-  };
-
+  // ИСПРАВЛЕНА ФУНКЦИЯ СКАЧИВАНИЯ для организаторов
   const handleFileDownload = async (file: any) => {
     try {
-      // Скачивание файла
+      console.log('🔽 Организатор скачивает файл:', {
+        fileName: file.file_name,
+        fileUrl: file.file_url,
+        department,
+        category: categoryId
+      });
+
+      // Принудительное скачивание файла
+      const response = await fetch(file.file_url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
       const link = document.createElement('a');
-      link.href = file.file_url;
+      link.href = blobUrl;
       link.download = file.file_name;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
+      link.style.display = 'none';
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Логирование для организатора
-      await logOrganizerDownload(file);
-    } catch (error) {
+      window.URL.revokeObjectURL(blobUrl);
+      
+      // Логирование скачивания организатором
+      console.log('✅ Файл успешно скачан организатором:', file.file_name);
+      
       toast({
-        title: 'Ошибка',
-        description: 'Не удалось скачать файл',
+        title: 'Файл скачан',
+        description: `${file.file_name} успешно скачан`
+      });
+      
+    } catch (error) {
+      console.error('❌ Ошибка при скачивании файла организатором:', error);
+      
+      // Fallback: попытка через прямую ссылку
+      try {
+        const link = document.createElement('a');
+        link.href = file.file_url;
+        link.download = file.file_name;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: 'Файл скачан',
+          description: `${file.file_name} открыт для скачивания`
+        });
+      } catch (fallbackError) {
+        console.error('❌ Fallback скачивание тоже не сработало:', fallbackError);
+        toast({
+          title: 'Ошибка скачивания',
+          description: 'Не удалось скачать файл',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
+
+  // Функция для скачивания всех файлов
+  const handleDownloadAll = async () => {
+    if (filteredAndSortedFiles.length === 0) {
+      toast({
+        title: 'Нет файлов',
+        description: 'Нет файлов для скачивания',
         variant: 'destructive'
       });
+      return;
+    }
+
+    toast({
+      title: 'Скачивание файлов',
+      description: `Начинается скачивание ${filteredAndSortedFiles.length} файлов...`
+    });
+
+    for (const file of filteredAndSortedFiles) {
+      try {
+        await handleFileDownload(file);
+        // Небольшая задержка между скачиваниями
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.error(`Ошибка скачивания файла ${file.file_name}:`, error);
+      }
     }
   };
 
@@ -144,6 +205,20 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
               </span>
             )}
           </CardTitle>
+          
+          {files.length > 0 && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadAll}
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Скачать все
+              </Button>
+            </div>
+          )}
         </div>
 
         {files.length > 0 && (
@@ -217,24 +292,22 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
               <div key={file.id} className="relative group">
                 <FileCard
                   file={file}
-                  onSend={isViewOnly ? undefined : undefined}
-                  onDelete={isViewOnly ? undefined : undefined}
+                  onSend={undefined}
+                  onDelete={undefined}
                 />
                 
                 {/* Кнопка скачивания для организаторов */}
-                {isViewOnly && (
-                  <div className="absolute top-2 right-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity gap-1"
-                      onClick={() => handleFileDownload(file)}
-                    >
-                      <Download className="w-3 h-3" />
-                      Скачать
-                    </Button>
-                  </div>
-                )}
+                <div className="absolute top-2 right-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                    onClick={() => handleFileDownload(file)}
+                  >
+                    <Download className="w-3 h-3" />
+                    Скачать
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -243,10 +316,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
             <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Нет документов</h3>
             <p className="text-muted-foreground">
-              {isViewOnly 
-                ? 'В этой категории пока нет документов для просмотра'
-                : 'Нажмите "Загрузить файлы" чтобы добавить файлы в эту категорию'
-              }
+              В этой категории пока нет документов для просмотра
             </p>
           </div>
         ) : (

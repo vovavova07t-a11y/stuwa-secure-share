@@ -94,7 +94,7 @@ const OrganizerDashboard = () => {
       if (currentDept) {
         items.push({
           label: currentDept.title,
-          onClick: undefined, // Make onClick optional for active items
+          onClick: undefined,
           isActive: true
         });
       }
@@ -117,41 +117,55 @@ const OrganizerDashboard = () => {
     const currentDept = departmentSections.find(d => d.id === activeSection);
     if (!currentDept) return null;
 
-    // Категории для каждого отдела
+    // ИСПРАВЛЕНО: Реальные категории для каждого отдела из базы данных
     const departmentCategories = {
       financial: [
-        { id: 'reports', title: 'Финансовые отчеты' },
-        { id: 'budgets', title: 'Бюджеты' },
-        { id: 'contracts', title: 'Договоры' },
-        { id: 'invoices', title: 'Счета' }
+        { id: 'fin_debt_reports', title: 'Отчеты по задолженностям' },
+        { id: 'fin_monthly_reports', title: 'Финансовый отчет за месяц' },
+        { id: 'fin_quarterly_tax', title: 'Налоговый отчет за квартал' },
+        { id: 'fin_yearly_reports', title: 'Финансовая отчетность за год' },
+        { id: 'fin_founding_docs', title: 'Учредительные документы' },
+        { id: 'fin_org_structure', title: 'Оргструктура и штатное расписание' },
+        { id: 'fin_protocols', title: 'Протоколы НС' }
       ],
       technical: [
-        { id: 'specifications', title: 'Спецификации продукции' },
-        { id: 'certificates', title: 'Сертификаты' },
-        { id: 'presentations', title: 'Презентации' },
-        { id: 'catalogs', title: 'Каталоги' }
+        { id: 'tech_development', title: 'Программа развития' },
+        { id: 'tech_product_overview', title: 'Обзор продукции' },
+        { id: 'tech_specifications', title: 'Спецификация продукции' },
+        { id: 'tech_presentations', title: 'Презентация деятельности' },
+        { id: 'tech_business_plans', title: 'Бизнес планы и проекты' },
+        { id: 'tech_catalog', title: 'Каталог компании' },
+        { id: 'tech_certificates', title: 'Сертификаты на продукцию' }
       ],
       logistics: [
-        { id: 'client-base', title: 'База клиентов' },
-        { id: 'contracts', title: 'Договоры' },
-        { id: 'reports', title: 'Отчеты' },
-        { id: 'communications', title: 'Коммуникации' }
+        { id: 'log_client_base', title: 'База клиентов' },
+        { id: 'log_contracts', title: 'Договоры с клиентами' },
+        { id: 'log_sales_reports', title: 'Отчеты по продажам' },
+        { id: 'log_communications', title: 'Коммуникации с клиентами' },
+        { id: 'log_delivery', title: 'Логистика и доставка' },
+        { id: 'log_regions', title: 'Региональные представительства' }
       ],
       commercial: [
-        { id: 'partnerships', title: 'Партнерства' },
-        { id: 'price-lists', title: 'Прайс-листы' },
-        { id: 'quotations', title: 'Коммерческие предложения' },
-        { id: 'analytics', title: 'Аналитика' }
+        { id: 'com_partnerships', title: 'Партнерства и альянсы' },
+        { id: 'com_price_lists', title: 'Прайс-листы и тарифы' },
+        { id: 'com_quotations', title: 'Коммерческие предложения' },
+        { id: 'com_analytics', title: 'Аналитика и маркетинг' },
+        { id: 'com_strategies', title: 'Стратегии развития' },
+        { id: 'com_investments', title: 'Инвестиционные проекты' }
       ],
       contacts: [
-        { id: 'contacts', title: 'Контакты' },
-        { id: 'schedules', title: 'Расписания' },
-        { id: 'events', title: 'Мероприятия' },
-        { id: 'coordination', title: 'Координация' }
+        { id: 'cont_contacts', title: 'Контактная информация' },
+        { id: 'cont_schedules', title: 'Расписания и графики' },
+        { id: 'cont_events', title: 'Мероприятия и встречи' },
+        { id: 'cont_coordination', title: 'Координация работы' },
+        { id: 'cont_visitors', title: 'Регистрация посетителей' },
+        { id: 'cont_facilities', title: 'Управление офисом' }
       ]
     };
 
     const categories = departmentCategories[activeSection as keyof typeof departmentCategories] || [];
+
+    console.log(`📋 OrganizerDashboard: Показ файлов для отдела ${activeSection}, категории:`, categories.map(c => c.id));
 
     return (
       <div className="space-y-6">
@@ -192,7 +206,7 @@ const OrganizerDashboard = () => {
                 <div>
                   <h1 className="text-2xl font-bold">Панель организатора</h1>
                   <p className="text-sm text-muted-foreground">
-                    {organizerName} • Полный доступ к просмотру
+                    {organizerName} • Полный доступ к просмотру всех разделов
                   </p>
                 </div>
               </div>
@@ -219,7 +233,7 @@ const OrganizerDashboard = () => {
           <div className="w-80 space-y-2">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Разделы</CardTitle>
+                <CardTitle className="text-lg">Разделы компании</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1">
                 {/* Собственный раздел организаторов */}
@@ -229,7 +243,7 @@ const OrganizerDashboard = () => {
                   onClick={() => setActiveSection('organizers')}
                 >
                   <Shield className="w-4 h-4" />
-                  Организаторы
+                  Панель организаторов
                 </Button>
 
                 <div className="my-3 border-t" />
