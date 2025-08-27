@@ -16,22 +16,22 @@ interface DocumentViewerProps {
   onClose: () => void;
 }
 
-export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document, onClose }) => {
+export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document: fileDoc, onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  const isPDF = document.file_type === 'application/pdf' || document.file_name.toLowerCase().endsWith('.pdf');
-  const isImage = document.file_type?.startsWith('image/') || 
+  const isPDF = fileDoc.file_type === 'application/pdf' || fileDoc.file_name.toLowerCase().endsWith('.pdf');
+  const isImage = fileDoc.file_type?.startsWith('image/') || 
                   ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(
-                    document.file_name.split('.').pop()?.toLowerCase() || ''
+                    fileDoc.file_name.split('.').pop()?.toLowerCase() || ''
                   );
 
   const handleDownload = async () => {
     try {
-      console.log('⬇️ Скачивание файла:', document.file_name);
+      console.log('⬇️ Скачивание файла:', fileDoc.file_name);
       
-      const response = await fetch(document.file_url);
+      const response = await fetch(fileDoc.file_url);
       if (!response.ok) throw new Error('Ошибка загрузки файла');
       
       const blob = await response.blob();
@@ -39,7 +39,7 @@ export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = document.file_name;
+      link.download = fileDoc.file_name;
       link.style.display = 'none';
       
       document.body.appendChild(link);
@@ -50,12 +50,12 @@ export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document
     } catch (error) {
       console.error('❌ Ошибка скачивания:', error);
       // Fallback - открыть в новой вкладке
-      window.open(document.file_url, '_blank', 'noopener,noreferrer');
+      window.open(fileDoc.file_url, '_blank', 'noopener,noreferrer');
     }
   };
 
   const handleOpenExternal = () => {
-    window.open(document.file_url, '_blank', 'noopener,noreferrer');
+    window.open(fileDoc.file_url, '_blank', 'noopener,noreferrer');
   };
 
   const handleRetry = () => {
@@ -106,9 +106,9 @@ export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document
       
       <iframe
         key={`pdf-${retryCount}`}
-        src={`${document.file_url}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
+        src={`${fileDoc.file_url}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
         className="w-full h-full border-0"
-        title={document.file_name}
+        title={fileDoc.file_name}
         onLoad={() => {
           setIsLoading(false);
           setError(null);
@@ -135,8 +135,8 @@ export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document
       
       <img
         key={`img-${retryCount}`}
-        src={document.file_url}
-        alt={document.file_name}
+        src={fileDoc.file_url}
+        alt={fileDoc.file_name}
         className="max-w-full max-h-full object-contain"
         onLoad={() => {
           setIsLoading(false);
@@ -169,9 +169,9 @@ export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document
     <div className="w-full h-[60vh] flex items-center justify-center bg-gray-50 rounded-lg">
       <div className="text-center max-w-md">
         <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">{document.file_name}</h3>
+        <h3 className="text-lg font-medium mb-2">{fileDoc.file_name}</h3>
         <p className="text-gray-600 mb-4">
-          Предварительный просмотр недоступен для файлов типа {document.file_type}
+          Предварительный просмотр недоступен для файлов типа {fileDoc.file_type}
         </p>
         <div className="flex gap-2 justify-center">
           <Button onClick={handleDownload}>
@@ -192,10 +192,10 @@ export const EnhancedDocumentViewer: React.FC<DocumentViewerProps> = ({ document
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-xl truncate">{document.file_name}</CardTitle>
+            <CardTitle className="text-xl truncate">{fileDoc.file_name}</CardTitle>
             <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-              <span>Тип: {document.file_type}</span>
-              <span>Размер: {formatFileSize(document.file_size)}</span>
+              <span>Тип: {fileDoc.file_type}</span>
+              <span>Размер: {formatFileSize(fileDoc.file_size)}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 ml-4">
