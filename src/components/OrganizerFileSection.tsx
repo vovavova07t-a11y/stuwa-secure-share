@@ -13,7 +13,8 @@ import {
   Download,
   Eye,
   Grid3X3,
-  List
+  List,
+  CheckCircle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -42,6 +43,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { files, isLoading, loadFiles } = useSupabaseFiles(department, categoryId);
@@ -79,12 +81,14 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         department,
         category: categoryId,
         fileName: file.file_name,
-        fileId: file.id
+        fileId: file.id,
+        timestamp: new Date().toISOString()
       });
       
       toast({
         title: 'Файл скачан',
-        description: `${file.file_name} - действие зарегистрировано`
+        description: `${file.file_name} - действие зарегистрировано`,
+        duration: 3000
       });
     } catch (error) {
       console.error('Failed to log organizer download:', error);
@@ -92,25 +96,63 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   };
 
   const handleFileDownload = async (file: any) => {
+    if (downloadingFiles.has(file.id)) return;
+
+    setDownloadingFiles(prev => new Set(prev).add(file.id));
+
     try {
+      // Проверяем доступность файла
+      const response = await fetch(file.file_url, { method: 'HEAD' });
+      
+      if (!response.ok) {
+        throw new Error('Файл недоступен для скачивания');
+      }
+
       // Скачивание файла
       const link = document.createElement('a');
       link.href = file.file_url;
       link.download = file.file_name;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
+      
+      // Добавляем временно в DOM и кликаем
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
       // Логирование для организатора
       await logOrganizerDownload(file);
-    } catch (error) {
+      
+    } catch (error: any) {
+      console.error('Download error:', error);
       toast({
-        title: 'Ошибка',
-        description: 'Не удалось скачать файл',
+        title: 'Ошибка скачивания',
+        description: error.message || 'Не удалось скачать файл',
         variant: 'destructive'
       });
+    } finally {
+      setTimeout(() => {
+        setDownloadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(file.id);
+          return newSet;
+        });
+      }, 1000);
+    }
+  };
+
+  const handleBulkDownload = async () => {
+    if (filteredAndSortedFiles.length === 0) return;
+
+    toast({
+      title: 'Массовое скачивание',
+      description: `Начинаем скачивание ${filteredAndSortedFiles.length} файлов...`
+    });
+
+    for (const file of filteredAndSortedFiles) {
+      await handleFileDownload(file);
+      // Небольшая задержка между скачиваниями
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   };
 
@@ -144,6 +186,17 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
               </span>
             )}
           </CardTitle>
+
+          {files.length > 0 && isViewOnly && (
+            <Button
+              onClick={handleBulkDownload}
+              className="gap-2"
+              variant="outline"
+            >
+              <Download className="w-4 h-4" />
+              Скачать все ({filteredAndSortedFiles.length})
+            </Button>
+          )}
         </div>
 
         {files.length > 0 && (
@@ -229,9 +282,19 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                       variant="secondary"
                       className="opacity-0 group-hover:opacity-100 transition-opacity gap-1"
                       onClick={() => handleFileDownload(file)}
+                      disabled={downloadingFiles.has(file.id)}
                     >
-                      <Download className="w-3 h-3" />
-                      Скачать
+                      {downloadingFiles.has(file.id) ? (
+                        <>
+                          <CheckCircle className="w-3 h-3 text-green-600" />
+                          Скачано
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3 h-3" />
+                          Скачать
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
