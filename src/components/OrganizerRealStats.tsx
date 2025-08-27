@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,67 +41,64 @@ export const OrganizerRealStats: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Загружаем реальные файлы из базы данных
-      const { data: filesData, error } = await supabase
-        .from('files')
+      // Загружаем реальные финансовые документы из базы данных
+      const { data: financialData, error: financialError } = await supabase
+        .from('financial_documents')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Ошибка загрузки файлов:', error);
-        // Если нет файлов в базе, показываем пустую статистику
-        setStats({
-          totalFiles: 0,
-          totalDepartments: 0,
-          recentFiles: 0,
-          departmentStats: []
-        });
-        return;
+      if (financialError) {
+        console.error('Ошибка загрузки финансовых документов:', financialError);
       }
 
-      const realFiles = filesData || [];
-      console.log('📁 Загружено реальных файлов для статистики организаторов:', realFiles.length);
+      const financialFiles = financialData || [];
+      console.log('📁 Загружено финансовых документов:', financialFiles.length);
 
       // Получаем файлы за последние 7 дней
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const recentFiles = realFiles.filter(file => {
-        const fileDate = new Date(file.created_at || file.uploaded_at);
+      const recentFinancialFiles = financialFiles.filter(file => {
+        const fileDate = new Date(file.created_at);
         return fileDate > weekAgo;
       });
 
-      // Подсчитываем статистику по отделам
-      const departmentCounts = realFiles.reduce((acc: Record<string, number>, file) => {
-        if (file.department) {
-          acc[file.department] = (acc[file.department] || 0) + 1;
-        }
-        return acc;
-      }, {});
+      // Статистика по отделам (пока только финансовый отдел имеет реальные данные)
+      const departmentStats = [];
+      
+      if (financialFiles.length > 0) {
+        departmentStats.push({
+          department: 'financial',
+          count: financialFiles.length,
+          name: 'Финансовая дирекция'
+        });
+      }
 
-      const departmentNames: Record<string, string> = {
-        financial: 'Финансовая дирекция',
-        technical: 'Техническая дирекция',
-        logistics: 'Управление логистики',
-        commercial: 'Коммерческая дирекция',
-        office: 'Офис-менеджер'
-      };
+      // Добавляем другие отделы с нулевым количеством файлов
+      const otherDepartments = [
+        { department: 'technical', name: 'Техническая дирекция' },
+        { department: 'logistics', name: 'Управление логистики' },
+        { department: 'commercial', name: 'Коммерческая дирекция' },
+        { department: 'office', name: 'Офис-менеджер' }
+      ];
 
-      const departmentStats = Object.entries(departmentCounts).map(([dept, count]) => ({
-        department: dept,
-        count: count as number,
-        name: departmentNames[dept] || dept
-      }));
+      otherDepartments.forEach(dept => {
+        departmentStats.push({
+          department: dept.department,
+          count: 0,
+          name: dept.name
+        });
+      });
 
       setStats({
-        totalFiles: realFiles.length,
-        totalDepartments: Object.keys(departmentCounts).length,
-        recentFiles: recentFiles.length,
+        totalFiles: financialFiles.length,
+        totalDepartments: departmentStats.filter(dept => dept.count > 0).length,
+        recentFiles: recentFinancialFiles.length,
         departmentStats
       });
 
       console.log('📊 Реальная статистика для организаторов загружена:', {
-        totalFiles: realFiles.length,
+        totalFiles: financialFiles.length,
         departments: departmentStats
       });
 
