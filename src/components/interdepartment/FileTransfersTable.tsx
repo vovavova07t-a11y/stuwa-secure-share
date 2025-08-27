@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,13 +19,13 @@ import {
   Building2,
   ArrowRight,
   RefreshCw,
-  ZoomIn,
   X,
   Check
 } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { EnhancedDocumentViewer } from './EnhancedDocumentViewer';
 
 interface FileTransfersTableProps {
   department: string;
@@ -63,32 +62,26 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     статус: f.status
   })));
 
-  // НОВАЯ ФУНКЦИЯ - ОТМЕТИТЬ КАК ПРОСМОТРЕННЫЙ
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ - ОТМЕТИТЬ КАК ПРОСМОТРЕННЫЙ
   const handleMarkAsViewed = async (transfer: any, checked: boolean) => {
     try {
-      console.log('✅ Отмечаем документ как просмотренный:', transfer.file_name);
+      console.log('✅ Отмечаем документ как просмотренный:', transfer.file_name, 'checked:', checked);
       
-      if (checked) {
-        await updateTransferStatus(transfer.id, 'viewed');
-        toast({
-          title: 'Документ отмечен',
-          description: `Документ "${transfer.file_name}" отмечен как просмотренный`
-        });
-      } else {
-        await updateTransferStatus(transfer.id, 'delivered');
-        toast({
-          title: 'Отметка снята',
-          description: `С документа "${transfer.file_name}" снята отметка о просмотре`
-        });
-      }
+      const newStatus = checked ? 'viewed' : 'delivered';
+      await updateTransferStatus(transfer.id, newStatus);
       
-      // Обновляем данные
-      loadTransfers();
+      toast({
+        title: checked ? 'Документ отмечен' : 'Отметка снята',
+        description: checked 
+          ? `Документ "${transfer.file_name}" отмечен как просмотренный`
+          : `С документа "${transfer.file_name}" снята отметка о просмотре`
+      });
+      
     } catch (error) {
       console.error('❌ Ошибка при отметке документа:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось отметить документ как просмотренный',
+        description: 'Не удалось изменить статус документа',
         variant: 'destructive'
       });
     }
@@ -150,16 +143,19 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     return names[dept] || dept;
   };
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОСМОТРА ФАЙЛОВ - ВСТРОЕННЫЙ ПРОСМОТРЩИК
+  // УЛУЧШЕННАЯ ФУНКЦИЯ ПРОСМОТРА ФАЙЛОВ
   const handleQuickView = (transfer: any) => {
-    console.log('🚀 Открытие файла во встроенном просмотрщике:', transfer.file_name);
+    console.log('🚀 Открытие файла в улучшенном просмотрщике:', transfer.file_name);
     
     setSelectedFile(transfer);
     setIsViewerOpen(true);
     
-    // Обновляем статус если файл не был просмотрен
-    if (transfer.status === 'sent' || transfer.status === 'delivered') {
-      updateTransferStatus(transfer.id, 'viewed');
+    // Автоматически обновляем статус на просмотренный для входящих файлов
+    if (transfer.receiver_department === department && 
+        (transfer.status === 'sent' || transfer.status === 'delivered')) {
+      setTimeout(() => {
+        updateTransferStatus(transfer.id, 'viewed');
+      }, 2000); // Через 2 секунды просмотра помечаем как просмотренный
     }
   };
 
@@ -204,85 +200,16 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     loadTransfers();
   };
 
-  // ВСТРОЕННЫЙ ПРОСМОТРЩИК ФАЙЛОВ
-  const renderFileViewer = () => {
-    if (!selectedFile) return null;
-
-    const isPDF = selectedFile.file_type === 'application/pdf' || selectedFile.file_name.toLowerCase().endsWith('.pdf');
-    const isImage = selectedFile.file_type?.startsWith('image/') || 
-                    ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(selectedFile.file_name.split('.').pop()?.toLowerCase() || '');
-
-    if (isPDF) {
-      return (
-        <div className="w-full h-[80vh] flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-red-500" />
-              <span className="font-medium">PDF Документ</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => handleDownload(selectedFile)}>
-              <Download className="w-4 h-4 mr-2" />
-              Скачать
-            </Button>
-          </div>
-          <div className="flex-1">
-            <iframe
-              src={selectedFile.file_url}
-              className="w-full h-full border-0"
-              title={selectedFile.file_name}
-            />
-          </div>
-        </div>
-      );
-    }
-    
-    if (isImage) {
-      return (
-        <div className="w-full h-[80vh] flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-            <div className="flex items-center gap-2">
-              <ZoomIn className="w-5 h-5 text-blue-500" />
-              <span className="font-medium">Изображение</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => handleDownload(selectedFile)}>
-              <Download className="w-4 h-4 mr-2" />
-              Скачать
-            </Button>
-          </div>
-          <div className="flex-1 flex items-center justify-center p-4">
-            <img 
-              src={selectedFile.file_url} 
-              alt={selectedFile.file_name}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="w-full h-[60vh] flex flex-col items-center justify-center bg-gray-50">
-        <FileText className="w-16 h-16 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium mb-2">{selectedFile.file_name}</h3>
-        <p className="text-gray-600 mb-4">Предварительный просмотр недоступен</p>
-        <Button onClick={() => handleDownload(selectedFile)}>
-          <Download className="w-4 h-4 mr-2" />
-          Скачать файл
-        </Button>
-      </div>
-    );
-  };
-
   const renderTransferRow = (transfer: any, isIncoming: boolean) => (
     <div key={transfer.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1">
-          {/* НОВАЯ КНОПКА ГАЛОЧКИ - только для входящих файлов */}
+          {/* УЛУЧШЕННАЯ КНОПКА ГАЛОЧКИ - только для входящих файлов */}
           {isIncoming && (
             <div className="flex flex-col items-center gap-1">
               <Checkbox
                 checked={transfer.status === 'viewed' || transfer.status === 'processed'}
-                onCheckedChange={(checked) => handleMarkAsViewed(transfer, checked as boolean)}
+                onCheckedChange={(checked) => handleMarkAsViewed(transfer, !!checked)}
                 className="w-5 h-5"
               />
               <span className="text-xs text-gray-500">Просмотрено</span>
@@ -433,24 +360,18 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
         </CardContent>
       </Card>
 
-      {/* ВСТРОЕННЫЙ ПРОСМОТРЩИК ФАЙЛОВ */}
+      {/* УЛУЧШЕННЫЙ ПРОСМОТРЩИК ФАЙЛОВ */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
-          <DialogHeader className="p-4 border-b">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-semibold truncate pr-4">
-                {selectedFile?.file_name}
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsViewerOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Просмотр документа</DialogTitle>
           </DialogHeader>
-          {renderFileViewer()}
+          {selectedFile && (
+            <EnhancedDocumentViewer
+              document={selectedFile}
+              onClose={() => setIsViewerOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>

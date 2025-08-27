@@ -168,11 +168,13 @@ export const useInterdepartmentTransfers = (department: string) => {
 
   const updateTransferStatus = async (transferId: string, status: string) => {
     try {
+      console.log(`🔄 Обновление статуса передачи ${transferId} на ${status}`);
+      
       const updateData: any = { 
         status
       };
 
-      // Добавляем соответствующую временную метку
+      // Добавляем соответствующую временную метку без updated_at
       if (status === 'viewed') {
         updateData.viewed_at = new Date().toISOString();
       } else if (status === 'processed') {
@@ -191,6 +193,8 @@ export const useInterdepartmentTransfers = (department: string) => {
         throw error;
       }
 
+      console.log('✅ Статус успешно обновлен');
+
       // Обновляем локальное состояние
       setTransfers(prev => prev.map(transfer => 
         transfer.id === transferId 
@@ -202,6 +206,12 @@ export const useInterdepartmentTransfers = (department: string) => {
         title: 'Статус обновлен',
         description: `Статус файла изменен на "${getStatusLabel(status)}"`
       });
+
+      // Принудительно обновляем данные через секунду
+      setTimeout(() => {
+        loadTransfers();
+      }, 1000);
+      
     } catch (error: any) {
       console.error('❌ Ошибка обновления статуса передачи:', error);
       toast({
