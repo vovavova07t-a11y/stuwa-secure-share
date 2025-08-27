@@ -3,14 +3,52 @@
 export const getCurrentDepartmentFromPath = (): string => {
   const path = window.location.pathname;
   
-  if (path.includes('/about') || path.includes('/financial')) return 'financial';
-  if (path.includes('/technical')) return 'technical';
-  if (path.includes('/logistics')) return 'logistics';
-  if (path.includes('/commercial')) return 'commercial';
-  if (path.includes('/contacts')) return 'office';
+  console.log('🔍 Определение отдела по пути:', path);
+  
+  // ИСПРАВЛЕННАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ ОТДЕЛОВ
+  if (path.includes('/about') || path.includes('/financial')) {
+    console.log('✅ Определен отдел: financial (О нас)');
+    return 'financial';
+  }
+  
+  if (path.includes('/technical') || path.includes('/product')) {
+    console.log('✅ Определен отдел: technical (Продукция)');
+    return 'technical';
+  }
+  
+  if (path.includes('/logistics') || path.includes('/client')) {
+    console.log('✅ Определен отдел: logistics (Клиенты)');
+    return 'logistics';
+  }
+  
+  if (path.includes('/commercial') || path.includes('/development')) {
+    console.log('✅ Определен отдел: commercial (Развитие)');
+    return 'commercial';
+  }
+  
+  if (path.includes('/contacts') || path.includes('/contact')) {
+    console.log('✅ Определен отдел: office (Контакты)');
+    return 'office';
+  }
+  
+  // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА ДЛЯ МЕЖДЕПАРТАМЕНТСКОГО ОБМЕНА
+  if (path.includes('/interdepartment')) {
+    // Пытаемся определить отдел из предыдущего пути или локального хранилища
+    const storedDepartment = localStorage.getItem('currentDepartment');
+    if (storedDepartment) {
+      console.log('✅ Отдел получен из localStorage:', storedDepartment);
+      return storedDepartment;
+    }
+  }
   
   // Дефолтное значение
+  console.log('⚠️ Не удалось определить отдел, используется дефолт: financial');
   return 'financial';
+};
+
+export const setCurrentDepartment = (department: string) => {
+  localStorage.setItem('currentDepartment', department);
+  console.log('💾 Отдел сохранен в localStorage:', department);
 };
 
 export const getDemoUserForDepartment = (department: string) => {
