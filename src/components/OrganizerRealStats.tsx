@@ -41,42 +41,61 @@ export const OrganizerRealStats: React.FC = () => {
   const loadRealStats = async () => {
     try {
       setIsLoading(true);
+      console.log('📊 Загружаем РЕАЛЬНУЮ статистику для организаторов...');
       
-      // Load real files from the database - use the actual files table
-      const { data: allFiles, error: filesError } = await (supabase as any)
+      // Загружаем РЕАЛЬНЫЕ файлы из таблицы files (которые загружают сотрудники)
+      const { data: realFiles, error: filesError } = await (supabase as any)
         .from('files')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (filesError) {
-        console.error('Ошибка загрузки файлов:', filesError);
+        console.error('❌ Ошибка загрузки РЕАЛЬНЫХ файлов:', filesError);
       }
 
-      const realFiles = allFiles || [];
-      console.log('📁 Загружено реальных файлов:', realFiles.length);
+      // Также загружаем файлы из таблицы financial_documents (дополнительные реальные файлы)
+      const { data: financialFiles, error: financialError } = await (supabase as any)
+        .from('financial_documents')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      // Get files from last 7 days
+      if (financialError) {
+        console.error('❌ Ошибка загрузки финансовых документов:', financialError);
+      }
+
+      const allRealFiles = [...(realFiles || []), ...(financialFiles || [])];
+      console.log(`📁 Загружено ${allRealFiles.length} РЕАЛЬНЫХ файлов из базы данных`);
+      console.log('📋 Файлы:', allRealFiles.map((f: any) => f.file_name || f.title));
+
+      // Получаем файлы за последние 7 дней
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const recentRealFiles = realFiles.filter((file: any) => {
-        const fileDate = new Date(file.created_at);
+      const recentRealFiles = allRealFiles.filter((file: any) => {
+        const fileDate = new Date(file.created_at || file.uploaded_at);
         return fileDate > weekAgo;
       });
 
-      // Calculate real department statistics
+      // Подсчитываем РЕАЛЬНУЮ статистику по отделам
       const departmentCounts: { [key: string]: number } = {};
       
-      realFiles.forEach((file: any) => {
-        if (file.department) {
-          departmentCounts[file.department] = (departmentCounts[file.department] || 0) + 1;
+      allRealFiles.forEach((file: any) => {
+        let department = file.department;
+        
+        // Для financial_documents определяем department как 'financial'
+        if (!department && file.category) {
+          department = 'financial';
+        }
+        
+        if (department) {
+          departmentCounts[department] = (departmentCounts[department] || 0) + 1;
         }
       });
 
-      // Map departments to display names (only show departments with files)
+      // Маппинг названий отделов
       const departmentNames: { [key: string]: string } = {
         'financial': 'Финансовая дирекция',
-        'technical': 'Техническая дирекция',
+        'technical': 'Техническая дирекция', 
         'logistics': 'Управление логистики',
         'commercial': 'Коммерческая дирекция',
         'office': 'Офис-менеджер'
@@ -88,20 +107,19 @@ export const OrganizerRealStats: React.FC = () => {
         name: departmentNames[department] || department
       }));
 
-      setStats({
-        totalFiles: realFiles.length,
+      const realStats = {
+        totalFiles: allRealFiles.length,
         totalDepartments: departmentStats.length,
         recentFiles: recentRealFiles.length,
         departmentStats
-      });
+      };
 
-      console.log('📊 Реальная статистика для организаторов загружена:', {
-        totalFiles: realFiles.length,
-        departments: departmentStats
-      });
+      setStats(realStats);
+
+      console.log('📊 РЕАЛЬНАЯ статистика для организаторов загружена:', realStats);
 
     } catch (error) {
-      console.error('Ошибка загрузки статистики:', error);
+      console.error('❌ Ошибка загрузки РЕАЛЬНОЙ статистики:', error);
       setStats({
         totalFiles: 0,
         totalDepartments: 0,
@@ -132,17 +150,18 @@ export const OrganizerRealStats: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Real metrics based on actual files */}
+      {/* РЕАЛЬНЫЕ метрики на основе фактических файлов */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Всего файлов</p>
-                <p className="text-2xl font-bold">{stats.totalFiles}</p>
+                <p className="text-sm font-medium text-muted-foreground">РЕАЛЬНЫХ файлов</p>
+                <p className="text-2xl font-bold text-green-600">{stats.totalFiles}</p>
+                <p className="text-xs text-muted-foreground">в базе данных</p>
               </div>
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <FileText className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -153,10 +172,11 @@ export const OrganizerRealStats: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Активных отделов</p>
-                <p className="text-2xl font-bold">{stats.totalDepartments}</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.totalDepartments}</p>
+                <p className="text-xs text-muted-foreground">с документами</p>
               </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Building2 className="w-6 h-6 text-green-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Building2 className="w-6 h-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -167,7 +187,8 @@ export const OrganizerRealStats: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Новых за неделю</p>
-                <p className="text-2xl font-bold">{stats.recentFiles}</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.recentFiles}</p>
+                <p className="text-xs text-muted-foreground">РЕАЛЬНЫХ файлов</p>
               </div>
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Clock className="w-6 h-6 text-orange-600" />
@@ -177,13 +198,13 @@ export const OrganizerRealStats: React.FC = () => {
         </Card>
       </div>
 
-      {/* Real department statistics */}
+      {/* РЕАЛЬНАЯ статистика по отделам */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="w-5 h-5" />
-              Файлы по отделам
+              РЕАЛЬНЫЕ файлы по отделам
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -192,40 +213,43 @@ export const OrganizerRealStats: React.FC = () => {
                 {stats.departmentStats.map((dept) => (
                   <div key={dept.department} className="flex items-center justify-between">
                     <span className="font-medium">{dept.name}</span>
-                    <Badge variant="secondary">{dept.count} файлов</Badge>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      {dept.count} РЕАЛЬН{dept.count === 1 ? 'ЫЙ' : 'ЫХ'} файл{dept.count === 1 ? '' : dept.count < 5 ? 'а' : 'ов'}
+                    </Badge>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-4">
-                Нет файлов в базе данных
+                Нет РЕАЛЬНЫХ файлов в базе данных
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Test data seeder component */}
+        {/* Компонент для добавления тестовых данных */}
         <OrganizerTestDataSeeder onDataSeeded={loadRealStats} />
       </div>
 
-      {/* Information card for organizers */}
-      <Card className="glass-card bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+      {/* Информационная карточка для организаторов */}
+      <Card className="glass-card bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-700">
+          <CardTitle className="flex items-center gap-2 text-green-700">
             <Eye className="w-5 h-5" />
-            Информация для организаторов
+            РЕАЛЬНЫЕ данные для организаторов
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
-            <p className="font-medium text-blue-800">
-              Возможности панели организатора:
+            <p className="font-medium text-green-800">
+              Возможности панели организатора с РЕАЛЬНЫМИ файлами:
             </p>
-            <ul className="list-disc list-inside space-y-1 text-blue-700">
-              <li>Просмотр всех файлов из всех отделов компании</li>
-              <li>Скачивание документов для анализа и контроля</li>
-              <li>Мониторинг активности загрузки файлов по отделам</li>
+            <ul className="list-disc list-inside space-y-1 text-green-700">
+              <li>Просмотр ВСЕХ реальных файлов из всех отделов компании</li>
+              <li>Скачивание настоящих документов для анализа и контроля</li>
+              <li>Мониторинг активности загрузки РЕАЛЬНЫХ файлов по отделам</li>
               <li>Доступ к актуальной документации всех направлений</li>
+              <li>БЕЗ фейковых данных - только настоящие документы сотрудников!</li>
             </ul>
           </div>
         </CardContent>

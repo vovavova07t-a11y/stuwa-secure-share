@@ -45,12 +45,13 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const { toast } = useToast();
 
-  // Use real files from database - this hook properly loads files from the database
+  // Загружаем РЕАЛЬНЫЕ файлы из базы данных
   const { files, isLoading } = useSupabaseFiles(department, categoryId);
 
-  console.log(`📋 OrganizerFileSection: Загружено ${files.length} реальных файлов для ${department}/${categoryId}`);
+  console.log(`📋 OrganizerFileSection: Загружено ${files.length} РЕАЛЬНЫХ файлов для ${department}/${categoryId}`);
+  console.log('📁 Файлы:', files.map(f => f.file_name));
 
-  // Filter and sort real files
+  // Фильтрация и сортировка РЕАЛЬНЫХ файлов
   const filteredAndSortedFiles = React.useMemo(() => {
     let filtered = files.filter(file => 
       file.file_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -76,14 +77,15 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     return filtered;
   }, [files, searchQuery, sortBy]);
 
-  // Real file download function for organizers
+  // Функция скачивания РЕАЛЬНЫХ файлов для организаторов
   const handleFileDownload = async (file: any) => {
     try {
-      console.log('🔽 Организатор скачивает файл:', {
+      console.log('🔽 Организатор скачивает РЕАЛЬНЫЙ файл:', {
         fileName: file.file_name,
         fileUrl: file.file_url,
         department,
-        category: categoryId
+        category: categoryId,
+        fileSize: file.file_size
       });
 
       if (file.file_url) {
@@ -96,7 +98,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         link.click();
         document.body.removeChild(link);
         
-        console.log('✅ Файл успешно скачан организатором:', file.file_name);
+        console.log('✅ РЕАЛЬНЫЙ файл успешно скачан организатором:', file.file_name);
         
         toast({
           title: 'Файл скачан',
@@ -107,7 +109,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       }
       
     } catch (error) {
-      console.error('❌ Ошибка при скачивании файла организатором:', error);
+      console.error('❌ Ошибка при скачивании РЕАЛЬНОГО файла организатором:', error);
       toast({
         title: 'Ошибка скачивания',
         description: 'Не удалось скачать файл',
@@ -116,29 +118,31 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     }
   };
 
-  // Function to download all real files
+  // Функция скачивания всех РЕАЛЬНЫХ файлов
   const handleDownloadAll = async () => {
     if (filteredAndSortedFiles.length === 0) {
       toast({
         title: 'Нет файлов',
-        description: 'Нет файлов для скачивания',
+        description: 'Нет РЕАЛЬНЫХ файлов для скачивания',
         variant: 'destructive'
       });
       return;
     }
 
+    console.log(`🔽 Организатор скачивает ВСЕ ${filteredAndSortedFiles.length} РЕАЛЬНЫХ файлов из ${department}/${categoryId}`);
+
     toast({
       title: 'Скачивание файлов',
-      description: `Начинается скачивание ${filteredAndSortedFiles.length} файлов...`
+      description: `Начинается скачивание ${filteredAndSortedFiles.length} РЕАЛЬНЫХ файлов...`
     });
 
     for (const file of filteredAndSortedFiles) {
       try {
         await handleFileDownload(file);
-        // Small delay between downloads
+        // Небольшая задержка между скачиваниями
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
-        console.error(`Ошибка скачивания файла ${file.file_name}:`, error);
+        console.error(`Ошибка скачивания РЕАЛЬНОГО файла ${file.file_name}:`, error);
       }
     }
   };
@@ -149,6 +153,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         <CardContent className="p-6">
           <div className="flex items-center justify-center h-32">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <span className="ml-2">Загрузка РЕАЛЬНЫХ файлов...</span>
           </div>
         </CardContent>
       </Card>
@@ -169,7 +174,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
             )}
             {files.length > 0 && (
               <span className="ml-2 text-sm text-green-600 font-normal">
-                ({files.length} файл{files.length === 1 ? '' : files.length < 5 ? 'а' : 'ов'})
+                ({files.length} РЕАЛЬН{files.length === 1 ? 'ЫЙ' : files.length < 5 ? 'ЫХ' : 'ЫХ'} файл{files.length === 1 ? '' : files.length < 5 ? 'а' : 'ов'})
               </span>
             )}
           </CardTitle>
@@ -183,7 +188,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                 className="gap-2"
               >
                 <Download className="w-4 h-4" />
-                Скачать все
+                Скачать все РЕАЛЬНЫЕ
               </Button>
             </div>
           )}
@@ -195,7 +200,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Поиск файлов..."
+                placeholder="Поиск РЕАЛЬНЫХ файлов..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -264,7 +269,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                   onDelete={undefined}
                 />
                 
-                {/* Download button for organizers */}
+                {/* Кнопка скачивания РЕАЛЬНЫХ файлов для организаторов */}
                 <div className="absolute top-2 right-2">
                   <Button
                     size="sm"
@@ -282,16 +287,19 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         ) : files.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Нет документов</h3>
+            <h3 className="text-lg font-semibold mb-2">Нет РЕАЛЬНЫХ документов</h3>
             <p className="text-muted-foreground">
-              В этой категории пока нет документов для просмотра
+              В этой категории пока нет РЕАЛЬНЫХ документов для просмотра
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Отдел: {department} | Категория: {categoryId}
             </p>
           </div>
         ) : (
           <div className="text-center py-8">
             <Search className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              Нет файлов, соответствующих запросу "{searchQuery}"
+              Нет РЕАЛЬНЫХ файлов, соответствующих запросу "{searchQuery}"
             </p>
           </div>
         )}
