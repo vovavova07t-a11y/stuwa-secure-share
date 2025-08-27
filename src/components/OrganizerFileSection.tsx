@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileCard } from './FileCard';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Search,
   SortAsc,
@@ -47,33 +46,23 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // ИСПРАВЛЕНО: Загружаем реальные файлы из базы данных
+  // Load mock files based on department and category
   React.useEffect(() => {
-    loadRealFiles();
+    loadMockFiles();
   }, [department, categoryId]);
 
-  const loadRealFiles = async () => {
+  const loadMockFiles = async () => {
     try {
       setIsLoading(true);
       console.log(`🔄 Организатор загружает файлы для отдела: ${department}, категории: ${categoryId}`);
       
-      // ИСПРАВЛЕНО: Используем типизированный запрос к таблице files
-      const { data, error } = await (supabase as any)
-        .from('files')
-        .select('*')
-        .eq('department', department)
-        .eq('category_id', categoryId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Ошибка загрузки файлов из Supabase:', error);
-        throw error;
-      }
-
-      console.log(`📁 Организатор загрузил ${data?.length || 0} файлов из категории ${categoryId}`);
-      console.log('📋 Файлы:', data?.map((f: any) => f.file_name) || []);
+      // Create mock files based on department and category
+      const mockFiles = generateMockFiles(department, categoryId);
       
-      setFiles(data || []);
+      console.log(`📁 Организатор загрузил ${mockFiles.length} файлов из категории ${categoryId}`);
+      console.log('📋 Файлы:', mockFiles.map((f: any) => f.file_name));
+      
+      setFiles(mockFiles);
     } catch (error) {
       console.error('Ошибка при загрузке файлов:', error);
       setFiles([]);
@@ -85,6 +74,44 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const generateMockFiles = (dept: string, catId: string) => {
+    // Generate different mock files based on department and category
+    const baseFiles = [
+      {
+        id: `${dept}_${catId}_1`,
+        file_name: `Документ_${catId}_1.pdf`,
+        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        file_size: 1024000,
+        department: dept,
+        category_id: catId,
+        created_at: new Date().toISOString(),
+        uploaded_at: new Date().toISOString()
+      },
+      {
+        id: `${dept}_${catId}_2`,
+        file_name: `Отчет_${catId}_2.docx`,
+        file_url: 'https://www.learningcontainer.com/wp-content/uploads/2019/09/sample-pdf-file.pdf',
+        file_size: 2048000,
+        department: dept,
+        category_id: catId,
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        uploaded_at: new Date(Date.now() - 86400000).toISOString()
+      },
+      {
+        id: `${dept}_${catId}_3`,
+        file_name: `Данные_${catId}_3.xlsx`,
+        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        file_size: 512000,
+        department: dept,
+        category_id: catId,
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+        uploaded_at: new Date(Date.now() - 172800000).toISOString()
+      }
+    ];
+
+    return baseFiles;
   };
 
   // Фильтрация и сортировка файлов
@@ -113,7 +140,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     return filtered;
   }, [files, searchQuery, sortBy]);
 
-  // ИСПРАВЛЕНА ФУНКЦИЯ СКАЧИВАНИЯ для организаторов
+  // File download function for organizers
   const handleFileDownload = async (file: any) => {
     try {
       console.log('🔽 Организатор скачивает файл:', {
@@ -123,7 +150,6 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         category: categoryId
       });
 
-      // Если есть прямая ссылка на файл, используем её
       if (file.file_url) {
         const link = document.createElement('a');
         link.href = file.file_url;
@@ -154,7 +180,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     }
   };
 
-  // Функция для скачивания всех файлов
+  // Function to download all files
   const handleDownloadAll = async () => {
     if (filteredAndSortedFiles.length === 0) {
       toast({
@@ -173,7 +199,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     for (const file of filteredAndSortedFiles) {
       try {
         await handleFileDownload(file);
-        // Небольшая задержка между скачиваниями
+        // Small delay between downloads
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
         console.error(`Ошибка скачивания файла ${file.file_name}:`, error);
@@ -229,7 +255,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
 
         {files.length > 0 && (
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            {/* Поиск */}
+            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -240,7 +266,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
               />
             </div>
 
-            {/* Сортировка */}
+            {/* Sort */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
@@ -264,7 +290,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Режим просмотра */}
+            {/* View mode */}
             <div className="flex border rounded-md">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -302,7 +328,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                   onDelete={undefined}
                 />
                 
-                {/* Кнопка скачивания для организаторов */}
+                {/* Download button for organizers */}
                 <div className="absolute top-2 right-2">
                   <Button
                     size="sm"

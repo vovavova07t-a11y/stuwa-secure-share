@@ -101,7 +101,7 @@ const sections = [
   }
 ];
 
-export const OrganizerDashboard: React.FC = () => {
+const OrganizerDashboard: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
@@ -126,10 +126,19 @@ export const OrganizerDashboard: React.FC = () => {
     }
   }, [currentDepartment]);
 
+  const handleBackToOrganizers = () => {
+    setSelectedSection('');
+    setSelectedCategory('');
+  };
+
   if (!selectedSection) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <OrganizerViewBanner />
+        <OrganizerViewBanner 
+          departmentTitle="Панель организатора"
+          departmentSubtitle="Доступ ко всем отделам"
+          onBackToOrganizers={handleBackToOrganizers}
+        />
         
         <div className="mb-8">
           <OrganizerRealStats />
@@ -179,13 +188,19 @@ export const OrganizerDashboard: React.FC = () => {
   }
 
   if (!selectedCategory) {
+    const breadcrumbItems = [
+      { label: 'Панель организатора', onClick: handleBackToOrganizers },
+      { label: currentSection?.name || '', isActive: true }
+    ];
+
     return (
       <div className="container mx-auto px-4 py-6">
-        <OrganizerViewBanner />
-        <OrganizerBreadcrumbs 
-          currentSection={currentSection?.name || ''}
-          onBack={() => setSelectedSection('')}
+        <OrganizerViewBanner 
+          departmentTitle={currentSection?.name || ''}
+          departmentSubtitle={currentSection?.description || ''}
+          onBackToOrganizers={handleBackToOrganizers}
         />
+        <OrganizerBreadcrumbs items={breadcrumbItems} />
 
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">{currentSection?.name}</h1>
@@ -226,17 +241,21 @@ export const OrganizerDashboard: React.FC = () => {
 
   const selectedCategoryInfo = availableCategories.find(c => c.id === selectedCategory);
 
+  const breadcrumbItems = [
+    { label: 'Панель организатора', onClick: handleBackToOrganizers },
+    { label: currentSection?.name || '', onClick: () => setSelectedCategory('') },
+    { label: selectedCategoryInfo?.title || '', isActive: true }
+  ];
+
   return (
     <div className="container mx-auto px-4 py-6">
-      <OrganizerViewBanner />
-      <OrganizerBreadcrumbs 
-        currentSection={currentSection?.name || ''}
-        currentCategory={selectedCategoryInfo?.title}
-        onBack={() => setSelectedSection('')}
-        onCategoryBack={() => setSelectedCategory('')}
+      <OrganizerViewBanner 
+        departmentTitle={currentSection?.name || ''}
+        departmentSubtitle={selectedCategoryInfo?.title || ''}
+        onBackToOrganizers={handleBackToOrganizers}
       />
+      <OrganizerBreadcrumbs items={breadcrumbItems} />
 
-      {/* ИСПРАВЛЕНО: Передаем правильные параметры для отображения файлов */}
       <OrganizerFileSection
         categoryId={selectedCategory}
         categoryTitle={selectedCategoryInfo?.title || 'Неизвестная категория'}
@@ -246,3 +265,5 @@ export const OrganizerDashboard: React.FC = () => {
     </div>
   );
 };
+
+export default OrganizerDashboard;
