@@ -2,14 +2,21 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
-import { Send, Clock, AlertTriangle, Zap } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useInterdepartmentTransfers } from '@/hooks/useInterdepartmentTransfers';
+import { 
+  Send, 
+  FileText, 
+  Building2, 
+  MessageSquare, 
+  ArrowRight,
+  Calendar,
+  AlertCircle
+} from 'lucide-react';
+import { formatFileSize } from '@/utils/fileUtils';
 
 interface FileTransferModalProps {
   isOpen: boolean;
@@ -25,20 +32,20 @@ interface FileTransferModalProps {
   onSuccess?: () => void;
 }
 
-const DEPARTMENT_OPTIONS = [
-  { value: 'financial', label: 'Финансовая дирекция (О нас)', icon: '💰' },
-  { value: 'technical', label: 'Техническая дирекция (Продукция)', icon: '⚙️' },
-  { value: 'logistics', label: 'Управление логистики (Клиенты)', icon: '🚚' },
-  { value: 'commercial', label: 'Коммерческая дирекция (Развитие)', icon: '📈' },
-  { value: 'office', label: 'Офис-менеджер (Контакты)', icon: '🏢' }
-];
+const DEPARTMENTS = {
+  financial: 'Финансовая дирекция',
+  technical: 'Техническая дирекция', 
+  logistics: 'Управление логистики',
+  commercial: 'Коммерческая дирекция',
+  office: 'Офис-менеджер'
+};
 
-const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Низкий', color: 'bg-gray-100 text-gray-800', icon: Clock },
-  { value: 'normal', label: 'Обычный', color: 'bg-blue-100 text-blue-800', icon: Send },
-  { value: 'high', label: 'Высокий', color: 'bg-orange-100 text-orange-800', icon: AlertTriangle },
-  { value: 'urgent', label: 'Срочно', color: 'bg-red-100 text-red-800', icon: Zap }
-];
+const PRIORITY_OPTIONS = {
+  low: { label: 'Низкий', color: 'bg-gray-100 text-gray-800' },
+  normal: { label: 'Обычный', color: 'bg-blue-100 text-blue-800' },
+  high: { label: 'Высокий', color: 'bg-orange-100 text-orange-800' },
+  urgent: { label: 'Срочно', color: 'bg-red-100 text-red-800' }
+};
 
 export const FileTransferModal: React.FC<FileTransferModalProps> = ({
   isOpen,
@@ -47,117 +54,92 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
   currentDepartment,
   onSuccess
 }) => {
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [priority, setPriority] = useState('normal');
+  const [receiverDepartment, setReceiverDepartment] = useState('');
   const [message, setMessage] = useState('');
+  const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [deadline, setDeadline] = useState('');
-  const [sending, setSending] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { toast } = useToast();
   const { createTransfer } = useInterdepartmentTransfers(currentDepartment);
 
-  const handleDepartmentToggle = (department: string) => {
-    if (department === currentDepartment) return;
-    
-    setSelectedDepartments(prev => {
-      if (prev.includes(department)) {
-        return prev.filter(d => d !== department);
-      } else {
-        return [...prev, department];
-      }
-    });
-  };
-
-  const handleSend = async () => {
-    if (selectedDepartments.length === 0) {
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТПРАВКИ ФАЙЛА
+  const handleSubmit = async () => {
+    if (!receiverDepartment) {
       toast({
-        title: "Ошибка",
-        description: "Выберите хотя бы один отдел для отправки",
-        variant: "destructive",
+        title: 'Ошибка',
+        description: 'Выберите отдел получателя',
+        variant: 'destructive'
       });
       return;
     }
 
-    setSending(true);
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Отправляем файл в каждый выбранный отдел
-      for (const department of selectedDepartments) {
-        try {
-          const transferData = {
-            file_name: file.name,
-            file_url: file.url,
-            file_size: file.size,
-            file_type: file.type,
-            sender_department: currentDepartment,
-            receiver_department: department,
-            priority,
-            status: 'sent',
-            message: message || null,
-            deadline: deadline ? new Date(deadline).toISOString() : null,
-            is_group_send: selectedDepartments.length > 1,
-            transfer_chain: [
-              {
-                department: currentDepartment,
-                action: 'sent',
-                timestamp: new Date().toISOString()
-              }
-            ]
-          };
-
-          console.log('Отправка файла в отдел:', department, transferData);
-
-          await createTransfer(transferData);
-          successCount++;
-        } catch (error) {
-          console.error(`Ошибка отправки в отдел ${department}:`, error);
-          errorCount++;
-        }
-      }
-
-      if (successCount > 0) {
-        toast({
-          title: "Успех",
-          description: `Файл успешно отправлен в ${successCount} отдел${successCount > 1 ? (successCount > 4 ? 'ов' : 'а') : ''}`,
-        });
-
-        if (errorCount === 0) {
-          onSuccess?.();
-          onClose();
-        }
-      }
-
-      if (errorCount > 0) {
-        toast({
-          title: "Частичная ошибка",
-          description: `Не удалось отправить в ${errorCount} отдел${errorCount > 1 ? (errorCount > 4 ? 'ов' : 'а') : ''}`,
-          variant: "destructive",
-        });
-      }
-
-    } catch (error) {
-      console.error('Общая ошибка отправки:', error);
+    if (receiverDepartment === currentDepartment) {
       toast({
-        title: "Ошибка",
-        description: "Не удалось отправить файл",
-        variant: "destructive",
+        title: 'Ошибка', 
+        description: 'Нельзя отправить файл в тот же отдел',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      console.log('📤 Отправка файла между отделами:', {
+        file: file.name,
+        from: currentDepartment,
+        to: receiverDepartment,
+        priority,
+        message
+      });
+
+      // СОЗДАЕМ ЗАПИСЬ О ПЕРЕДАЧЕ ФАЙЛА
+      const transferData = {
+        file_name: file.name,
+        file_url: file.url,
+        file_size: file.size,
+        file_type: file.type,
+        sender_department: currentDepartment,
+        receiver_department: receiverDepartment,
+        priority,
+        status: 'sent',
+        message: message.trim() || undefined,
+        deadline: deadline ? new Date(deadline).toISOString() : undefined,
+        is_group_send: false,
+        transfer_chain: []
+      };
+
+      await createTransfer(transferData);
+
+      console.log('✅ Файл успешно отправлен между отделами');
+      
+      toast({
+        title: 'Файл отправлен',
+        description: `Файл "${file.name}" отправлен в отдел "${DEPARTMENTS[receiverDepartment as keyof typeof DEPARTMENTS]}"`
+      });
+
+      onSuccess?.();
+      onClose();
+      
+    } catch (error: any) {
+      console.error('❌ Ошибка отправки файла:', error);
+      toast({
+        title: 'Ошибка отправки',
+        description: `Не удалось отправить файл: ${error.message}`,
+        variant: 'destructive'
       });
     } finally {
-      setSending(false);
+      setIsSubmitting(false);
     }
   };
 
-  const availableDepartments = DEPARTMENT_OPTIONS.filter(
-    dept => dept.value !== currentDepartment
+  const availableDepartments = Object.entries(DEPARTMENTS).filter(
+    ([key]) => key !== currentDepartment
   );
-
-  const selectedPriority = PRIORITY_OPTIONS.find(p => p.value === priority);
-  const PriorityIcon = selectedPriority?.icon || Send;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="w-5 h-5" />
@@ -168,137 +150,141 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
         <div className="space-y-6">
           {/* Информация о файле */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">Отправляемый файл:</h3>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                📄
-              </div>
-              <div>
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(file.size / 1024 / 1024).toFixed(2)} MB
+              <FileText className="w-8 h-8 text-blue-500" />
+              <div className="flex-1">
+                <h4 className="font-medium">{file.name}</h4>
+                <p className="text-sm text-gray-600">
+                  Размер: {formatFileSize(file.size)} • Тип: {file.type}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Выбор получателей */}
-          <div className="space-y-3">
-            <Label>Выберите отделы-получатели *</Label>
-            <div className="grid grid-cols-1 gap-2">
-              {availableDepartments.map((dept) => (
-                <div
-                  key={dept.value}
-                  className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                    selectedDepartments.includes(dept.value)
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => handleDepartmentToggle(dept.value)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{dept.icon}</span>
-                    <span className="font-medium">{dept.label}</span>
-                    {selectedDepartments.includes(dept.value) && (
-                      <Badge variant="outline" className="ml-auto">
-                        Выбран
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+          {/* Маршрут передачи */}
+          <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-blue-600" />
+              <span className="font-medium text-blue-800">
+                {DEPARTMENTS[currentDepartment as keyof typeof DEPARTMENTS]}
+              </span>
             </div>
-            {selectedDepartments.length > 0 && (
-              <p className="text-sm text-gray-600">
-                Выбрано отделов: {selectedDepartments.length}
-              </p>
-            )}
+            <ArrowRight className="w-4 h-4 text-blue-600" />
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-green-600" />
+              <span className="font-medium text-green-800">
+                {receiverDepartment ? DEPARTMENTS[receiverDepartment as keyof typeof DEPARTMENTS] : 'Выберите отдел'}
+              </span>
+            </div>
           </div>
 
-          {/* Приоритет */}
+          {/* Выбор получателя */}
           <div className="space-y-2">
-            <Label htmlFor="priority">Приоритет отправки</Label>
-            <Select value={priority} onValueChange={setPriority}>
+            <label className="text-sm font-medium">Отдел получатель *</label>
+            <Select value={receiverDepartment} onValueChange={setReceiverDepartment}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Выберите отдел для отправки файла" />
               </SelectTrigger>
               <SelectContent>
-                {PRIORITY_OPTIONS.map((option) => {
-                  const Icon = option.icon;
-                  return (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        <span>{option.label}</span>
-                        <Badge className={option.color}>{option.label}</Badge>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
+                {availableDepartments.map(([key, name]) => (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      {name}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Сообщение */}
+          {/* Приоритет */}
           <div className="space-y-2">
-            <Label htmlFor="message">Сообщение к файлу</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Добавьте комментарий или инструкции для получателя..."
-              rows={3}
-            />
+            <label className="text-sm font-medium">Приоритет</label>
+            <Select value={priority} onValueChange={(value: any) => setPriority(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(PRIORITY_OPTIONS).map(([key, { label, color }]) => (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center gap-2">
+                      <Badge className={color}>{label}</Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Срок ответа */}
+          {/* Срок выполнения */}
           <div className="space-y-2">
-            <Label htmlFor="deadline">Срок ответа (опционально)</Label>
-            <Input
-              id="deadline"
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Срок выполнения (опционально)
+            </label>
+            <input
               type="datetime-local"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
+              className="w-full p-2 border rounded-md"
               min={new Date().toISOString().slice(0, 16)}
             />
           </div>
 
-          {/* Информация о групповой отправке */}
-          {selectedDepartments.length > 1 && (
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Send className="w-4 h-4 text-blue-600" />
-                <span className="font-medium text-blue-800">Групповая отправка</span>
-              </div>
-              <p className="text-sm text-blue-700">
-                Файл будет отправлен в {selectedDepartments.length} отделов одновременно.
-                Каждый отдел получит отдельную копию с возможностью независимой обработки.
-              </p>
-            </div>
-          )}
-        </div>
+          {/* Сообщение */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Сообщение (опционально)
+            </label>
+            <Textarea
+              placeholder="Добавьте комментарий к передаче файла..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+              maxLength={500}
+            />
+            <p className="text-xs text-gray-500">{message.length}/500 символов</p>
+          </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Отмена
-          </Button>
-          <Button 
-            onClick={handleSend} 
-            disabled={sending || selectedDepartments.length === 0}
-            className="flex items-center gap-2"
-          >
-            {sending ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Отправляем...
-              </>
-            ) : (
-              <>
-                <PriorityIcon className="w-4 h-4" />
-                Отправить файл
-              </>
-            )}
-          </Button>
+          {/* Предупреждение */}
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <p className="font-medium">Внимание!</p>
+              <p>Файл будет отправлен в отдел "{DEPARTMENTS[receiverDepartment as keyof typeof DEPARTMENTS] || '...'}" и появится у них во входящих файлах.</p>
+            </div>
+          </div>
+
+          {/* Кнопки */}
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1"
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!receiverDepartment || isSubmitting}
+              className="flex-1"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Отправляю...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4" />
+                  Отправить файл
+                </div>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

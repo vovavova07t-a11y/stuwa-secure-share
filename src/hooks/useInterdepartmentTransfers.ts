@@ -20,7 +20,6 @@ export interface InterdepartmentTransfer {
   is_group_send: boolean;
   transfer_chain: any[];
   created_at: string;
-  updated_at: string;
   delivered_at?: string;
   viewed_at?: string;
   processed_at?: string;
@@ -42,7 +41,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       
       // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: каждый отдел видит ТОЛЬКО свои файлы
       const { data, error } = await supabase
-        .from('interdepartment_file_transfers' as any)
+        .from('interdepartment_file_transfers')
         .select('*')
         .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
         .order('created_at', { ascending: false });
@@ -103,7 +102,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { data: insertData, error: insertError } = await supabase
-        .from('interdepartment_file_transfers' as any)
+        .from('interdepartment_file_transfers')
         .insert([cleanTransferData])
         .select()
         .single();
@@ -134,8 +133,7 @@ export const useInterdepartmentTransfers = (department: string) => {
   const updateTransferStatus = async (transferId: string, status: string) => {
     try {
       const updateData: any = { 
-        status,
-        updated_at: new Date().toISOString()
+        status
       };
 
       // Добавляем соответствующую временную метку
@@ -148,7 +146,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { error } = await supabase
-        .from('interdepartment_file_transfers' as any)
+        .from('interdepartment_file_transfers')
         .update(updateData)
         .eq('id', transferId);
 

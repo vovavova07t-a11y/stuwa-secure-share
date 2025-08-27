@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,8 @@ import {
   Calendar,
   HardDrive,
   X,
-  ExternalLink
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatFileSize } from '@/utils/fileUtils';
@@ -66,6 +66,7 @@ export const FileCard: React.FC<FileCardProps> = ({
 }) => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
   
   const currentDepartment = getCurrentDepartmentFromPath();
   
@@ -93,48 +94,19 @@ export const FileCard: React.FC<FileCardProps> = ({
            fileType?.includes('word') || fileType?.includes('sheet') || fileType?.includes('text');
   };
 
-  // КРИТИЧЕСКИ ИСПРАВЛЕННАЯ ФУНКЦИЯ БЫСТРОГО ОТКРЫТИЯ
   const handleQuickOpen = async () => {
     try {
-      console.log('🚀 БЫСТРОЕ открытие файла:', file.file_name);
+      console.log('🚀 Открытие файла во встроенном просмотрщике:', file.file_name);
       
-      // Для PDF - мгновенное открытие в новой вкладке
-      if (isPDF(file.file_name, file.file_type)) {
-        console.log('📄 Открываем PDF в новой вкладке');
-        window.open(file.file_url, '_blank', 'noopener,noreferrer');
-        onView?.(file);
-        return;
-      }
-
-      // Для изображений - мгновенное открытие в новой вкладке
-      if (isImage(file.file_name, file.file_type)) {
-        console.log('🖼️ Открываем изображение в новой вкладке');
-        window.open(file.file_url, '_blank', 'noopener,noreferrer');
-        onView?.(file);
-        return;
-      }
-
-      // Для документов - показываем в модальном окне или открываем в новой вкладке
-      if (isDocument(file.file_name, file.file_type)) {
-        console.log('📝 Открываем документ в новой вкладке');
-        window.open(file.file_url, '_blank', 'noopener,noreferrer');
-        onView?.(file);
-        return;
-      }
-
-      // Для остальных файлов - показываем превью в модальном окне
-      console.log('👁️ Показываем превью в модальном окне');
+      // Открываем встроенный просмотрщик вместо прямой ссылки Supabase
       setIsViewerOpen(true);
       onView?.(file);
       
     } catch (error) {
-      console.error('❌ Ошибка быстрого открытия:', error);
-      // Fallback - всегда пытаемся открыть в новой вкладке
-      window.open(file.file_url, '_blank', 'noopener,noreferrer');
+      console.error('❌ Ошибка открытия просмотрщика:', error);
     }
   };
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СКАЧИВАНИЯ
   const handleDownload = async () => {
     try {
       console.log('⬇️ Скачивание файла:', file.file_name);
@@ -177,27 +149,71 @@ export const FileCard: React.FC<FileCardProps> = ({
     onSend?.(file);
   };
 
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 25, 200));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 25, 50));
+  };
+
   const renderFileViewer = () => {
     if (isPDF(file.file_name, file.file_type)) {
       return (
-        <div className="w-full h-[70vh]">
-          <iframe
-            src={file.file_url}
-            className="w-full h-full border-0"
-            title={file.file_name}
-          />
+        <div className="w-full h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-red-500" />
+              <span className="font-medium">PDF Просмотр</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleZoomOut}>
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+              <span className="text-sm px-2">{zoomLevel}%</span>
+              <Button variant="outline" size="sm" onClick={handleZoomIn}>
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <iframe
+              src={file.file_url}
+              className="w-full h-full border-0"
+              title={file.file_name}
+              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left' }}
+            />
+          </div>
         </div>
       );
     }
     
     if (isImage(file.file_name, file.file_type)) {
       return (
-        <div className="w-full h-[70vh] flex items-center justify-center">
-          <img 
-            src={file.file_url} 
-            alt={file.file_name}
-            className="max-w-full max-h-full object-contain"
-          />
+        <div className="w-full h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-blue-500" />
+              <span className="font-medium">Просмотр изображения</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleZoomOut}>
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+              <span className="text-sm px-2">{zoomLevel}%</span>
+              <Button variant="outline" size="sm" onClick={handleZoomIn}>
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center overflow-auto p-4">
+            <img 
+              src={file.file_url} 
+              alt={file.file_name}
+              className="max-w-full max-h-full object-contain"
+              style={{ transform: `scale(${zoomLevel / 100})` }}
+            />
+          </div>
         </div>
       );
     }
@@ -207,19 +223,11 @@ export const FileCard: React.FC<FileCardProps> = ({
         <div className="text-center">
           {getFileIcon(file.file_name, file.file_type)}
           <h3 className="text-lg font-medium mt-4 mb-2">{file.file_name}</h3>
-          <p className="text-gray-600 mb-4">Предварительный просмотр недоступен</p>
+          <p className="text-gray-600 mb-4">Предварительный просмотр недоступен для данного типа файла</p>
           <div className="flex gap-2">
             <Button onClick={handleDownload} className="flex items-center gap-2">
               <Download className="w-4 h-4" />
               Скачать файл
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => window.open(file.file_url, '_blank')} 
-              className="flex items-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Открыть в новой вкладке
             </Button>
           </div>
         </div>
@@ -232,7 +240,6 @@ export const FileCard: React.FC<FileCardProps> = ({
       <Card className="glass-card hover:shadow-lg transition-all duration-300 group">
         <CardContent className="p-4">
           <div className="flex flex-col h-full">
-            {/* File Icon and Type Badge */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex-shrink-0">
                 {getFileIcon(file.file_name, file.file_type)}
@@ -250,7 +257,7 @@ export const FileCard: React.FC<FileCardProps> = ({
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={handleQuickOpen}>
                       <Eye className="w-4 h-4 mr-2" />
-                      Открыть
+                      Открыть в просмотрщике
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleDownload}>
                       <Download className="w-4 h-4 mr-2" />
@@ -271,12 +278,10 @@ export const FileCard: React.FC<FileCardProps> = ({
               </div>
             </div>
 
-            {/* File Name */}
             <h4 className="font-medium text-sm mb-2 line-clamp-2 flex-1">
               {file.file_name}
             </h4>
 
-            {/* File Info */}
             <div className="space-y-1 text-xs text-muted-foreground mb-3">
               <div className="flex items-center gap-1">
                 <HardDrive className="w-3 h-3" />
@@ -288,7 +293,6 @@ export const FileCard: React.FC<FileCardProps> = ({
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-1 mt-auto">
               <Button 
                 variant="outline" 
@@ -321,12 +325,12 @@ export const FileCard: React.FC<FileCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* File Viewer Modal */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-        <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden">
-          <DialogHeader>
+        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
+          <DialogHeader className="p-4 border-b">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-semibold truncate pr-4">
+              <DialogTitle className="text-lg font-semibold truncate pr-4 flex items-center gap-2">
+                {getFileIcon(file.file_name, file.file_type)}
                 {file.file_name}
               </DialogTitle>
               <div className="flex items-center gap-2">
@@ -353,7 +357,6 @@ export const FileCard: React.FC<FileCardProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* File Transfer Modal */}
       {showTransferModal && (
         <FileTransferModal
           isOpen={showTransferModal}

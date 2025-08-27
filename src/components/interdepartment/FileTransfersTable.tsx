@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,26 +17,46 @@ import {
   User,
   Building2,
   ArrowRight,
-  ExternalLink
+  RefreshCw,
+  ZoomIn,
+  X
 } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface FileTransfersTableProps {
   department: string;
 }
 
 export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ department }) => {
-  const { transfers, isLoading, getIncomingTransfers, getOutgoingTransfers, updateTransferStatus } = useInterdepartmentTransfers(department);
+  const { transfers, isLoading, getIncomingTransfers, getOutgoingTransfers, updateTransferStatus, loadTransfers } = useInterdepartmentTransfers(department);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   
-  // ИСПРАВЛЕННАЯ ЛОГИКА - ИЗОЛИРОВАННЫЕ ФАЙЛЫ ПО ОТДЕЛАМ
+  // ИСПРАВЛЕННАЯ ЛОГИКА - ПРАВИЛЬНАЯ ИЗОЛЯЦИЯ ФАЙЛОВ ПО ОТДЕЛАМ
   const incomingFiles = getIncomingTransfers(); // Только файлы присланные В данный отдел
   const outgoingFiles = getOutgoingTransfers(); // Только файлы отправленные ИЗ данного отдела
 
-  console.log(`📋 Отдел ${department}:`, {
-    входящие: incomingFiles.length,
-    отправленные: outgoingFiles.length,
+  console.log(`📋 ИСПРАВЛЕННАЯ логика для отдела ${department}:`, {
+    входящие_файлы: incomingFiles.length,
+    отправленные_файлы: outgoingFiles.length,
     всего_в_системе: transfers.length
   });
+
+  // ИСПРАВЛЕННЫЕ ДАННЫЕ ДЛЯ ДЕБАГА
+  console.log('📥 ВХОДЯЩИЕ файлы (присланные В этот отдел):', incomingFiles.map(f => ({
+    файл: f.file_name,
+    от: f.sender_department,
+    к: f.receiver_department,
+    статус: f.status
+  })));
+  
+  console.log('📤 ОТПРАВЛЕННЫЕ файлы (отправленные ИЗ этого отдела):', outgoingFiles.map(f => ({
+    файл: f.file_name,
+    от: f.sender_department,
+    к: f.receiver_department,
+    статус: f.status
+  })));
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -88,12 +107,12 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     return names[dept] || dept;
   };
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ БЫСТРОГО ПРОСМОТРА
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОСМОТРА ФАЙЛОВ - ВСТРОЕННЫЙ ПРОСМОТРЩИК
   const handleQuickView = (transfer: any) => {
-    console.log('🚀 Быстрое открытие файла:', transfer.file_name);
+    console.log('🚀 Открытие файла во встроенном просмотрщике:', transfer.file_name);
     
-    // Мгновенное открытие файла в новой вкладке
-    window.open(transfer.file_url, '_blank', 'noopener,noreferrer');
+    setSelectedFile(transfer);
+    setIsViewerOpen(true);
     
     // Обновляем статус если файл не был просмотрен
     if (transfer.status === 'sent' || transfer.status === 'delivered') {
@@ -135,6 +154,80 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
       console.error('❌ Ошибка при скачивании:', error);
       window.open(transfer.file_url, '_blank', 'noopener,noreferrer');
     }
+  };
+
+  const handleRefresh = () => {
+    console.log('🔄 Принудительное обновление списка файлов...');
+    loadTransfers();
+  };
+
+  // ВСТРОЕННЫЙ ПРОСМОТРЩИК ФАЙЛОВ
+  const renderFileViewer = () => {
+    if (!selectedFile) return null;
+
+    const isPDF = selectedFile.file_type === 'application/pdf' || selectedFile.file_name.toLowerCase().endsWith('.pdf');
+    const isImage = selectedFile.file_type?.startsWith('image/') || 
+                    ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(selectedFile.file_name.split('.').pop()?.toLowerCase() || '');
+
+    if (isPDF) {
+      return (
+        <div className="w-full h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-red-500" />
+              <span className="font-medium">PDF Документ</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => handleDownload(selectedFile)}>
+              <Download className="w-4 h-4 mr-2" />
+              Скачать
+            </Button>
+          </div>
+          <div className="flex-1">
+            <iframe
+              src={selectedFile.file_url}
+              className="w-full h-full border-0"
+              title={selectedFile.file_name}
+            />
+          </div>
+        </div>
+      );
+    }
+    
+    if (isImage) {
+      return (
+        <div className="w-full h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+            <div className="flex items-center gap-2">
+              <ZoomIn className="w-5 h-5 text-blue-500" />
+              <span className="font-medium">Изображение</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => handleDownload(selectedFile)}>
+              <Download className="w-4 h-4 mr-2" />
+              Скачать
+            </Button>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-4">
+            <img 
+              src={selectedFile.file_url} 
+              alt={selectedFile.file_name}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="w-full h-[60vh] flex flex-col items-center justify-center bg-gray-50">
+        <FileText className="w-16 h-16 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium mb-2">{selectedFile.file_name}</h3>
+        <p className="text-gray-600 mb-4">Предварительный просмотр недоступен</p>
+        <Button onClick={() => handleDownload(selectedFile)}>
+          <Download className="w-4 h-4 mr-2" />
+          Скачать файл
+        </Button>
+      </div>
+    );
   };
 
   const renderTransferRow = (transfer: any, isIncoming: boolean) => (
@@ -211,69 +304,98 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="w-5 h-5" />
-          Межотдельский обмен - {getDepartmentName(department)}
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Файлы отправленные и полученные данным отделом
-        </p>
-      </CardHeader>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Межотдельский обмен - {getDepartmentName(department)}
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Обновить
+            </Button>
+          </div>
+          <p className="text-sm text-gray-600">
+            Файлы отправленные и полученные данным отделом
+          </p>
+        </CardHeader>
 
-      <CardContent>
-        <Tabs defaultValue="incoming" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="incoming" className="flex items-center gap-2">
-              <Inbox className="w-4 h-4" />
-              Входящие ({incomingFiles.length})
-            </TabsTrigger>
-            <TabsTrigger value="outgoing" className="flex items-center gap-2">
-              <Send className="w-4 h-4" />
-              Отправленные ({outgoingFiles.length})
-            </TabsTrigger>
-          </TabsList>
+        <CardContent>
+          <Tabs defaultValue="incoming" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="incoming" className="flex items-center gap-2">
+                <Inbox className="w-4 h-4" />
+                Входящие ({incomingFiles.length})
+              </TabsTrigger>
+              <TabsTrigger value="outgoing" className="flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                Отправленные ({outgoingFiles.length})
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="incoming" className="mt-4">
-            {incomingFiles.length > 0 ? (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600 mb-3">
-                  📥 Файлы, полученные отделом "{getDepartmentName(department)}" от других отделов:
+            <TabsContent value="incoming" className="mt-4">
+              {incomingFiles.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600 mb-3">
+                    📥 Файлы, полученные отделом "{getDepartmentName(department)}" от других отделов:
+                  </div>
+                  {incomingFiles.map(transfer => renderTransferRow(transfer, true))}
                 </div>
-                {incomingFiles.map(transfer => renderTransferRow(transfer, true))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Нет входящих файлов</h3>
-                <p className="text-gray-600">
-                  Отдел "{getDepartmentName(department)}" пока не получил файлов от других отделов
-                </p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="outgoing" className="mt-4">
-            {outgoingFiles.length > 0 ? (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600 mb-3">
-                  📤 Файлы, отправленные отделом "{getDepartmentName(department)}" в другие отделы:
+              ) : (
+                <div className="text-center py-8">
+                  <Inbox className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Нет входящих файлов</h3>
+                  <p className="text-gray-600">
+                    Отдел "{getDepartmentName(department)}" пока не получил файлов от других отделов
+                  </p>
                 </div>
-                {outgoingFiles.map(transfer => renderTransferRow(transfer, false))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Send className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Нет отправленных файлов</h3>
-                <p className="text-gray-600">
-                  Отдел "{getDepartmentName(department)}" пока не отправил файлов в другие отделы
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="outgoing" className="mt-4">
+              {outgoingFiles.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600 mb-3">
+                    📤 Файлы, отправленные отделом "{getDepartmentName(department)}" в другие отделы:
+                  </div>
+                  {outgoingFiles.map(transfer => renderTransferRow(transfer, false))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Send className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Нет отправленных файлов</h3>
+                  <p className="text-gray-600">
+                    Отдел "{getDepartmentName(department)}" пока не отправил файлов в другие отделы
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* ВСТРОЕННЫЙ ПРОСМОТРЩИК ФАЙЛОВ */}
+      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
+          <DialogHeader className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg font-semibold truncate pr-4">
+                {selectedFile?.file_name}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsViewerOpen(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          {renderFileViewer()}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
