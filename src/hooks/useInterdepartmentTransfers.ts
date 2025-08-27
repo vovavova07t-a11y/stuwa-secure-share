@@ -41,7 +41,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       
       // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: каждый отдел видит ТОЛЬКО свои файлы
       const { data, error } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .select('*')
         .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
         .order('created_at', { ascending: false });
@@ -102,7 +102,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { data: insertData, error: insertError } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .insert([cleanTransferData])
         .select()
         .single();
@@ -146,7 +146,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { error } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .update(updateData)
         .eq('id', transferId);
 
