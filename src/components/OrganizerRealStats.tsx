@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 import { OrganizerTestDataSeeder } from './OrganizerTestDataSeeder';
 import { 
   FileText, 
@@ -9,7 +10,6 @@ import {
   Building2, 
   TrendingUp,
   Database,
-  Download,
   Eye,
   Clock
 } from 'lucide-react';
@@ -18,7 +18,6 @@ interface StatsData {
   totalFiles: number;
   totalDepartments: number;
   recentFiles: number;
-  totalDownloads: number;
   departmentStats: Array<{
     department: string;
     count: number;
@@ -31,44 +30,50 @@ export const OrganizerRealStats: React.FC = () => {
     totalFiles: 0,
     totalDepartments: 0,
     recentFiles: 0,
-    totalDownloads: 0,
     departmentStats: []
   });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadMockStats();
+    loadRealStats();
   }, []);
 
-  const loadMockStats = async () => {
+  const loadRealStats = async () => {
     try {
       setIsLoading(true);
       
-      // Mock data since the files table doesn't exist in the database
-      const mockFiles = [
-        { department: 'financial', category_id: 'fin_debt_reports', created_at: new Date().toISOString() },
-        { department: 'financial', category_id: 'fin_monthly_reports', created_at: new Date(Date.now() - 86400000).toISOString() },
-        { department: 'technical', category_id: 'tech_development', created_at: new Date(Date.now() - 172800000).toISOString() },
-        { department: 'technical', category_id: 'tech_specifications', created_at: new Date().toISOString() },
-        { department: 'logistics', category_id: 'log_client_base', created_at: new Date(Date.now() - 259200000).toISOString() },
-        { department: 'commercial', category_id: 'com_partnerships', created_at: new Date().toISOString() },
-        { department: 'office', category_id: 'cont_contacts', created_at: new Date(Date.now() - 345600000).toISOString() }
-      ];
+      // Загружаем реальные файлы из базы данных
+      const { data: filesData, error } = await supabase
+        .from('files')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      console.log('📁 Загружено мок файлов для статистики организаторов:', mockFiles.length);
-      console.log('📋 Файлы по отделам:', mockFiles.map((f: any) => `${f.department}/${f.category_id}`));
+      if (error) {
+        console.error('Ошибка загрузки файлов:', error);
+        // Если нет файлов в базе, показываем пустую статистику
+        setStats({
+          totalFiles: 0,
+          totalDepartments: 0,
+          recentFiles: 0,
+          departmentStats: []
+        });
+        return;
+      }
+
+      const realFiles = filesData || [];
+      console.log('📁 Загружено реальных файлов для статистики организаторов:', realFiles.length);
 
       // Получаем файлы за последние 7 дней
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const recentFiles = mockFiles.filter((file: any) => {
-        const fileDate = new Date(file.created_at);
+      const recentFiles = realFiles.filter(file => {
+        const fileDate = new Date(file.created_at || file.uploaded_at);
         return fileDate > weekAgo;
       });
 
       // Подсчитываем статистику по отделам
-      const departmentCounts = mockFiles.reduce((acc: Record<string, number>, file: any) => {
+      const departmentCounts = realFiles.reduce((acc: Record<string, number>, file) => {
         if (file.department) {
           acc[file.department] = (acc[file.department] || 0) + 1;
         }
@@ -90,20 +95,25 @@ export const OrganizerRealStats: React.FC = () => {
       }));
 
       setStats({
-        totalFiles: mockFiles.length,
+        totalFiles: realFiles.length,
         totalDepartments: Object.keys(departmentCounts).length,
         recentFiles: recentFiles.length,
-        totalDownloads: Math.floor(Math.random() * 1000) + 500,
         departmentStats
       });
 
-      console.log('📊 Статистика для организаторов загружена:', {
-        totalFiles: mockFiles.length,
+      console.log('📊 Реальная статистика для организаторов загружена:', {
+        totalFiles: realFiles.length,
         departments: departmentStats
       });
 
     } catch (error) {
       console.error('Ошибка загрузки статистики:', error);
+      setStats({
+        totalFiles: 0,
+        totalDepartments: 0,
+        recentFiles: 0,
+        departmentStats: []
+      });
     } finally {
       setIsLoading(false);
     }
@@ -111,8 +121,8 @@ export const OrganizerRealStats: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
           <Card key={i} className="glass-card">
             <CardContent className="p-6">
               <div className="animate-pulse">
@@ -129,7 +139,7 @@ export const OrganizerRealStats: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Основные метрики */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -171,20 +181,6 @@ export const OrganizerRealStats: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Скачиваний</p>
-                <p className="text-2xl font-bold">{stats.totalDownloads}</p>
-              </div>
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Download className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Статистика по отделам */}
@@ -215,7 +211,7 @@ export const OrganizerRealStats: React.FC = () => {
         </Card>
 
         {/* Компонент для создания тестовых данных */}
-        <OrganizerTestDataSeeder onDataSeeded={loadMockStats} />
+        <OrganizerTestDataSeeder onDataSeeded={loadRealStats} />
       </div>
 
       {/* Информационная карточка */}

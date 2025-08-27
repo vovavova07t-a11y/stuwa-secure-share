@@ -1,10 +1,11 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileCard } from './FileCard';
 import { useToast } from '@/hooks/use-toast';
+import { useSupabaseFiles } from '@/hooks/useSupabaseFiles';
 import { 
   Search,
   SortAsc,
@@ -42,77 +43,12 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [files, setFiles] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Load mock files based on department and category
-  React.useEffect(() => {
-    loadMockFiles();
-  }, [department, categoryId]);
+  // Используем реальные файлы из базы данных
+  const { files, isLoading } = useSupabaseFiles(department, categoryId);
 
-  const loadMockFiles = async () => {
-    try {
-      setIsLoading(true);
-      console.log(`🔄 Организатор загружает файлы для отдела: ${department}, категории: ${categoryId}`);
-      
-      // Create mock files based on department and category
-      const mockFiles = generateMockFiles(department, categoryId);
-      
-      console.log(`📁 Организатор загрузил ${mockFiles.length} файлов из категории ${categoryId}`);
-      console.log('📋 Файлы:', mockFiles.map((f: any) => f.file_name));
-      
-      setFiles(mockFiles);
-    } catch (error) {
-      console.error('Ошибка при загрузке файлов:', error);
-      setFiles([]);
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось загрузить файлы',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const generateMockFiles = (dept: string, catId: string) => {
-    // Generate different mock files based on department and category
-    const baseFiles = [
-      {
-        id: `${dept}_${catId}_1`,
-        file_name: `Документ_${catId}_1.pdf`,
-        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        file_size: 1024000,
-        department: dept,
-        category_id: catId,
-        created_at: new Date().toISOString(),
-        uploaded_at: new Date().toISOString()
-      },
-      {
-        id: `${dept}_${catId}_2`,
-        file_name: `Отчет_${catId}_2.docx`,
-        file_url: 'https://www.learningcontainer.com/wp-content/uploads/2019/09/sample-pdf-file.pdf',
-        file_size: 2048000,
-        department: dept,
-        category_id: catId,
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        uploaded_at: new Date(Date.now() - 86400000).toISOString()
-      },
-      {
-        id: `${dept}_${catId}_3`,
-        file_name: `Данные_${catId}_3.xlsx`,
-        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        file_size: 512000,
-        department: dept,
-        category_id: catId,
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-        uploaded_at: new Date(Date.now() - 172800000).toISOString()
-      }
-    ];
-
-    return baseFiles;
-  };
+  console.log(`📋 OrganizerFileSection: Загружено ${files.length} реальных файлов для ${department}/${categoryId}`);
 
   // Фильтрация и сортировка файлов
   const filteredAndSortedFiles = React.useMemo(() => {
@@ -125,7 +61,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         case 'name':
           return a.file_name.localeCompare(b.file_name);
         case 'date':
-          return new Date(b.uploaded_at || b.created_at).getTime() - new Date(a.uploaded_at || a.created_at).getTime();
+          return new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime();
         case 'size':
           return b.file_size - a.file_size;
         case 'type':
