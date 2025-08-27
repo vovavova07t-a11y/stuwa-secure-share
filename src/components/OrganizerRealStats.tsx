@@ -41,8 +41,8 @@ export const OrganizerRealStats: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Загружаем реальные финансовые документы из базы данных
-      const { data: financialData, error: financialError } = await supabase
+      // Загружаем реальные финансовые документы из базы данных с type assertion
+      const { data: financialData, error: financialError } = await (supabase as any)
         .from('financial_documents')
         .select('*')
         .order('created_at', { ascending: false });
@@ -58,7 +58,7 @@ export const OrganizerRealStats: React.FC = () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const recentFinancialFiles = financialFiles.filter(file => {
+      const recentFinancialFiles = financialFiles.filter((file: any) => {
         const fileDate = new Date(file.created_at);
         return fileDate > weekAgo;
       });
