@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useInterdepartmentTransfers } from '@/hooks/useInterdepartmentTransfers';
 import { 
   Download, 
@@ -19,10 +21,12 @@ import {
   ArrowRight,
   RefreshCw,
   ZoomIn,
-  X
+  X,
+  Check
 } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface FileTransfersTableProps {
   department: string;
@@ -32,6 +36,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
   const { transfers, isLoading, getIncomingTransfers, getOutgoingTransfers, updateTransferStatus, loadTransfers } = useInterdepartmentTransfers(department);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const { toast } = useToast();
   
   // ИСПРАВЛЕННАЯ ЛОГИКА - ПРАВИЛЬНАЯ ИЗОЛЯЦИЯ ФАЙЛОВ ПО ОТДЕЛАМ
   const incomingFiles = getIncomingTransfers(); // Только файлы присланные В данный отдел
@@ -58,6 +63,37 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     статус: f.status
   })));
 
+  // НОВАЯ ФУНКЦИЯ - ОТМЕТИТЬ КАК ПРОСМОТРЕННЫЙ
+  const handleMarkAsViewed = async (transfer: any, checked: boolean) => {
+    try {
+      console.log('✅ Отмечаем документ как просмотренный:', transfer.file_name);
+      
+      if (checked) {
+        await updateTransferStatus(transfer.id, 'viewed');
+        toast({
+          title: 'Документ отмечен',
+          description: `Документ "${transfer.file_name}" отмечен как просмотренный`
+        });
+      } else {
+        await updateTransferStatus(transfer.id, 'delivered');
+        toast({
+          title: 'Отметка снята',
+          description: `С документа "${transfer.file_name}" снята отметка о просмотре`
+        });
+      }
+      
+      // Обновляем данные
+      loadTransfers();
+    } catch (error) {
+      console.error('❌ Ошибка при отметке документа:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось отметить документ как просмотренный',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'sent':
@@ -65,9 +101,9 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
       case 'delivered':
         return <CheckCircle className="w-4 h-4 text-blue-500" />;
       case 'viewed':
-        return <Eye className="w-4 h-4 text-purple-500" />;
+        return <Eye className="w-4 h-4 text-green-500" />;
       case 'processed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
       default:
         return <AlertTriangle className="w-4 h-4 text-gray-500" />;
     }
@@ -77,12 +113,19 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     const variants: Record<string, any> = {
       sent: { variant: 'secondary', label: 'Отправлено' },
       delivered: { variant: 'default', label: 'Доставлено' },
-      viewed: { variant: 'outline', label: 'Просмотрено' },
-      processed: { variant: 'default', label: 'Обработано' }
+      viewed: { variant: 'default', label: 'Просмотрено', className: 'bg-green-100 text-green-800' },
+      processed: { variant: 'default', label: 'Обработано', className: 'bg-green-200 text-green-900' }
     };
     
     const config = variants[status] || { variant: 'secondary', label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return (
+      <Badge 
+        variant={config.variant}
+        className={config.className}
+      >
+        {config.label}
+      </Badge>
+    );
   };
 
   const getDepartmentIcon = (dept: string) => {
@@ -234,6 +277,18 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     <div key={transfer.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1">
+          {/* НОВАЯ КНОПКА ГАЛОЧКИ - только для входящих файлов */}
+          {isIncoming && (
+            <div className="flex flex-col items-center gap-1">
+              <Checkbox
+                checked={transfer.status === 'viewed' || transfer.status === 'processed'}
+                onCheckedChange={(checked) => handleMarkAsViewed(transfer, checked as boolean)}
+                className="w-5 h-5"
+              />
+              <span className="text-xs text-gray-500">Просмотрено</span>
+            </div>
+          )}
+          
           <FileText className="w-8 h-8 text-blue-500 flex-shrink-0" />
           
           <div className="flex-1 min-w-0">
@@ -338,8 +393,10 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
             <TabsContent value="incoming" className="mt-4">
               {incomingFiles.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="text-sm text-gray-600 mb-3">
-                    📥 Файлы, полученные отделом "{getDepartmentName(department)}" от других отделов:
+                  <div className="text-sm text-gray-600 mb-3 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-600" />
+                    📥 Файлы, полученные отделом "{getDepartmentName(department)}" от других отделов.
+                    <span className="text-xs text-gray-500">Отметьте галочкой просмотренные документы</span>
                   </div>
                   {incomingFiles.map(transfer => renderTransferRow(transfer, true))}
                 </div>
