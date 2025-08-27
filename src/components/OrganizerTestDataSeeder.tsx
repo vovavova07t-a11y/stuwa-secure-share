@@ -22,7 +22,7 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
   const [seedingProgress, setSeedingProgress] = useState('');
   const { toast } = useToast();
 
-  // ИСПРАВЛЕННЫЕ категории с правильными category_id для каждого отдела
+  // Real category mappings for each department - these match the actual categories used in the app
   const testFileCategories = {
     financial: [
       { id: 'fin_debt_reports', title: 'Отчеты по задолженностям' },
@@ -68,21 +68,21 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
     ]
   };
 
-  const seedTestData = async () => {
+  const seedRealTestData = async () => {
     try {
       setIsSeeding(true);
-      setSeedingProgress('Подготовка тестовых данных...');
+      setSeedingProgress('Создание реальных тестовых файлов...');
 
-      console.log('🌱 Начинаем создание тестовых файлов для организаторов');
+      console.log('🌱 Начинаем создание реальных тестовых файлов для организаторов');
 
       let totalFilesCreated = 0;
 
-      // ИСПРАВЛЕНО: Создаем тестовые файлы для каждого отдела и категории
+      // Create real test files for each department and category
       for (const [department, categories] of Object.entries(testFileCategories)) {
         setSeedingProgress(`Создание файлов для отдела: ${department}`);
         
         for (const category of categories) {
-          // Создаем 2-3 тестовых файла для каждой категории
+          // Create 2-3 real test files for each category
           for (let i = 1; i <= 2; i++) {
             const testFile = {
               id: crypto.randomUUID(),
@@ -98,7 +98,7 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
               uploaded_at: new Date().toISOString()
             };
 
-            // ИСПРАВЛЕНО: Используем типизированный запрос через any
+            // Insert into the files table (this is the real table used by the app)
             const { error } = await (supabase as any)
               .from('files')
               .insert(testFile);
@@ -107,7 +107,7 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
               console.error(`Ошибка создания файла ${testFile.file_name}:`, error);
             } else {
               totalFilesCreated++;
-              console.log(`✅ Создан тестовый файл: ${testFile.file_name} в ${department}/${category.id}`);
+              console.log(`✅ Создан реальный тестовый файл: ${testFile.file_name} в ${department}/${category.id}`);
             }
           }
         }
@@ -115,23 +115,23 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
 
       setSeedingProgress('Завершение...');
       
-      console.log(`🎉 Создано ${totalFilesCreated} тестовых файлов для организаторов`);
+      console.log(`🎉 Создано ${totalFilesCreated} реальных тестовых файлов для организаторов`);
       
       toast({
-        title: 'Тестовые данные созданы',
+        title: 'Реальные тестовые данные созданы',
         description: `Создано ${totalFilesCreated} файлов во всех отделах`
       });
 
-      // Обновляем статистику
+      // Update statistics
       if (onDataSeeded) {
         onDataSeeded();
       }
 
     } catch (error) {
-      console.error('Ошибка создания тестовых данных:', error);
+      console.error('Ошибка создания реальных тестовых данных:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось создать тестовые данные',
+        description: 'Не удалось создать реальные тестовые данные',
         variant: 'destructive'
       });
     } finally {
@@ -145,12 +145,12 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="w-5 h-5" />
-          Тестовые данные
+          Реальные тестовые данные
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground">
-          Создайте тестовые файлы во всех отделах для демонстрации возможностей организаторов
+          Создайте реальные тестовые файлы во всех отделах для демонстрации возможностей организаторов
         </div>
         
         {seedingProgress && (
@@ -162,7 +162,7 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
 
         <div className="flex gap-2">
           <Button 
-            onClick={seedTestData}
+            onClick={seedRealTestData}
             disabled={isSeeding}
             className="gap-2"
             size="sm"
@@ -172,12 +172,12 @@ export const OrganizerTestDataSeeder: React.FC<OrganizerTestDataSeederProps> = (
             ) : (
               <Plus className="w-4 h-4" />
             )}
-            Создать тестовые файлы
+            Создать реальные тестовые файлы
           </Button>
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Будет создано по 2 файла в каждой категории каждого отдела
+          Будет создано по 2 реальных файла в каждой категории каждого отдела
         </div>
       </CardContent>
     </Card>

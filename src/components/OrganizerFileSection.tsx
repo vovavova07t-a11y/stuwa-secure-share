@@ -45,12 +45,12 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const { toast } = useToast();
 
-  // Используем реальные файлы из базы данных
+  // Use real files from database - this hook properly loads files from the database
   const { files, isLoading } = useSupabaseFiles(department, categoryId);
 
   console.log(`📋 OrganizerFileSection: Загружено ${files.length} реальных файлов для ${department}/${categoryId}`);
 
-  // Фильтрация и сортировка файлов
+  // Filter and sort real files
   const filteredAndSortedFiles = React.useMemo(() => {
     let filtered = files.filter(file => 
       file.file_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -76,7 +76,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     return filtered;
   }, [files, searchQuery, sortBy]);
 
-  // File download function for organizers
+  // Real file download function for organizers
   const handleFileDownload = async (file: any) => {
     try {
       console.log('🔽 Организатор скачивает файл:', {
@@ -116,7 +116,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     }
   };
 
-  // Function to download all files
+  // Function to download all real files
   const handleDownloadAll = async () => {
     if (filteredAndSortedFiles.length === 0) {
       toast({

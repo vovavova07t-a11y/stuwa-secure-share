@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,64 +42,61 @@ export const OrganizerRealStats: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Загружаем реальные финансовые документы из базы данных с type assertion
-      const { data: financialData, error: financialError } = await (supabase as any)
-        .from('financial_documents')
+      // Load real files from the database - use the actual files table
+      const { data: allFiles, error: filesError } = await (supabase as any)
+        .from('files')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (financialError) {
-        console.error('Ошибка загрузки финансовых документов:', financialError);
+      if (filesError) {
+        console.error('Ошибка загрузки файлов:', filesError);
       }
 
-      const financialFiles = financialData || [];
-      console.log('📁 Загружено финансовых документов:', financialFiles.length);
+      const realFiles = allFiles || [];
+      console.log('📁 Загружено реальных файлов:', realFiles.length);
 
-      // Получаем файлы за последние 7 дней
+      // Get files from last 7 days
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       
-      const recentFinancialFiles = financialFiles.filter((file: any) => {
+      const recentRealFiles = realFiles.filter((file: any) => {
         const fileDate = new Date(file.created_at);
         return fileDate > weekAgo;
       });
 
-      // Статистика по отделам (пока только финансовый отдел имеет реальные данные)
-      const departmentStats = [];
+      // Calculate real department statistics
+      const departmentCounts: { [key: string]: number } = {};
       
-      if (financialFiles.length > 0) {
-        departmentStats.push({
-          department: 'financial',
-          count: financialFiles.length,
-          name: 'Финансовая дирекция'
-        });
-      }
-
-      // Добавляем другие отделы с нулевым количеством файлов
-      const otherDepartments = [
-        { department: 'technical', name: 'Техническая дирекция' },
-        { department: 'logistics', name: 'Управление логистики' },
-        { department: 'commercial', name: 'Коммерческая дирекция' },
-        { department: 'office', name: 'Офис-менеджер' }
-      ];
-
-      otherDepartments.forEach(dept => {
-        departmentStats.push({
-          department: dept.department,
-          count: 0,
-          name: dept.name
-        });
+      realFiles.forEach((file: any) => {
+        if (file.department) {
+          departmentCounts[file.department] = (departmentCounts[file.department] || 0) + 1;
+        }
       });
 
+      // Map departments to display names (only show departments with files)
+      const departmentNames: { [key: string]: string } = {
+        'financial': 'Финансовая дирекция',
+        'technical': 'Техническая дирекция',
+        'logistics': 'Управление логистики',
+        'commercial': 'Коммерческая дирекция',
+        'office': 'Офис-менеджер'
+      };
+
+      const departmentStats = Object.entries(departmentCounts).map(([department, count]) => ({
+        department,
+        count,
+        name: departmentNames[department] || department
+      }));
+
       setStats({
-        totalFiles: financialFiles.length,
-        totalDepartments: departmentStats.filter(dept => dept.count > 0).length,
-        recentFiles: recentFinancialFiles.length,
+        totalFiles: realFiles.length,
+        totalDepartments: departmentStats.length,
+        recentFiles: recentRealFiles.length,
         departmentStats
       });
 
       console.log('📊 Реальная статистика для организаторов загружена:', {
-        totalFiles: financialFiles.length,
+        totalFiles: realFiles.length,
         departments: departmentStats
       });
 
@@ -134,7 +132,7 @@ export const OrganizerRealStats: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Основные метрики */}
+      {/* Real metrics based on actual files */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="glass-card">
           <CardContent className="p-6">
@@ -179,7 +177,7 @@ export const OrganizerRealStats: React.FC = () => {
         </Card>
       </div>
 
-      {/* Статистика по отделам */}
+      {/* Real department statistics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="glass-card">
           <CardHeader>
@@ -200,17 +198,17 @@ export const OrganizerRealStats: React.FC = () => {
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-4">
-                Нет данных по отделам
+                Нет файлов в базе данных
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Компонент для создания тестовых данных */}
+        {/* Test data seeder component */}
         <OrganizerTestDataSeeder onDataSeeded={loadRealStats} />
       </div>
 
-      {/* Информационная карточка */}
+      {/* Information card for organizers */}
       <Card className="glass-card bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-700">
