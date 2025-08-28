@@ -44,7 +44,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       
       // Загружаем ВСЕ файлы где отдел является отправителем ИЛИ получателем
       const { data, error } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .select('*')
         .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
         .order('created_at', { ascending: false });
@@ -91,7 +91,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       });
 
       const { data: insertData, error: insertError } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .insert([transferData])
         .select()
         .single();
@@ -139,7 +139,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { error } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .update(updateData)
         .eq('id', transferId);
 
@@ -179,7 +179,7 @@ export const useInterdepartmentTransfers = (department: string) => {
       console.log(`🗑️ Удаление передачи файла ${transferId} из БД`);
       
       const { error } = await supabase
-        .from('interdepartment_file_transfers')
+        .from('interdepartment_file_transfers' as any)
         .delete()
         .eq('id', transferId);
 
