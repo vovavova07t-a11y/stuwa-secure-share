@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,12 +20,13 @@ import {
   XCircle,
   RotateCcw
 } from 'lucide-react';
+import { FileTransfer } from '@/hooks/useFileTransfers';
 
 interface DocumentDetailsModalProps {
-  document: any;
+  transfer: FileTransfer;
   onClose: () => void;
-  onStatusUpdate: (documentId: string, newStatus: string) => void;
-  onSuccess: () => void;
+  onStatusUpdate?: (transferId: string, newStatus: string) => void;
+  onSuccess?: () => void;
 }
 
 interface Comment {
@@ -47,14 +49,11 @@ const DEPARTMENT_NAMES = {
 const STATUS_CONFIG = {
   sent: { label: 'Отправлен', color: 'bg-blue-100 text-blue-800' },
   received: { label: 'Получен', color: 'bg-yellow-100 text-yellow-800' },
-  in_progress: { label: 'В обработке', color: 'bg-orange-100 text-orange-800' },
-  approved: { label: 'Утвержден', color: 'bg-green-100 text-green-800' },
-  needs_revision: { label: 'Нужна доработка', color: 'bg-red-100 text-red-800' },
-  rejected: { label: 'Отклонен', color: 'bg-red-100 text-red-800' }
+  deleted: { label: 'Удален', color: 'bg-red-100 text-red-800' }
 };
 
 export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
-  document,
+  transfer,
   onClose,
   onStatusUpdate,
   onSuccess
@@ -90,7 +89,7 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
       const { data, error } = await (supabase as any)
         .from('interdepartment_comments')
         .select('*')
-        .eq('document_id', document.id)
+        .eq('document_id', transfer.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -101,8 +100,10 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
   };
 
   useEffect(() => {
-    fetchComments();
-  }, [document.id]);
+    if (transfer?.id) {
+      fetchComments();
+    }
+  }, [transfer?.id]);
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
@@ -115,7 +116,7 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
       const { error } = await (supabase as any)
         .from('interdepartment_comments')
         .insert([{
-          document_id: document.id,
+          document_id: transfer.id,
           user_id: user.id,
           department: 'office', // This should be determined based on user's department
           comment_text: newComment,
@@ -143,13 +144,15 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
   };
 
   const handleStatusChange = async (newStatus: string) => {
-    await onStatusUpdate(document.id, newStatus);
-    onSuccess();
+    if (onStatusUpdate) {
+      await onStatusUpdate(transfer.id, newStatus);
+      onSuccess?.();
+    }
   };
 
   const downloadFile = () => {
-    if (document.file_url) {
-      window.open(document.file_url, '_blank');
+    if (transfer.file_url) {
+      window.open(transfer.file_url, '_blank');
     }
   };
 
@@ -159,7 +162,7 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            {document.title}
+            {transfer.file_name}
           </DialogTitle>
         </DialogHeader>
 
@@ -170,27 +173,17 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
               <div>
                 <Label className="text-sm font-semibold">Статус</Label>
                 <div className="mt-1">
-                  <Badge className={STATUS_CONFIG[document.status as keyof typeof STATUS_CONFIG].color}>
-                    {STATUS_CONFIG[document.status as keyof typeof STATUS_CONFIG].label}
+                  <Badge className={STATUS_CONFIG[transfer.status as keyof typeof STATUS_CONFIG]?.color || 'bg-gray-100 text-gray-800'}>
+                    {STATUS_CONFIG[transfer.status as keyof typeof STATUS_CONFIG]?.label || transfer.status}
                   </Badge>
                 </div>
               </div>
 
               <div>
-                <Label className="text-sm font-semibold">Приоритет</Label>
-                <div className="mt-1">
-                  <Badge variant="outline">
-                    {document.priority === 'low' && 'Низкий'}
-                    {document.priority === 'medium' && 'Средний'}
-                    {document.priority === 'high' && 'Высокий'}
-                    {document.priority === 'critical' && 'Критический'}
-                  </Badge>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-semibold">Тип документа</Label>
-                <p className="mt-1 text-sm">{document.document_type}</p>
+                <Label className="text-sm font-semibold">Размер файла</Label>
+                <p className="mt-1 text-sm">
+                  {Math.round(transfer.file_size / 1024)} КБ
+                </p>
               </div>
             </div>
 
@@ -198,102 +191,43 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
               <div>
                 <Label className="text-sm font-semibold">Отправитель</Label>
                 <p className="mt-1 text-sm">
-                  {DEPARTMENT_NAMES[document.sender_department as keyof typeof DEPARTMENT_NAMES]}
+                  {DEPARTMENT_NAMES[transfer.sender_department as keyof typeof DEPARTMENT_NAMES] || transfer.sender_department}
                 </p>
               </div>
 
               <div>
                 <Label className="text-sm font-semibold">Получатель</Label>
                 <p className="mt-1 text-sm">
-                  {DEPARTMENT_NAMES[document.receiver_department as keyof typeof DEPARTMENT_NAMES]}
+                  {DEPARTMENT_NAMES[transfer.recipient_department as keyof typeof DEPARTMENT_NAMES] || transfer.recipient_department}
                 </p>
               </div>
 
               <div>
-                <Label className="text-sm font-semibold">Дата создания</Label>
+                <Label className="text-sm font-semibold">Дата отправки</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-4 h-4" />
                   <span className="text-sm">
-                    {new Date(document.created_at).toLocaleString('ru-RU')}
+                    {new Date(transfer.sent_date).toLocaleString('ru-RU')}
                   </span>
                 </div>
               </div>
-
-              {document.due_date && (
-                <div>
-                  <Label className="text-sm font-semibold">Срок выполнения</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm">
-                      {new Date(document.due_date).toLocaleString('ru-RU')}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          {document.description && (
+          {transfer.comment && (
             <div>
-              <Label className="text-sm font-semibold">Описание</Label>
-              <p className="mt-1 text-sm text-muted-foreground">{document.description}</p>
+              <Label className="text-sm font-semibold">Комментарий</Label>
+              <p className="mt-1 text-sm text-muted-foreground">{transfer.comment}</p>
             </div>
           )}
 
-          {document.file_name && (
-            <div>
-              <Label className="text-sm font-semibold">Прикрепленный файл</Label>
-              <div className="mt-1">
-                <Button variant="outline" onClick={downloadFile} className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  {document.file_name}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <Separator />
-
-          {/* Status Actions */}
           <div>
-            <Label className="text-sm font-semibold mb-3 block">Действия</Label>
-            <div className="flex gap-2 flex-wrap">
-              {document.status === 'sent' && (
-                <Button onClick={() => handleStatusChange('received')} className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  Принять к рассмотрению
-                </Button>
-              )}
-              {document.status === 'received' && (
-                <Button onClick={() => handleStatusChange('in_progress')} className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Начать обработку
-                </Button>
-              )}
-              {document.status === 'in_progress' && (
-                <>
-                  <Button onClick={() => handleStatusChange('approved')} className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    Утвердить
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleStatusChange('needs_revision')} 
-                    className="flex items-center gap-2"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    Вернуть на доработку
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => handleStatusChange('rejected')} 
-                    className="flex items-center gap-2"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Отклонить
-                  </Button>
-                </>
-              )}
+            <Label className="text-sm font-semibold">Прикрепленный файл</Label>
+            <div className="mt-1">
+              <Button variant="outline" onClick={downloadFile} className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                {transfer.file_name}
+              </Button>
             </div>
           </div>
 
@@ -313,7 +247,7 @@ export const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       <span className="text-sm font-medium">
-                        {DEPARTMENT_NAMES[comment.department as keyof typeof DEPARTMENT_NAMES]}
+                        {DEPARTMENT_NAMES[comment.department as keyof typeof DEPARTMENT_NAMES] || comment.department}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">

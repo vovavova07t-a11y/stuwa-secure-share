@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileTransfersTable } from './FileTransfersTable';
-import { DocumentDetailsModal } from './DocumentDetailsModal';
 import { useFileTransfers, FileTransfer } from '@/hooks/useFileTransfers';
 
 interface FileTransferContainerProps {
@@ -13,7 +12,6 @@ export const FileTransferContainer: React.FC<FileTransferContainerProps> = ({
   department
 }) => {
   const [selectedTransfer, setSelectedTransfer] = useState<FileTransfer | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     isLoading,
@@ -24,8 +22,9 @@ export const FileTransferContainer: React.FC<FileTransferContainerProps> = ({
   } = useFileTransfers(department);
 
   const handleView = (transfer: FileTransfer) => {
-    setSelectedTransfer(transfer);
-    setIsModalOpen(true);
+    console.log('📋 Просмотр файла:', transfer.file_name);
+    // Открываем файл в новой вкладке
+    window.open(transfer.file_url, '_blank');
   };
 
   const handleReadStatusChange = async (transferId: string, isRead: boolean) => {
@@ -59,48 +58,35 @@ export const FileTransferContainer: React.FC<FileTransferContainerProps> = ({
   }
 
   return (
-    <>
-      <Tabs defaultValue="incoming" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="incoming" className="flex items-center gap-2">
-            📥 Входящие файлы ({incomingTransfers.length})
-          </TabsTrigger>
-          <TabsTrigger value="outgoing" className="flex items-center gap-2">
-            📤 Отправленные файлы ({outgoingTransfers.length})
-          </TabsTrigger>
-        </TabsList>
+    <Tabs defaultValue="incoming" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="incoming" className="flex items-center gap-2">
+          📥 Входящие файлы ({incomingTransfers.length})
+        </TabsTrigger>
+        <TabsTrigger value="outgoing" className="flex items-center gap-2">
+          📤 Отправленные файлы ({outgoingTransfers.length})
+        </TabsTrigger>
+      </TabsList>
 
-        <TabsContent value="incoming" className="mt-6">
-          <FileTransfersTable
-            transfers={incomingTransfers}
-            type="incoming"
-            onDelete={handleDelete}
-            onReadStatusChange={handleReadStatusChange}
-            onView={handleView}
-          />
-        </TabsContent>
-
-        <TabsContent value="outgoing" className="mt-6">
-          <FileTransfersTable
-            transfers={outgoingTransfers}
-            type="outgoing"
-            onDelete={handleDelete}
-            onReadStatusChange={handleReadStatusChange}
-            onView={handleView}
-          />
-        </TabsContent>
-      </Tabs>
-
-      {selectedTransfer && (
-        <DocumentDetailsModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedTransfer(null);
-          }}
-          transfer={selectedTransfer}
+      <TabsContent value="incoming" className="mt-6">
+        <FileTransfersTable
+          transfers={incomingTransfers}
+          type="incoming"
+          onDelete={handleDelete}
+          onReadStatusChange={handleReadStatusChange}
+          onView={handleView}
         />
-      )}
-    </>
+      </TabsContent>
+
+      <TabsContent value="outgoing" className="mt-6">
+        <FileTransfersTable
+          transfers={outgoingTransfers}
+          type="outgoing"
+          onDelete={handleDelete}
+          onReadStatusChange={handleReadStatusChange}
+          onView={handleView}
+        />
+      </TabsContent>
+    </Tabs>
   );
 };

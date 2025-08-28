@@ -37,7 +37,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       
       // Загружаем ВСЕ файлы где отдел является отправителем ИЛИ получателем
       const { data, error } = await supabase
-        .from('file_transfers')
+        .from('file_transfers' as any)
         .select('*')
         .or(`sender_department.eq.${currentDepartment},recipient_department.eq.${currentDepartment}`)
         .neq('status', 'deleted')
@@ -49,7 +49,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       }
 
       console.log(`📁 Загружено файлов для отдела ${currentDepartment}:`, data?.length || 0);
-      setTransfers(data || []);
+      setTransfers(data as FileTransfer[] || []);
       
     } catch (error) {
       console.error('❌ Критическая ошибка загрузки:', error);
@@ -90,7 +90,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       });
 
       const { data: insertData, error: insertError } = await supabase
-        .from('file_transfers')
+        .from('file_transfers' as any)
         .insert([{
           ...transferData,
           status: 'sent',
@@ -106,10 +106,12 @@ export const useFileTransfers = (currentDepartment: string) => {
 
       console.log('✅ ПЕРЕДАЧА СОЗДАНА успешно:', insertData);
       
+      const newTransfer = insertData as FileTransfer;
+      
       // Перезагружаем данные для актуализации
       await loadTransfers();
       
-      return insertData;
+      return newTransfer;
     } catch (error: any) {
       console.error('❌ Критическая ошибка создания передачи:', error);
       toast({
@@ -127,7 +129,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       console.log(`🔄 Обновление статуса прочтения ${transferId} на ${isRead}`);
       
       const { error } = await supabase
-        .from('file_transfers')
+        .from('file_transfers' as any)
         .update({ 
           is_read: isRead,
           updated_at: new Date().toISOString()
@@ -170,7 +172,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       console.log(`🗑️ Удаление передачи файла ${transferId}`);
       
       const { error } = await supabase
-        .from('file_transfers')
+        .from('file_transfers' as any)
         .update({ 
           status: 'deleted',
           updated_at: new Date().toISOString()
