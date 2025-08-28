@@ -31,7 +31,7 @@ export const useInterdepartmentTransfers = (department: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // КРИТИЧЕСКИ ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ФАЙЛОВ
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ФАЙЛОВ
   const loadTransfers = async () => {
     if (!department) {
       console.log('❌ Отдел не указан, загрузка невозможна');
@@ -40,11 +40,11 @@ export const useInterdepartmentTransfers = (department: string) => {
     
     try {
       setIsLoading(true);
-      console.log(`🔄 ИСПРАВЛЕННАЯ загрузка файлов для отдела: ${department}`);
+      console.log(`🔄 Загрузка файлов для отдела: ${department}`);
       
-      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: загружаем ВСЕ файлы где отдел является отправителем ИЛИ получателем
+      // Загружаем ВСЕ файлы где отдел является отправителем ИЛИ получателем
       const { data, error } = await supabase
-        .from('interdepartment_file_transfers' as any)
+        .from('interdepartment_file_transfers')
         .select('*')
         .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
         .order('created_at', { ascending: false });
@@ -57,26 +57,8 @@ export const useInterdepartmentTransfers = (department: string) => {
       console.log(`📁 Загружено файлов для отдела ${department}:`, data?.length || 0);
       
       const departmentTransfers = (data as unknown as InterdepartmentTransfer[]) || [];
-      
-      // ДЕТАЛЬНАЯ ОТЛАДКА ЗАГРУЖЕННЫХ ФАЙЛОВ
-      console.log('📋 ДЕТАЛИ загруженных файлов:');
-      departmentTransfers.forEach((transfer, index) => {
-        console.log(`${index + 1}. ${transfer.file_name}:`);
-        console.log(`   От: ${transfer.sender_department} → К: ${transfer.receiver_department}`);
-        console.log(`   Статус: ${transfer.status}, Дата: ${transfer.created_at}`);
-      });
-      
-      // РАЗДЕЛЕНИЕ НА ВХОДЯЩИЕ И ИСХОДЯЩИЕ
-      const incomingFiles = departmentTransfers.filter(t => t.receiver_department === department);
-      const outgoingFiles = departmentTransfers.filter(t => t.sender_department === department);
-      
-      console.log(`📥 ВХОДЯЩИЕ файлы для ${department}:`, incomingFiles.length);
-      incomingFiles.forEach(f => console.log(`   - ${f.file_name} от ${f.sender_department}`));
-      
-      console.log(`📤 ИСХОДЯЩИЕ файлы из ${department}:`, outgoingFiles.length);
-      outgoingFiles.forEach(f => console.log(`   - ${f.file_name} в ${f.receiver_department}`));
-      
       setTransfers(departmentTransfers);
+      
     } catch (error) {
       console.error('❌ Критическая ошибка загрузки:', error);
       setTransfers([]);
@@ -90,28 +72,14 @@ export const useInterdepartmentTransfers = (department: string) => {
     }
   };
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ВХОДЯЩИХ ФАЙЛОВ
+  // ФУНКЦИЯ ПОЛУЧЕНИЯ ВХОДЯЩИХ ФАЙЛОВ
   const getIncomingTransfers = () => {
-    const incoming = transfers.filter(transfer => {
-      const isIncoming = transfer.receiver_department === department;
-      console.log(`🔍 Файл ${transfer.file_name}: ${transfer.sender_department} → ${transfer.receiver_department}, входящий для ${department}? ${isIncoming}`);
-      return isIncoming;
-    });
-    
-    console.log(`📥 ИТОГО входящих файлов для ${department}:`, incoming.length);
-    return incoming;
+    return transfers.filter(transfer => transfer.receiver_department === department);
   };
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ИСХОДЯЩИХ ФАЙЛОВ  
+  // ФУНКЦИЯ ПОЛУЧЕНИЯ ИСХОДЯЩИХ ФАЙЛОВ  
   const getOutgoingTransfers = () => {
-    const outgoing = transfers.filter(transfer => {
-      const isOutgoing = transfer.sender_department === department;
-      console.log(`🔍 Файл ${transfer.file_name}: ${transfer.sender_department} → ${transfer.receiver_department}, исходящий из ${department}? ${isOutgoing}`);
-      return isOutgoing;
-    });
-    
-    console.log(`📤 ИТОГО исходящих файлов из ${department}:`, outgoing.length);
-    return outgoing;
+    return transfers.filter(transfer => transfer.sender_department === department);
   };
 
   const createTransfer = async (transferData: Partial<InterdepartmentTransfer>): Promise<InterdepartmentTransfer> => {
@@ -122,15 +90,9 @@ export const useInterdepartmentTransfers = (department: string) => {
         to: transferData.receiver_department
       });
 
-      // Убираем sender_id если он равен "demo-user" или не является валидным UUID
-      const cleanTransferData = { ...transferData };
-      if (cleanTransferData.sender_id === 'demo-user' || !isValidUUID(cleanTransferData.sender_id)) {
-        delete cleanTransferData.sender_id;
-      }
-
       const { data: insertData, error: insertError } = await supabase
-        .from('interdepartment_file_transfers' as any)
-        .insert([cleanTransferData])
+        .from('interdepartment_file_transfers')
+        .insert([transferData])
         .select()
         .single();
 
@@ -141,19 +103,10 @@ export const useInterdepartmentTransfers = (department: string) => {
 
       console.log('✅ ПЕРЕДАЧА СОЗДАНА успешно:', insertData);
       
-      // Добавляем новую передачу в локальное состояние
       const newTransfer = insertData as unknown as InterdepartmentTransfer;
-      setTransfers(prevTransfers => {
-        const updated = [newTransfer, ...prevTransfers];
-        console.log('📋 Обновленный список передач:', updated.length);
-        return updated;
-      });
       
-      // ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ДАННЫЕ
-      setTimeout(() => {
-        console.log('🔄 Принудительное обновление после создания передачи');
-        loadTransfers();
-      }, 1000);
+      // Перезагружаем данные для актуализации
+      await loadTransfers();
       
       return newTransfer;
     } catch (error: any) {
@@ -167,6 +120,7 @@ export const useInterdepartmentTransfers = (department: string) => {
     }
   };
 
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ СТАТУСА
   const updateTransferStatus = async (transferId: string, status: string) => {
     try {
       console.log(`🔄 Обновление статуса передачи ${transferId} на ${status}`);
@@ -185,16 +139,16 @@ export const useInterdepartmentTransfers = (department: string) => {
       }
 
       const { error } = await supabase
-        .from('interdepartment_file_transfers' as any)
+        .from('interdepartment_file_transfers')
         .update(updateData)
         .eq('id', transferId);
 
       if (error) {
-        console.error('❌ Ошибка обновления статуса:', error);
+        console.error('❌ Ошибка обновления статуса в БД:', error);
         throw error;
       }
 
-      console.log('✅ Статус успешно обновлен');
+      console.log('✅ Статус успешно обновлен в БД');
 
       // Обновляем локальное состояние
       setTransfers(prev => prev.map(transfer => 
@@ -207,11 +161,6 @@ export const useInterdepartmentTransfers = (department: string) => {
         title: 'Статус обновлен',
         description: `Статус файла изменен на "${getStatusLabel(status)}"`
       });
-
-      // Принудительно обновляем данные через секунду
-      setTimeout(() => {
-        loadTransfers();
-      }, 1000);
       
     } catch (error: any) {
       console.error('❌ Ошибка обновления статуса передачи:', error);
@@ -224,29 +173,29 @@ export const useInterdepartmentTransfers = (department: string) => {
     }
   };
 
-  // НОВАЯ ФУНКЦИЯ: Удаление передачи
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ УДАЛЕНИЯ
   const deleteTransfer = async (transferId: string) => {
     try {
-      console.log(`🗑️ Удаление передачи файла ${transferId}`);
+      console.log(`🗑️ Удаление передачи файла ${transferId} из БД`);
       
       const { error } = await supabase
-        .from('interdepartment_file_transfers' as any)
+        .from('interdepartment_file_transfers')
         .delete()
         .eq('id', transferId);
 
       if (error) {
-        console.error('❌ Ошибка удаления передачи:', error);
+        console.error('❌ Ошибка удаления передачи из БД:', error);
         throw error;
       }
 
-      console.log('✅ Передача успешно удалена');
+      console.log('✅ Передача успешно удалена из БД');
 
       // Обновляем локальное состояние
       setTransfers(prev => prev.filter(transfer => transfer.id !== transferId));
       
       toast({
         title: 'Документ удален',
-        description: 'Передача файла успешно удалена'
+        description: 'Передача файла успешно удалена из системы'
       });
       
     } catch (error: any) {
@@ -271,13 +220,6 @@ export const useInterdepartmentTransfers = (department: string) => {
     return statusLabels[status] || status;
   };
 
-  // Функция для проверки валидности UUID
-  const isValidUUID = (uuid?: string): boolean => {
-    if (!uuid) return false;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
-  };
-
   useEffect(() => {
     if (department) {
       console.log('🔄 useEffect: загрузка файлов для отдела:', department);
@@ -291,7 +233,7 @@ export const useInterdepartmentTransfers = (department: string) => {
     loadTransfers,
     createTransfer,
     updateTransferStatus,
-    deleteTransfer, // НОВАЯ ФУНКЦИЯ
+    deleteTransfer,
     getIncomingTransfers,
     getOutgoingTransfers
   };

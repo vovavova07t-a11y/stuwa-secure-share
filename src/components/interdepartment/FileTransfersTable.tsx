@@ -19,8 +19,6 @@ import {
   Building2,
   ArrowRight,
   RefreshCw,
-  X,
-  Check,
   Trash2
 } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
@@ -38,48 +36,25 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { toast } = useToast();
   
-  // ИСПРАВЛЕННАЯ ЛОГИКА - ПРАВИЛЬНАЯ ИЗОЛЯЦИЯ ФАЙЛОВ ПО ОТДЕЛАМ
-  const incomingFiles = getIncomingTransfers(); // Только файлы присланные В данный отдел
-  const outgoingFiles = getOutgoingTransfers(); // Только файлы отправленные ИЗ данного отдела
+  const incomingFiles = getIncomingTransfers();
+  const outgoingFiles = getOutgoingTransfers();
 
-  console.log(`📋 ИСПРАВЛЕННАЯ логика для отдела ${department}:`, {
+  console.log(`📋 Данные для отдела ${department}:`, {
     входящие_файлы: incomingFiles.length,
     отправленные_файлы: outgoingFiles.length,
     всего_в_системе: transfers.length
   });
 
-  // ИСПРАВЛЕННЫЕ ДАННЫЕ ДЛЯ ДЕБАГА
-  console.log('📥 ВХОДЯЩИЕ файлы (присланные В этот отдел):', incomingFiles.map(f => ({
-    файл: f.file_name,
-    от: f.sender_department,
-    к: f.receiver_department,
-    статус: f.status
-  })));
-  
-  console.log('📤 ОТПРАВЛЕННЫЕ файлы (отправленные ИЗ этого отдела):', outgoingFiles.map(f => ({
-    файл: f.file_name,
-    от: f.sender_department,
-    к: f.receiver_department,
-    статус: f.status
-  })));
-
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ - ОТМЕТИТЬ КАК ПРОСМОТРЕННЫЙ
+  // НОВАЯ ИСПРАВЛЕННАЯ ФУНКЦИЯ ГАЛОЧКИ
   const handleMarkAsViewed = async (transfer: any, checked: boolean) => {
     try {
-      console.log('✅ Отмечаем документ как просмотренный:', transfer.file_name, 'checked:', checked);
+      console.log('✅ Изменение статуса документа:', transfer.file_name, 'на просмотренный:', checked);
       
       const newStatus = checked ? 'viewed' : 'delivered';
       await updateTransferStatus(transfer.id, newStatus);
       
-      toast({
-        title: checked ? 'Документ отмечен' : 'Отметка снята',
-        description: checked 
-          ? `Документ "${transfer.file_name}" отмечен как просмотренный`
-          : `С документа "${transfer.file_name}" снята отметка о просмотре`
-      });
-      
     } catch (error) {
-      console.error('❌ Ошибка при отметке документа:', error);
+      console.error('❌ Ошибка при изменении статуса документа:', error);
       toast({
         title: 'Ошибка',
         description: 'Не удалось изменить статус документа',
@@ -88,7 +63,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     }
   };
 
-  // НОВАЯ ФУНКЦИЯ - УДАЛЕНИЕ ДОКУМЕНТА
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ УДАЛЕНИЯ
   const handleDeleteTransfer = async (transfer: any) => {
     if (!confirm(`Вы уверены, что хотите удалить документ "${transfer.file_name}"? Это действие нельзя отменить.`)) {
       return;
@@ -157,9 +132,8 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     return names[dept] || dept;
   };
 
-  // УЛУЧШЕННАЯ ФУНКЦИЯ ПРОСМОТРА ФАЙЛОВ
   const handleQuickView = (transfer: any) => {
-    console.log('🚀 Открытие файла в улучшенном просмотрщике:', transfer.file_name);
+    console.log('🚀 Открытие файла в просмотрщике:', transfer.file_name);
     
     setSelectedFile(transfer);
     setIsViewerOpen(true);
@@ -169,7 +143,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
         (transfer.status === 'sent' || transfer.status === 'delivered')) {
       setTimeout(() => {
         updateTransferStatus(transfer.id, 'viewed');
-      }, 2000); // Через 2 секунды просмотра помечаем как просмотренный
+      }, 2000);
     }
   };
 
@@ -218,7 +192,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
     <div key={transfer.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1">
-          {/* УЛУЧШЕННАЯ КНОПКА ГАЛОЧКИ - только для входящих файлов */}
+          {/* НОВАЯ ИСПРАВЛЕННАЯ ГАЛОЧКА - только для входящих файлов */}
           {isIncoming && (
             <div className="flex flex-col items-center gap-1">
               <Checkbox
@@ -347,7 +321,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
               {incomingFiles.length > 0 ? (
                 <div className="space-y-3">
                   <div className="text-sm text-gray-600 mb-3 flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Inbox className="w-4 h-4 text-blue-600" />
                     📥 Файлы, полученные отделом "{getDepartmentName(department)}" от других отделов.
                     <span className="text-xs text-gray-500">Отметьте галочкой просмотренные документы</span>
                   </div>
@@ -368,7 +342,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
               {outgoingFiles.length > 0 ? (
                 <div className="space-y-3">
                   <div className="text-sm text-gray-600 mb-3 flex items-center gap-2">
-                    <Trash2 className="w-4 h-4 text-red-600" />
+                    <Send className="w-4 h-4 text-green-600" />
                     📤 Файлы, отправленные отделом "{getDepartmentName(department)}" в другие отделы.
                     <span className="text-xs text-gray-500">Нажмите на корзину для удаления документа</span>
                   </div>
@@ -388,7 +362,7 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({ departme
         </CardContent>
       </Card>
 
-      {/* УЛУЧШЕННЫЙ ПРОСМОТРЩИК ФАЙЛОВ */}
+      {/* ПРОСМОТРЩИК ФАЙЛОВ */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
           <DialogHeader className="sr-only">
