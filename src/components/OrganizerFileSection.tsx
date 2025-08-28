@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,14 +74,14 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       // 1. Load from files table (main files table for all departments)
       try {
         const { data: filesData, error: filesError } = await supabase
-          .from('files')
+          .from('files' as any)
           .select('*')
           .eq('department', department)
           .order('created_at', { ascending: false });
 
         if (!filesError && filesData) {
           const formattedFiles = filesData
-            .filter(file => file.category_id === categoryId || !file.category_id)
+            .filter((file: any) => file.category_id === categoryId || !file.category_id)
             .map((file: any) => ({
               id: file.id,
               title: file.file_name,
@@ -108,7 +107,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       if (department === 'financial') {
         try {
           const { data: financialData, error: financialError } = await supabase
-            .from('financial_documents')
+            .from('financial_documents' as any)
             .select('*')
             .eq('category', categoryId)
             .order('created_at', { ascending: false });
@@ -141,7 +140,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       if (department === 'logistics') {
         try {
           const { data: clientsData, error: clientsError } = await supabase
-            .from('logistics_clients')
+            .from('logistics_clients' as any)
             .select('*')
             .order('created_at', { ascending: false });
 
@@ -168,7 +167,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       // 4. Load interdepartment transfers
       try {
         const { data: transfersData, error: transfersError } = await supabase
-          .from('interdepartment_file_transfers')
+          .from('interdepartment_file_transfers' as any)
           .select('*')
           .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
           .order('created_at', { ascending: false });
@@ -201,7 +200,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
 
         if (!documentsError && documentsData) {
           const formattedDocuments = documentsData
-            .filter(doc => doc.category === categoryId || !doc.category)
+            .filter((doc: any) => doc.category === categoryId || !doc.category)
             .map((doc: any) => ({
               id: doc.id,
               title: doc.title,
