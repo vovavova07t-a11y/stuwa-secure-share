@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +36,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       
       // Загружаем ВСЕ файлы где отдел является отправителем ИЛИ получателем
       const { data, error } = await supabase
-        .from('file_transfers' as any)
+        .from('file_transfers')
         .select('*')
         .or(`sender_department.eq.${currentDepartment},recipient_department.eq.${currentDepartment}`)
         .neq('status', 'deleted')
@@ -49,7 +48,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       }
 
       console.log(`📁 Загружено файлов для отдела ${currentDepartment}:`, data?.length || 0);
-      setTransfers(data as FileTransfer[] || []);
+      setTransfers((data || []) as FileTransfer[]);
       
     } catch (error) {
       console.error('❌ Критическая ошибка загрузки:', error);
@@ -90,7 +89,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       });
 
       const { data: insertData, error: insertError } = await supabase
-        .from('file_transfers' as any)
+        .from('file_transfers')
         .insert([{
           ...transferData,
           status: 'sent',
@@ -129,7 +128,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       console.log(`🔄 Обновление статуса прочтения ${transferId} на ${isRead}`);
       
       const { error } = await supabase
-        .from('file_transfers' as any)
+        .from('file_transfers')
         .update({ 
           is_read: isRead,
           updated_at: new Date().toISOString()
@@ -172,7 +171,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       console.log(`🗑️ Удаление передачи файла ${transferId}`);
       
       const { error } = await supabase
-        .from('file_transfers' as any)
+        .from('file_transfers')
         .update({ 
           status: 'deleted',
           updated_at: new Date().toISOString()

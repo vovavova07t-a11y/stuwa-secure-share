@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,17 +14,15 @@ import {
   FileType,
   MoreVertical,
   Calendar,
-  HardDrive,
-  X,
-  ZoomIn,
-  ZoomOut
+  HardDrive
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatFileSize } from '@/utils/fileUtils';
 import { FileData } from '@/hooks/useSupabaseFiles';
 import { FileTransferModal } from './interdepartment/FileTransferModal';
 import { getCurrentDepartmentFromPath } from './interdepartment/utils/departmentUtils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { UniversalFileViewer } from './UniversalFileViewer';
+import { downloadFile, canPreview } from '@/utils/fileDownload';
 
 interface FileCardProps {
   file: FileData;
@@ -66,7 +65,6 @@ export const FileCard: React.FC<FileCardProps> = ({
 }) => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(100);
   
   const currentDepartment = getCurrentDepartmentFromPath();
   
@@ -78,161 +76,32 @@ export const FileCard: React.FC<FileCardProps> = ({
     });
   };
 
-  const isImage = (fileName: string, fileType?: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '') || fileType?.startsWith('image/');
-  };
-
-  const isPDF = (fileName: string, fileType?: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    return extension === 'pdf' || fileType?.includes('pdf');
-  };
-
-  const isDocument = (fileName: string, fileType?: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    return ['doc', 'docx', 'xls', 'xlsx', 'txt', 'rtf'].includes(extension || '') || 
-           fileType?.includes('word') || fileType?.includes('sheet') || fileType?.includes('text');
-  };
-
-  const handleQuickOpen = async () => {
-    try {
-      console.log('🚀 Открытие файла во встроенном просмотрщике:', file.file_name);
-      
-      // Открываем встроенный просмотрщик вместо прямой ссылки Supabase
+  const handlePreview = () => {
+    console.log('🔍 Открытие просмотра файла:', file.file_name);
+    
+    if (canPreview(file.file_name)) {
       setIsViewerOpen(true);
       onView?.(file);
-      
-    } catch (error) {
-      console.error('❌ Ошибка открытия просмотрщика:', error);
+    } else {
+      // Если предпросмотр недоступен, предлагаем скачать
+      handleDownload();
     }
   };
 
   const handleDownload = async () => {
+    console.log('⬇️ Скачивание файла:', file.file_name);
+    
     try {
-      console.log('⬇️ Скачивание файла:', file.file_name);
-      
-      const response = await fetch(file.file_url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Ошибка загрузки файла');
-      }
-      
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = file.file_name;
-      link.style.display = 'none';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      window.URL.revokeObjectURL(blobUrl);
-      
-      console.log('✅ Файл успешно скачан:', file.file_name);
+      await downloadFile(file.file_url, file.file_name);
       onDownload?.(file);
     } catch (error) {
       console.error('❌ Ошибка при скачивании файла:', error);
-      window.open(file.file_url, '_blank', 'noopener,noreferrer');
     }
   };
 
   const handleSendToOtherDepartment = () => {
     setShowTransferModal(true);
     onSend?.(file);
-  };
-
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 25, 200));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 25, 50));
-  };
-
-  const renderFileViewer = () => {
-    if (isPDF(file.file_name, file.file_type)) {
-      return (
-        <div className="w-full h-[80vh] flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-red-500" />
-              <span className="font-medium">PDF Просмотр</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleZoomOut}>
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <span className="text-sm px-2">{zoomLevel}%</span>
-              <Button variant="outline" size="sm" onClick={handleZoomIn}>
-                <ZoomIn className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <iframe
-              src={file.file_url}
-              className="w-full h-full border-0"
-              title={file.file_name}
-              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left' }}
-            />
-          </div>
-        </div>
-      );
-    }
-    
-    if (isImage(file.file_name, file.file_type)) {
-      return (
-        <div className="w-full h-[80vh] flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-blue-500" />
-              <span className="font-medium">Просмотр изображения</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleZoomOut}>
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <span className="text-sm px-2">{zoomLevel}%</span>
-              <Button variant="outline" size="sm" onClick={handleZoomIn}>
-                <ZoomIn className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          <div className="flex-1 flex items-center justify-center overflow-auto p-4">
-            <img 
-              src={file.file_url} 
-              alt={file.file_name}
-              className="max-w-full max-h-full object-contain"
-              style={{ transform: `scale(${zoomLevel / 100})` }}
-            />
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="w-full h-[70vh] flex flex-col items-center justify-center bg-gray-50">
-        <div className="text-center">
-          {getFileIcon(file.file_name, file.file_type)}
-          <h3 className="text-lg font-medium mt-4 mb-2">{file.file_name}</h3>
-          <p className="text-gray-600 mb-4">Предварительный просмотр недоступен для данного типа файла</p>
-          <div className="flex gap-2">
-            <Button onClick={handleDownload} className="flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              Скачать файл
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -255,9 +124,9 @@ export const FileCard: React.FC<FileCardProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleQuickOpen}>
+                    <DropdownMenuItem onClick={handlePreview}>
                       <Eye className="w-4 h-4 mr-2" />
-                      Открыть в просмотрщике
+                      {canPreview(file.file_name) ? 'Предпросмотр' : 'Скачать'}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleDownload}>
                       <Download className="w-4 h-4 mr-2" />
@@ -298,10 +167,10 @@ export const FileCard: React.FC<FileCardProps> = ({
                 variant="outline" 
                 size="sm" 
                 className="flex-1 text-xs"
-                onClick={handleQuickOpen}
+                onClick={handlePreview}
               >
                 <Eye className="w-3 h-3 mr-1" />
-                Открыть
+                {canPreview(file.file_name) ? 'Просмотр' : 'Скачать'}
               </Button>
               <Button 
                 variant="ghost" 
@@ -325,37 +194,13 @@ export const FileCard: React.FC<FileCardProps> = ({
         </CardContent>
       </Card>
 
-      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
-          <DialogHeader className="p-4 border-b">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-semibold truncate pr-4 flex items-center gap-2">
-                {getFileIcon(file.file_name, file.file_type)}
-                {file.file_name}
-              </DialogTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownload}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Скачать
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsViewerOpen(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </DialogHeader>
-          {renderFileViewer()}
-        </DialogContent>
-      </Dialog>
+      <UniversalFileViewer
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        fileUrl={file.file_url}
+        fileName={file.file_name}
+        fileSize={file.file_size}
+      />
 
       {showTransferModal && (
         <FileTransferModal
