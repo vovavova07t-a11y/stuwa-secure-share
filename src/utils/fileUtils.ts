@@ -9,8 +9,14 @@ export const sanitizeFileName = (fileName: string): string => {
   
   // Очищаем имя от проблемных символов для хранения
   const cleanName = name
-    .replace(/[<>:"/\\|?*]/g, '_') // Заменяем недопустимые символы
-    .replace(/\s+/g, '_') // Заменяем пробелы на подчеркивания
+    .replace(/[<>:"/\\|?*\s]/g, '_') // Заменяем недопустимые символы и пробелы
+    .replace(/[а-яё]/gi, (match) => {
+      // Транслитерация кириллицы
+      const cyrillic = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+      const latin = 'abvgdeejzijklmnoprstufhcchshshhyeyuya';
+      const index = cyrillic.indexOf(match.toLowerCase());
+      return index !== -1 ? latin[index] : match;
+    })
     .replace(/_{2,}/g, '_') // Убираем повторяющиеся подчеркивания
     .substring(0, 100); // Ограничиваем длину
 
@@ -43,14 +49,42 @@ export const validateFile = (file: File, maxSize: number, allowedTypes: string[]
     };
   }
 
-  // Проверка типа
+  // Проверка типа файла
   const fileExtension = file.name.split('.').pop()?.toLowerCase();
-  if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+  if (!fileExtension) {
     return {
       valid: false,
-      error: `Неподдерживаемый тип файла. Разрешены: ${allowedTypes.join(', ').toUpperCase()}`
+      error: 'Файл должен иметь расширение'
     };
   }
 
-  return { valid: true };
+  // Если разрешены все типы или конкретный тип найден
+  if (allowedTypes.includes('*') || allowedTypes.includes(fileExtension)) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    error: `Неподдерживаемый тип файла. Разрешены: ${allowedTypes.join(', ').toUpperCase()}`
+  };
+};
+
+export const isImageFile = (fileName: string): boolean => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension || '');
+};
+
+export const isPdfFile = (fileName: string): boolean => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  return extension === 'pdf';
+};
+
+export const isDocumentFile = (fileName: string): boolean => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  return ['doc', 'docx', 'txt', 'rtf'].includes(extension || '');
+};
+
+export const isSpreadsheetFile = (fileName: string): boolean => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  return ['xls', 'xlsx', 'csv'].includes(extension || '');
 };

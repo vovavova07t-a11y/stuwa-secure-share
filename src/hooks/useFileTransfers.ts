@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +24,6 @@ export const useFileTransfers = (currentDepartment: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Загрузка всех передач для текущего отдела
   const loadTransfers = async () => {
     if (!currentDepartment) {
       console.log('❌ Отдел не указан, загрузка невозможна');
@@ -34,7 +34,6 @@ export const useFileTransfers = (currentDepartment: string) => {
       setIsLoading(true);
       console.log(`🔄 Загрузка файлов для отдела: ${currentDepartment}`);
       
-      // Загружаем ВСЕ файлы где отдел является отправителем ИЛИ получателем
       const { data, error } = await supabase
         .from('file_transfers')
         .select('*')
@@ -63,7 +62,6 @@ export const useFileTransfers = (currentDepartment: string) => {
     }
   };
 
-  // Получение входящих файлов
   const getIncomingTransfers = () => {
     return transfers.filter(transfer => 
       transfer.recipient_department === currentDepartment && 
@@ -71,7 +69,6 @@ export const useFileTransfers = (currentDepartment: string) => {
     );
   };
 
-  // Получение отправленных файлов (только свои)
   const getOutgoingTransfers = () => {
     return transfers.filter(transfer => 
       transfer.sender_department === currentDepartment && 
@@ -79,7 +76,6 @@ export const useFileTransfers = (currentDepartment: string) => {
     );
   };
 
-  // Создание новой передачи файла
   const createTransfer = async (transferData: Partial<FileTransfer>): Promise<FileTransfer> => {
     try {
       console.log('📤 СОЗДАНИЕ ПЕРЕДАЧИ файла:', {
@@ -106,8 +102,6 @@ export const useFileTransfers = (currentDepartment: string) => {
       console.log('✅ ПЕРЕДАЧА СОЗДАНА успешно:', insertData);
       
       const newTransfer = insertData as FileTransfer;
-      
-      // Перезагружаем данные для актуализации
       await loadTransfers();
       
       return newTransfer;
@@ -122,7 +116,6 @@ export const useFileTransfers = (currentDepartment: string) => {
     }
   };
 
-  // Обновление статуса прочтения файла
   const updateReadStatus = async (transferId: string, isRead: boolean) => {
     try {
       console.log(`🔄 Обновление статуса прочтения ${transferId} на ${isRead}`);
@@ -142,7 +135,6 @@ export const useFileTransfers = (currentDepartment: string) => {
 
       console.log('✅ Статус успешно обновлен в БД');
 
-      // Обновляем локальное состояние
       setTransfers(prev => prev.map(transfer => 
         transfer.id === transferId 
           ? { ...transfer, is_read: isRead, updated_at: new Date().toISOString() }
@@ -165,7 +157,6 @@ export const useFileTransfers = (currentDepartment: string) => {
     }
   };
 
-  // Удаление передачи (изменение статуса на deleted)
   const deleteTransfer = async (transferId: string) => {
     try {
       console.log(`🗑️ Удаление передачи файла ${transferId}`);
@@ -185,7 +176,6 @@ export const useFileTransfers = (currentDepartment: string) => {
 
       console.log('✅ Передача успешно удалена из БД');
 
-      // Убираем из локального состояния
       setTransfers(prev => prev.filter(transfer => transfer.id !== transferId));
       
       toast({

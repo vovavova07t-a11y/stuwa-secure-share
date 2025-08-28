@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Upload, File, X, Check, AlertCircle } from 'lucide-react';
 import { useSupabaseFiles } from '@/hooks/useSupabaseFiles';
 import { toast } from 'sonner';
+import { validateFile, formatFileSize } from '@/utils/fileUtils';
 
 interface UniversalFileUploadProps {
   department: string;
@@ -43,7 +44,32 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       return;
     }
 
-    const filesWithProgress = acceptedFiles.map(file => ({
+    // Валидируем каждый файл
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    for (const file of acceptedFiles) {
+      const validation = validateFile(file, maxSize, acceptedFileTypes);
+      if (validation.valid) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(`${file.name}: ${validation.error}`);
+      }
+    }
+
+    // Показываем ошибки валидации
+    if (invalidFiles.length > 0) {
+      invalidFiles.forEach(error => {
+        toast.error(error);
+      });
+    }
+
+    // Если нет валидных файлов, прекращаем загрузку
+    if (validFiles.length === 0) {
+      return;
+    }
+
+    const filesWithProgress = validFiles.map(file => ({
       file,
       progress: 0,
       status: 'uploading' as const
@@ -54,17 +80,12 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
     const uploadedFiles = [];
 
     // Загружаем файлы по одному
-    for (let i = 0; i < acceptedFiles.length; i++) {
-      const file = acceptedFiles[i];
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
       
       try {
-        console.log(`📤 Загружаем файл ${i + 1}/${acceptedFiles.length}:`, file.name);
+        console.log(`📤 Загружаем файл ${i + 1}/${validFiles.length}:`, file.name);
         
-        // Проверяем размер файла
-        if (file.size > maxSize) {
-          throw new Error(`Файл слишком большой. Максимальный размер: ${Math.round(maxSize / 1024 / 1024)}MB`);
-        }
-
         // Обновляем прогресс
         setUploadingFiles(prev => prev.map((item, index) => 
           index === i ? { ...item, progress: 25 } : item
@@ -99,7 +120,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
 
     // Уведомляем о завершении
     if (uploadedFiles.length > 0) {
-      toast.success(`Успешно загружено ${uploadedFiles.length} из ${acceptedFiles.length} файлов`);
+      toast.success(`Успешно загружено ${uploadedFiles.length} из ${validFiles.length} файлов`);
       onUploadComplete?.(uploadedFiles);
     }
 
@@ -108,7 +129,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       setUploadingFiles([]);
     }, 3000);
 
-  }, [department, categoryId, maxFiles, maxSize, saveFile, onUploadComplete]);
+  }, [department, categoryId, maxFiles, maxSize, acceptedFileTypes, saveFile, onUploadComplete]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -120,8 +141,11 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-    }
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'text/plain': ['.txt'],
+      'application/rtf': ['.rtf']
+    },
+    multiple: maxFiles > 1
   });
 
   const removeUploadingFile = (index: number) => {
@@ -148,7 +172,10 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
               <div>
                 <p className="text-lg mb-2">Перетащите файлы сюда или нажмите для выбора</p>
                 <p className="text-sm text-gray-500">
-                  Максимум {maxFiles} файлов, до {Math.round(maxSize / 1024 / 1024)}MB каждый
+                  Максимум {maxFiles} файлов, до {formatFileSize(maxSize)} каждый
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Поддерживаемые форматы: PDF, Word, Excel, изображения, текстовые файлы
                 </p>
               </div>
             )}
@@ -168,7 +195,7 @@ export const UniversalFileUpload: React.FC<UniversalFileUploadProps> = ({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.file.name}</p>
                     <p className="text-xs text-gray-500">
-                      {Math.round(item.file.size / 1024)} KB
+                      {formatFileSize(item.file.size)}
                     </p>
                     
                     {item.status === 'uploading' && (

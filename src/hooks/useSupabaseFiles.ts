@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { sanitizeFileName, generateFileId } from '@/utils/fileUtils';
 
 export interface FileData {
   id: string;
@@ -17,20 +18,17 @@ export interface FileData {
 }
 
 const SUPABASE_URL = "https://cevdbplhmncqbyuzchhj.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldmRicGxobW5jcWJ5dXpjaGhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NTMzNDEsImV4cCI6MjA1ODMyOTM0MX0.Vj7N9OOr4oDJtfgo1WsF32Hc46VkG1oh0bC7gz6d7Kw";
 
 export const useSupabaseFiles = (department: string, categoryId: string) => {
   const [files, setFiles] = useState<FileData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ФАЙЛОВ
   const loadFiles = async () => {
     try {
       setIsLoading(true);
       console.log(`🔄 Загрузка файлов для отдела: ${department}, категории: ${categoryId}`);
       
-      // Use type assertion to handle the files table that exists in the database
       const { data, error } = await (supabase as any)
         .from('files')
         .select('*')
@@ -46,7 +44,6 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       console.log(`📁 Загружено ${data?.length || 0} файлов из базы данных для категории ${categoryId}`);
       console.log('📋 Файлы:', data?.map((f: any) => f.file_name) || []);
       
-      // Обеспечиваем, что все файлы имеют корректные URL и приводим к правильному типу
       const filesWithUrls: FileData[] = (data || []).map((file: any) => ({
         id: file.id,
         file_name: file.file_name,
@@ -74,13 +71,15 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
     }
   };
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ФАЙЛА
   const saveFile = async (file: File, categoryId: string, department: string): Promise<FileData> => {
     try {
-      const fileId = crypto.randomUUID();
-      const fileName = `${department}/${categoryId}/${fileId}_${file.name}`;
+      const fileId = generateFileId();
+      const sanitizedFileName = sanitizeFileName(file.name);
+      const fileName = `${department}/${categoryId}/${fileId}_${sanitizedFileName}`;
       
       console.log('📤 Загружаем файл в Supabase Storage:', fileName);
+      console.log('📋 Оригинальное имя:', file.name);
+      console.log('📋 Очищенное имя:', sanitizedFileName);
 
       // Загружаем файл в Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -107,7 +106,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       // Сохраняем информацию о файле в базу данных
       const fileData = {
         id: fileId,
-        file_name: file.name,
+        file_name: file.name, // Сохраняем оригинальное имя для отображения
         file_size: file.size,
         file_type: file.type,
         category_id: categoryId,
@@ -132,7 +131,6 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
       console.log('✅ Файл успешно сохранен в базу данных:', insertData);
       
-      // Приводим результат к правильному типу и добавляем в локальное состояние
       const newFile: FileData = {
         id: insertData.id,
         file_name: insertData.file_name,
@@ -160,7 +158,6 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
     }
   };
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ УДАЛЕНИЯ ФАЙЛА
   const deleteFile = async (fileId: string) => {
     try {
       const fileToDelete = files.find(f => f.id === fileId);
@@ -171,7 +168,6 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
       console.log('🗑️ Удаление файла:', fileToDelete.file_name);
 
-      // Удаляем файл из Storage
       if (fileToDelete.storage_path) {
         const { error: storageError } = await supabase.storage
           .from('files')
@@ -184,7 +180,6 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         }
       }
 
-      // Удаляем запись из базы данных
       const { error: deleteError } = await (supabase as any)
         .from('files')
         .delete()
@@ -197,7 +192,6 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
       console.log('✅ Файл удален из базы данных');
 
-      // Обновляем локальное состояние
       setFiles(prev => prev.filter(f => f.id !== fileId));
       
       toast({
@@ -215,7 +209,6 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
     }
   };
 
-  // Загружаем файлы при изменении department или categoryId
   useEffect(() => {
     if (department && categoryId) {
       loadFiles();
