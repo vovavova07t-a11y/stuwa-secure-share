@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OrganizerFileSection } from '@/components/OrganizerFileSection';
-import { OrganizerRealStats } from '@/components/OrganizerRealStats';
+import { OrganizerStats } from '@/components/OrganizerStats';
 import { OrganizerViewBanner } from '@/components/OrganizerViewBanner';
 import { OrganizerBreadcrumbs } from '@/components/OrganizerBreadcrumbs';
 import { 
@@ -14,90 +14,97 @@ import {
   TrendingUp, 
   Phone,
   Settings,
-  BarChart3
+  ArrowLeft,
+  Eye,
+  Shield
 } from 'lucide-react';
 
 // РЕАЛЬНЫЕ категории для каждого отдела из базы данных
 const departmentCategories = {
   financial: [
-    { id: 'fin_debt_reports', title: 'Отчеты по задолженностям' },
-    { id: 'fin_monthly_reports', title: 'Финансовый отчет за месяц' },
-    { id: 'fin_quarterly_tax', title: 'Налоговый отчет за квартал' },
-    { id: 'fin_yearly_reports', title: 'Финансовая отчетность за год' },
-    { id: 'fin_founding_docs', title: 'Учредительные документы' },
-    { id: 'fin_org_structure', title: 'Оргструктура и штатное расписание' },
-    { id: 'fin_protocols', title: 'Протоколы НС' }
+    { id: 'fin_debt_reports', title: 'Отчеты по задолженностям', description: 'Финансовые отчеты и анализ задолженности клиентов' },
+    { id: 'fin_monthly_reports', title: 'Месячные отчеты', description: 'Ежемесячная финансовая отчетность компании' },
+    { id: 'fin_quarterly_tax', title: 'Налоговые отчеты', description: 'Квартальные налоговые декларации и отчеты' },
+    { id: 'fin_yearly_reports', title: 'Годовые отчеты', description: 'Годовая финансовая отчетность и анализ' },
+    { id: 'fin_founding_docs', title: 'Учредительные документы', description: 'Уставные документы и регистрационные материалы' },
+    { id: 'fin_org_structure', title: 'Организационная структура', description: 'Штатное расписание и структура компании' },
+    { id: 'fin_protocols', title: 'Протоколы НС', description: 'Протоколы наблюдательного совета' }
   ],
   technical: [
-    { id: 'tech_development', title: 'Программа развития' },
-    { id: 'tech_product_overview', title: 'Обзор продукции' },
-    { id: 'tech_specifications', title: 'Спецификация продукции' },
-    { id: 'tech_presentations', title: 'Презентация деятельности' },
-    { id: 'tech_business_plans', title: 'Бизнес планы и проекты' },
-    { id: 'tech_catalog', title: 'Каталог компании' },
-    { id: 'tech_certificates', title: 'Сертификаты на продукцию' }
+    { id: 'tech_development', title: 'Программы развития', description: 'Стратегические планы технического развития' },
+    { id: 'tech_product_overview', title: 'Обзор продукции', description: 'Техническое описание продуктов и услуг' },
+    { id: 'tech_specifications', title: 'Спецификации', description: 'Технические спецификации и требования' },
+    { id: 'tech_presentations', title: 'Презентации', description: 'Презентационные материалы о деятельности' },
+    { id: 'tech_business_plans', title: 'Бизнес планы', description: 'Бизнес планы и проектная документация' },
+    { id: 'tech_catalog', title: 'Каталог продукции', description: 'Каталог товаров и услуг компании' },
+    { id: 'tech_certificates', title: 'Сертификаты', description: 'Сертификаты качества и compliance документы' }
   ],
   logistics: [
-    { id: 'log_client_base', title: 'База клиентов' },
-    { id: 'log_contracts', title: 'Договоры с клиентами' },
-    { id: 'log_sales_reports', title: 'Отчеты по продажам' },
-    { id: 'log_communications', title: 'Коммуникации с клиентами' },
-    { id: 'log_delivery', title: 'Логистика и доставка' },
-    { id: 'log_regions', title: 'Региональные представительства' }
+    { id: 'log_client_base', title: 'База клиентов', description: 'Реестр клиентов и контрагентов' },
+    { id: 'log_contracts', title: 'Договоры', description: 'Договоры с клиентами и поставщиками' },
+    { id: 'log_sales_reports', title: 'Отчеты по продажам', description: 'Аналитика продаж и КПД' },
+    { id: 'log_communications', title: 'Коммуникации', description: 'Корреспонденция с клиентами' },
+    { id: 'log_delivery', title: 'Логистика', description: 'Документы по доставке и логистике' },
+    { id: 'log_regions', title: 'Региональные представительства', description: 'Документы региональных офисов' }
   ],
   commercial: [
-    { id: 'com_partnerships', title: 'Партнерства и альянсы' },
-    { id: 'com_price_lists', title: 'Прайс-листы и тарифы' },
-    { id: 'com_quotations', title: 'Коммерческие предложения' },
-    { id: 'com_analytics', title: 'Аналитика и маркетинг' },
-    { id: 'com_strategies', title: 'Стратегии развития' },
-    { id: 'com_investments', title: 'Инвестиционные проекты' }
+    { id: 'com_partnerships', title: 'Партнерства', description: 'Соглашения о партнерстве и альянсах' },
+    { id: 'com_price_lists', title: 'Прайс-листы', description: 'Актуальные прайс-листы и тарифы' },
+    { id: 'com_quotations', title: 'Коммерческие предложения', description: 'КП и тендерная документация' },
+    { id: 'com_analytics', title: 'Аналитика', description: 'Маркетинговые исследования и аналитика' },
+    { id: 'com_strategies', title: 'Стратегии развития', description: 'Стратегические планы развития бизнеса' },
+    { id: 'com_investments', title: 'Инвестиционные проекты', description: 'Инвестиционные предложения и проекты' }
   ],
   office: [
-    { id: 'cont_contacts', title: 'Контактная информация' },
-    { id: 'cont_schedules', title: 'Расписания и графики' },
-    { id: 'cont_events', title: 'Мероприятия и встречи' },
-    { id: 'cont_coordination', title: 'Координация работы' },
-    { id: 'cont_visitors', title: 'Регистрация посетителей' },
-    { id: 'cont_facilities', title: 'Управление офисом' }
+    { id: 'cont_contacts', title: 'Контакты', description: 'Контактная информация сотрудников и партнеров' },
+    { id: 'cont_schedules', title: 'Расписания', description: 'Графики работы и календарь мероприятий' },
+    { id: 'cont_events', title: 'Мероприятия', description: 'Планы мероприятий и встреч' },
+    { id: 'cont_coordination', title: 'Координация', description: 'Координационные документы' },
+    { id: 'cont_visitors', title: 'Посетители', description: 'Журнал регистрации посетителей' },
+    { id: 'cont_facilities', title: 'Управление офисом', description: 'Документы по управлению офисными помещениями' }
   ]
 };
 
 const sections = [
   { 
     id: 'about', 
-    name: 'О нас',
+    name: 'Финансы',
     description: 'Финансовая дирекция',
     icon: Building2,
-    department: 'financial'
+    department: 'financial',
+    color: 'bg-blue-500'
   },
   { 
     id: 'products', 
-    name: 'Продукция',
-    description: 'Техническая дирекция',
+    name: 'Техническая дирекция',
+    description: 'Техническая документация',
     icon: Settings,
-    department: 'technical'
+    department: 'technical',
+    color: 'bg-green-500'
   },
   { 
     id: 'clients', 
-    name: 'Клиенты',
+    name: 'Логистика',
     description: 'Управление логистики',
     icon: Users,
-    department: 'logistics'
+    department: 'logistics',
+    color: 'bg-purple-500'
   },
   { 
     id: 'development', 
-    name: 'Развитие',
+    name: 'Коммерция',
     description: 'Коммерческая дирекция',
     icon: TrendingUp,
-    department: 'commercial'
+    department: 'commercial',
+    color: 'bg-orange-500'
   },
   { 
     id: 'contacts', 
-    name: 'Контакты',
-    description: 'Офис-менеджер',
+    name: 'Офис-менеджер',
+    description: 'Административные документы',
     icon: Phone,
-    department: 'office'
+    department: 'office',
+    color: 'bg-pink-500'
   }
 ];
 
@@ -109,84 +116,79 @@ export const OrganizerDashboard: React.FC = () => {
   const currentDepartment = currentSection?.department;
   const availableCategories = currentDepartment ? departmentCategories[currentDepartment as keyof typeof departmentCategories] : [];
 
-  console.log('📋 OrganizerDashboard: Организатор просматривает реальные файлы для отдела', currentDepartment, ', категории:', availableCategories.map(c => c.id));
-
-  const logOrganizerActivity = (actionType: string, department?: string, category?: string, fileName?: string) => {
-    console.log('🔍 Organizer activity:', {
-      actionType,
-      department,
-      category,
-      fileName,
-      timestamp: new Date().toISOString()
-    });
-  };
-
-  React.useEffect(() => {
-    if (currentDepartment) {
-      logOrganizerActivity('view_department', currentDepartment);
-    }
-  }, [currentDepartment]);
-
   const handleBackToOrganizers = () => {
     setSelectedSection('');
     setSelectedCategory('');
-    logOrganizerActivity('back_to_dashboard');
   };
 
   if (!selectedSection) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <OrganizerViewBanner 
-          departmentTitle="Панель организатора"
-          departmentSubtitle="РЕАЛЬНЫЕ ДОКУМЕНТЫ всех отделов STUWA"
-          onBackToOrganizers={handleBackToOrganizers}
-        />
-        
-        <div className="mb-8">
-          <OrganizerRealStats />
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="container mx-auto px-4 py-6">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Shield className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">Панель организатора</h1>
+                  <p className="text-muted-foreground">Доступ ко всем документам компании STUWA</p>
+                </div>
+              </div>
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Eye className="w-3 h-3 mr-1" />
+                Режим просмотра
+              </Badge>
+            </div>
+            
+            {/* Statistics */}
+            <OrganizerStats />
+          </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-4">Разделы компании</h1>
-          <p className="text-muted-foreground">Выберите раздел для просмотра РЕАЛЬНЫХ документов</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sections.map((section, index) => {
-            const Icon = section.icon;
-            return (
-              <Card 
-                key={section.id}
-                className={`glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-${index + 1}`}
-                onClick={() => {
-                  setSelectedSection(section.id);
-                  logOrganizerActivity('select_section', section.department);
-                }}
-              >
-                <CardHeader className="text-center">
-                  <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <Icon className="w-8 h-8" />
-                  </div>
-                  <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
-                    {section.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 text-center">
-                    {section.description}
-                  </p>
-                  <div className="text-center">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full group-hover:bg-primary/10 transition-colors"
-                    >
-                      Просмотр РЕАЛЬНЫХ документов
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {/* Departments Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sections.map((section, index) => {
+              const Icon = section.icon;
+              return (
+                <Card 
+                  key={section.id}
+                  className="glass-card hover:scale-[1.02] transition-all duration-300 cursor-pointer group border border-border/50 hover:border-primary/30"
+                  onClick={() => setSelectedSection(section.id)}
+                >
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-3 rounded-lg ${section.color} bg-opacity-10`}>
+                        <Icon className={`w-6 h-6 text-${section.color.split('-')[1]}-600`} />
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <ArrowLeft className="w-4 h-4 rotate-180" />
+                      </Button>
+                    </div>
+                    <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                      {section.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {section.description}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Категорий: {departmentCategories[section.department as keyof typeof departmentCategories]?.length || 0}</span>
+                      <Badge variant="outline" className="text-xs">
+                        Активен
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -199,49 +201,52 @@ export const OrganizerDashboard: React.FC = () => {
     ];
 
     return (
-      <div className="container mx-auto px-4 py-6">
-        <OrganizerViewBanner 
-          departmentTitle={currentSection?.name || ''}
-          departmentSubtitle={`РЕАЛЬНЫЕ документы: ${currentSection?.description || ''}`}
-          onBackToOrganizers={handleBackToOrganizers}
-        />
-        <OrganizerBreadcrumbs items={breadcrumbItems} />
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <div className="container mx-auto px-4 py-6">
+          <OrganizerViewBanner 
+            departmentTitle={currentSection?.name || ''}
+            departmentSubtitle={`Документы отдела: ${currentSection?.description || ''}`}
+            onBackToOrganizers={handleBackToOrganizers}
+          />
+          <OrganizerBreadcrumbs items={breadcrumbItems} />
 
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">{currentSection?.name}</h1>
-          <p className="text-muted-foreground">РЕАЛЬНЫЕ документы от {currentSection?.description}</p>
-        </div>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold mb-2">{currentSection?.name}</h1>
+            <p className="text-muted-foreground">Выберите категорию для просмотра документов</p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {availableCategories.map((category, index) => (
-            <Card 
-              key={category.id}
-              className={`glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-${index + 1}`}
-              onClick={() => {
-                setSelectedCategory(category.id);
-                logOrganizerActivity('select_category', currentDepartment, category.id);
-              }}
-            >
-              <CardHeader className="text-center">
-                <div className="feature-icon mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <FileText className="w-8 h-8" />
-                </div>
-                <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">
-                  {category.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full group-hover:bg-primary/10 transition-colors"
-                  >
-                    Просмотр РЕАЛЬНЫХ файлов
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {availableCategories.map((category, index) => (
+              <Card 
+                key={category.id}
+                className="glass-card hover:scale-[1.02] transition-all duration-300 cursor-pointer group border border-border/50 hover:border-primary/30"
+                onClick={() => setSelectedCategory(category.id)}
+              >
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ArrowLeft className="w-4 h-4 rotate-180" />
+                    </Button>
+                  </div>
+                  <CardTitle className="text-base group-hover:text-primary transition-colors line-clamp-2">
+                    {category.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {category.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -256,20 +261,22 @@ export const OrganizerDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <OrganizerViewBanner 
-        departmentTitle={currentSection?.name || ''}
-        departmentSubtitle={`РЕАЛЬНЫЕ файлы: ${selectedCategoryInfo?.title || ''}`}
-        onBackToOrganizers={handleBackToOrganizers}
-      />
-      <OrganizerBreadcrumbs items={breadcrumbItems} />
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="container mx-auto px-4 py-6">
+        <OrganizerViewBanner 
+          departmentTitle={currentSection?.name || ''}
+          departmentSubtitle={`Категория: ${selectedCategoryInfo?.title || ''}`}
+          onBackToOrganizers={handleBackToOrganizers}
+        />
+        <OrganizerBreadcrumbs items={breadcrumbItems} />
 
-      <OrganizerFileSection
-        categoryId={selectedCategory}
-        categoryTitle={selectedCategoryInfo?.title || 'Неизвестная категория'}
-        department={currentDepartment || 'unknown'}
-        isViewOnly={true}
-      />
+        <OrganizerFileSection
+          categoryId={selectedCategory}
+          categoryTitle={selectedCategoryInfo?.title || 'Неизвестная категория'}
+          department={currentDepartment || 'unknown'}
+          isViewOnly={true}
+        />
+      </div>
     </div>
   );
 };
