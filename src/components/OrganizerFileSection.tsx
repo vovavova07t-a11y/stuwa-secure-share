@@ -70,130 +70,163 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       setIsLoading(true);
       console.log(`🔍 Organizer loading REAL documents for department: ${department}, category: ${categoryId}`);
       
-      // Load from multiple sources to get ALL real documents
-      const promises = [];
-      
-      // 1. Load from files table (uploaded by employees from all departments)
-      promises.push(
-        (supabase as any)
+      let allDocuments: RealDocument[] = [];
+
+      // 1. Load from files table (main files table for all departments)
+      try {
+        const { data: filesData, error: filesError } = await supabase
           .from('files')
           .select('*')
           .eq('department', department)
-          .eq('category_id', categoryId)
-          .order('created_at', { ascending: false })
-      );
+          .order('created_at', { ascending: false });
 
-      // 2. Load from financial_documents if it's financial department
+        if (!filesError && filesData) {
+          const formattedFiles = filesData
+            .filter(file => file.category_id === categoryId || !file.category_id)
+            .map((file: any) => ({
+              id: file.id,
+              title: file.file_name,
+              file_name: file.file_name,
+              file_url: file.file_url,
+              file_type: file.file_type || 'document',
+              file_size: file.file_size || 0,
+              created_at: file.created_at || file.uploaded_at,
+              uploaded_at: file.uploaded_at,
+              uploaded_by: file.uploaded_by,
+              department: file.department,
+              category_id: file.category_id,
+              description: `Документ из отдела: ${file.department}`
+            }));
+          allDocuments = [...allDocuments, ...formattedFiles];
+          console.log(`📁 Files table: ${formattedFiles.length} documents for ${department}`);
+        }
+      } catch (error) {
+        console.error('Error loading from files table:', error);
+      }
+
+      // 2. Load financial documents if financial department
       if (department === 'financial') {
-        promises.push(
-          (supabase as any)
+        try {
+          const { data: financialData, error: financialError } = await supabase
             .from('financial_documents')
             .select('*')
             .eq('category', categoryId)
-            .order('created_at', { ascending: false })
-        );
+            .order('created_at', { ascending: false });
+
+          if (!financialError && financialData) {
+            const formattedFinancial = financialData.map((doc: any) => ({
+              id: doc.id,
+              title: doc.title,
+              file_name: doc.file_name,
+              file_url: doc.file_url,
+              file_type: doc.file_type || 'document',
+              file_size: doc.file_size || 0,
+              created_at: doc.created_at,
+              uploaded_by: doc.uploaded_by,
+              department: 'financial',
+              category: doc.category,
+              description: doc.description,
+              version: doc.version,
+              download_count: doc.download_count
+            }));
+            allDocuments = [...allDocuments, ...formattedFinancial];
+            console.log(`💰 Financial documents: ${formattedFinancial.length} documents`);
+          }
+        } catch (error) {
+          console.error('Error loading financial documents:', error);
+        }
       }
 
-      // 3. Load from interdepartment_file_transfers (files sent to this department)
-      promises.push(
-        (supabase as any)
+      // 3. Load logistics clients if logistics department
+      if (department === 'logistics') {
+        try {
+          const { data: clientsData, error: clientsError } = await supabase
+            .from('logistics_clients')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (!clientsError && clientsData) {
+            const formattedClients = clientsData.map((client: any) => ({
+              id: client.id,
+              title: client.company_name,
+              file_name: `${client.company_name}.json`,
+              file_url: `data:application/json;base64,${btoa(JSON.stringify(client))}`,
+              file_type: 'json',
+              file_size: JSON.stringify(client).length,
+              created_at: client.created_at,
+              department: 'logistics',
+              description: `Клиент: ${client.company_name} - ${client.industry || 'Не указано'}`
+            }));
+            allDocuments = [...allDocuments, ...formattedClients];
+            console.log(`👥 Logistics clients: ${formattedClients.length} records`);
+          }
+        } catch (error) {
+          console.error('Error loading logistics clients:', error);
+        }
+      }
+
+      // 4. Load interdepartment transfers
+      try {
+        const { data: transfersData, error: transfersError } = await supabase
           .from('interdepartment_file_transfers')
           .select('*')
-          .eq('receiver_department', department)
-          .order('created_at', { ascending: false })
-      );
+          .or(`sender_department.eq.${department},receiver_department.eq.${department}`)
+          .order('created_at', { ascending: false });
 
-      // 4. Load from documents table (legacy documents)
-      promises.push(
-        (supabase as any)
+        if (!transfersError && transfersData) {
+          const formattedTransfers = transfersData.map((transfer: any) => ({
+            id: transfer.id,
+            title: transfer.file_name,
+            file_name: transfer.file_name,
+            file_url: transfer.file_url,
+            file_type: transfer.file_type || 'document',
+            file_size: transfer.file_size || 0,
+            created_at: transfer.created_at,
+            department: transfer.sender_department,
+            description: `Передача: ${transfer.sender_department} → ${transfer.receiver_department}`
+          }));
+          allDocuments = [...allDocuments, ...formattedTransfers];
+          console.log(`🔄 Interdepartment transfers: ${formattedTransfers.length} documents`);
+        }
+      } catch (error) {
+        console.error('Error loading interdepartment transfers:', error);
+      }
+
+      // 5. Load from documents table (legacy)
+      try {
+        const { data: documentsData, error: documentsError } = await supabase
           .from('documents')
           .select('*')
-          .eq('category', categoryId)
-          .order('created_at', { ascending: false })
-      );
+          .order('created_at', { ascending: false });
 
-      const results = await Promise.allSettled(promises);
-      
-      let allDocuments: RealDocument[] = [];
-      
-      // Process files table results
-      if (results[0].status === 'fulfilled' && results[0].value.data) {
-        const filesData = results[0].value.data.map((file: any) => ({
-          id: file.id,
-          title: file.file_name,
-          file_name: file.file_name,
-          file_url: file.file_url,
-          file_type: file.file_type || 'document',
-          file_size: file.file_size || 0,
-          created_at: file.created_at || file.uploaded_at,
-          uploaded_at: file.uploaded_at,
-          uploaded_by: file.uploaded_by,
-          department: file.department,
-          category_id: file.category_id,
-          description: `Загружен из отдела: ${file.department}`
-        }));
-        allDocuments = [...allDocuments, ...filesData];
-      }
-
-      // Process financial_documents results
-      if (results[1] && results[1].status === 'fulfilled' && results[1].value.data) {
-        const financialData = results[1].value.data.map((doc: any) => ({
-          id: doc.id,
-          title: doc.title,
-          file_name: doc.file_name,
-          file_url: doc.file_url,
-          file_type: doc.file_type || 'document',
-          file_size: doc.file_size || 0,
-          created_at: doc.created_at,
-          uploaded_by: doc.uploaded_by,
-          department: 'financial',
-          category: doc.category,
-          description: doc.description,
-          version: doc.version,
-          download_count: doc.download_count
-        }));
-        allDocuments = [...allDocuments, ...financialData];
-      }
-
-      // Process interdepartment transfers
-      if (results[2].status === 'fulfilled' && results[2].value.data) {
-        const transferData = results[2].value.data.map((transfer: any) => ({
-          id: transfer.id,
-          title: transfer.file_name,
-          file_name: transfer.file_name,
-          file_url: transfer.file_url,
-          file_type: transfer.file_type || 'document',
-          file_size: transfer.file_size || 0,
-          created_at: transfer.created_at,
-          department: transfer.sender_department,
-          description: `Передан из отдела: ${transfer.sender_department}`
-        }));
-        allDocuments = [...allDocuments, ...transferData];
-      }
-
-      // Process documents table
-      if (results[3].status === 'fulfilled' && results[3].value.data) {
-        const documentsData = results[3].value.data.map((doc: any) => ({
-          id: doc.id,
-          title: doc.title,
-          file_name: doc.file_name || doc.title,
-          file_url: doc.file_url || '',
-          file_type: doc.file_type || 'document',
-          file_size: doc.file_size || 0,
-          created_at: doc.created_at,
-          uploaded_by: doc.created_by,
-          department: department,
-          category: doc.category,
-          description: doc.description
-        }));
-        allDocuments = [...allDocuments, ...documentsData];
+        if (!documentsError && documentsData) {
+          const formattedDocuments = documentsData
+            .filter(doc => doc.category === categoryId || !doc.category)
+            .map((doc: any) => ({
+              id: doc.id,
+              title: doc.title,
+              file_name: doc.file_name || doc.title,
+              file_url: doc.file_url || '',
+              file_type: doc.file_type || 'document',
+              file_size: doc.file_size || 0,
+              created_at: doc.created_at,
+              uploaded_by: doc.created_by,
+              department: department,
+              category: doc.category,
+              description: doc.description
+            }));
+          allDocuments = [...allDocuments, ...formattedDocuments];
+          console.log(`📄 Legacy documents: ${formattedDocuments.length} documents`);
+        }
+      } catch (error) {
+        console.error('Error loading legacy documents:', error);
       }
 
       // Remove duplicates and sort by date
       const uniqueDocuments = allDocuments
         .filter((doc) => doc.file_url && doc.file_url.trim() !== '')
         .filter((doc, index, self) => 
-          index === self.findIndex(d => d.file_url === doc.file_url)
+          index === self.findIndex(d => d.file_url === doc.file_url || d.id === doc.id)
         )
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -242,6 +275,22 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       
       if (!document.file_url || document.file_url.trim() === '') {
         throw new Error('URL файла недоступен');
+      }
+
+      // Handle data URLs (for generated JSON files)
+      if (document.file_url.startsWith('data:')) {
+        const link = window.document.createElement('a');
+        link.href = document.file_url;
+        link.download = document.file_name;
+        window.document.body.appendChild(link);
+        link.click();
+        window.document.body.removeChild(link);
+        
+        toast({
+          title: 'Документ скачан',
+          description: `Файл "${document.file_name}" успешно скачан`
+        });
+        return;
       }
 
       const response = await fetch(document.file_url, {
