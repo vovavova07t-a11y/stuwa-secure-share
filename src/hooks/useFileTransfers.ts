@@ -34,7 +34,7 @@ export const useFileTransfers = (currentDepartment: string) => {
       setIsLoading(true);
       console.log(`🔄 Загрузка файлов для отдела: ${currentDepartment}`);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('file_transfers')
         .select('*')
         .or(`sender_department.eq.${currentDepartment},recipient_department.eq.${currentDepartment}`)
@@ -84,7 +84,7 @@ export const useFileTransfers = (currentDepartment: string) => {
         to: transferData.recipient_department
       });
 
-      const { data: insertData, error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await (supabase as any)
         .from('file_transfers')
         .insert([{
           ...transferData,
@@ -120,7 +120,7 @@ export const useFileTransfers = (currentDepartment: string) => {
     try {
       console.log(`🔄 Обновление статуса прочтения ${transferId} на ${isRead}`);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('file_transfers')
         .update({ 
           is_read: isRead,
@@ -161,7 +161,7 @@ export const useFileTransfers = (currentDepartment: string) => {
     try {
       console.log(`🗑️ Удаление передачи файла ${transferId}`);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('file_transfers')
         .update({ 
           status: 'deleted',
