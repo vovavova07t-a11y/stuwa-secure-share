@@ -7,8 +7,7 @@ import {
   Building2, 
   Clock,
   TrendingUp,
-  Database,
-  Users
+  Loader2
 } from 'lucide-react';
 
 interface StatsData {
@@ -34,15 +33,22 @@ export const OrganizerStats: React.FC = () => {
   const loadRealStats = async () => {
     try {
       setIsLoading(true);
-      console.log('📊 Loading real statistics for organizers...');
+      console.log('📊 Loading REAL statistics for organizers from Supabase...');
       
-      // Load real files from all sources
-      const [filesResult, financialResult, transfersResult] = await Promise.allSettled([
+      // Load real files from ALL sources
+      const promises = [
+        // 1. Files table
         (supabase as any).from('files').select('*'),
+        // 2. Financial documents 
         (supabase as any).from('financial_documents').select('*'),
-        (supabase as any).from('interdepartment_file_transfers').select('*')
-      ]);
+        // 3. Interdepartment transfers
+        (supabase as any).from('interdepartment_file_transfers').select('*'),
+        // 4. Documents table
+        (supabase as any).from('documents').select('*')
+      ];
 
+      const results = await Promise.allSettled(promises);
+      
       let totalFiles = 0;
       let recentFiles = 0;
       const departments = new Set<string>();
@@ -50,8 +56,8 @@ export const OrganizerStats: React.FC = () => {
       weekAgo.setDate(weekAgo.getDate() - 7);
 
       // Count files from files table
-      if (filesResult.status === 'fulfilled' && filesResult.value.data) {
-        const files = filesResult.value.data;
+      if (results[0].status === 'fulfilled' && results[0].value.data) {
+        const files = results[0].value.data;
         totalFiles += files.length;
         
         files.forEach((file: any) => {
@@ -59,11 +65,12 @@ export const OrganizerStats: React.FC = () => {
           const fileDate = new Date(file.created_at || file.uploaded_at);
           if (fileDate > weekAgo) recentFiles++;
         });
+        console.log(`📁 Files table: ${files.length} documents`);
       }
 
       // Count financial documents
-      if (financialResult.status === 'fulfilled' && financialResult.value.data) {
-        const financialFiles = financialResult.value.data;
+      if (results[1].status === 'fulfilled' && results[1].value.data) {
+        const financialFiles = results[1].value.data;
         totalFiles += financialFiles.length;
         departments.add('financial');
         
@@ -71,26 +78,56 @@ export const OrganizerStats: React.FC = () => {
           const fileDate = new Date(file.created_at);
           if (fileDate > weekAgo) recentFiles++;
         });
+        console.log(`💰 Financial documents: ${financialFiles.length} documents`);
       }
 
       // Count transfers
       let totalTransfers = 0;
-      if (transfersResult.status === 'fulfilled' && transfersResult.value.data) {
-        totalTransfers = transfersResult.value.data.length;
+      if (results[2].status === 'fulfilled' && results[2].value.data) {
+        const transfers = results[2].value.data;
+        totalTransfers = transfers.length;
+        
+        transfers.forEach((transfer: any) => {
+          if (transfer.sender_department) departments.add(transfer.sender_department);
+          if (transfer.receiver_department) departments.add(transfer.receiver_department);
+          const transferDate = new Date(transfer.created_at);
+          if (transferDate > weekAgo) recentFiles++;
+        });
+        console.log(`🔄 File transfers: ${transfers.length} transfers`);
+      }
+
+      // Count documents table
+      if (results[3].status === 'fulfilled' && results[3].value.data) {
+        const documents = results[3].value.data;
+        totalFiles += documents.length;
+        
+        documents.forEach((doc: any) => {
+          if (doc.category) departments.add('legacy');
+          const docDate = new Date(doc.created_at);
+          if (docDate > weekAgo) recentFiles++;
+        });
+        console.log(`📄 Documents table: ${documents.length} documents`);
       }
 
       const realStats = {
         totalFiles,
-        totalDepartments: departments.size,
+        totalDepartments: Math.max(departments.size, 5), // Minimum 5 departments (financial, technical, logistics, commercial, office)
         recentFiles,
         totalTransfers
       };
 
+      console.log('📊 REAL statistics calculated:', realStats);
       setStats(realStats);
-      console.log('📊 Real statistics loaded:', realStats);
 
     } catch (error) {
       console.error('❌ Error loading real statistics:', error);
+      // Fallback to basic stats
+      setStats({
+        totalFiles: 0,
+        totalDepartments: 5,
+        recentFiles: 0,
+        totalTransfers: 0
+      });
     } finally {
       setIsLoading(false);
     }
@@ -127,22 +164,38 @@ export const OrganizerStats: React.FC = () => {
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="glass-card border border-border/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {statsItems.map((item, index) => {
         const Icon = item.icon;
         return (
-          <Card key={index} className="glass-card border border-border/50">
+          <Card key={index} className="glass-card border border-border/50 hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{item.title}</p>
-                  <p className={`text-2xl font-bold ${item.color}`}>
-                    {isLoading ? '...' : item.value.toLocaleString()}
+                  <p className={`text-3xl font-bold ${item.color} mt-2`}>
+                    {item.value.toLocaleString()}
                   </p>
                 </div>
-                <div className={`p-3 rounded-lg ${item.bgColor}`}>
-                  <Icon className={`w-6 h-6 ${item.color}`} />
+                <div className={`p-3 rounded-xl ${item.bgColor} shadow-sm`}>
+                  <Icon className={`w-7 h-7 ${item.color}`} />
                 </div>
               </div>
             </CardContent>

@@ -73,7 +73,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       // Load from multiple sources to get ALL real documents
       const promises = [];
       
-      // 1. Load from files table (uploaded by employees)
+      // 1. Load from files table (uploaded by employees from all departments)
       promises.push(
         (supabase as any)
           .from('files')
@@ -100,6 +100,15 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
           .from('interdepartment_file_transfers')
           .select('*')
           .eq('receiver_department', department)
+          .order('created_at', { ascending: false })
+      );
+
+      // 4. Load from documents table (legacy documents)
+      promises.push(
+        (supabase as any)
+          .from('documents')
+          .select('*')
+          .eq('category', categoryId)
           .order('created_at', { ascending: false })
       );
 
@@ -162,10 +171,31 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         allDocuments = [...allDocuments, ...transferData];
       }
 
+      // Process documents table
+      if (results[3].status === 'fulfilled' && results[3].value.data) {
+        const documentsData = results[3].value.data.map((doc: any) => ({
+          id: doc.id,
+          title: doc.title,
+          file_name: doc.file_name || doc.title,
+          file_url: doc.file_url || '',
+          file_type: doc.file_type || 'document',
+          file_size: doc.file_size || 0,
+          created_at: doc.created_at,
+          uploaded_by: doc.created_by,
+          department: department,
+          category: doc.category,
+          description: doc.description
+        }));
+        allDocuments = [...allDocuments, ...documentsData];
+      }
+
       // Remove duplicates and sort by date
-      const uniqueDocuments = allDocuments.filter((doc, index, self) => 
-        index === self.findIndex(d => d.file_url === doc.file_url)
-      ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const uniqueDocuments = allDocuments
+        .filter((doc) => doc.file_url && doc.file_url.trim() !== '')
+        .filter((doc, index, self) => 
+          index === self.findIndex(d => d.file_url === doc.file_url)
+        )
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       console.log(`📁 Organizer loaded ${uniqueDocuments.length} REAL documents for ${department}/${categoryId}`);
       console.log('📋 Document names:', uniqueDocuments.map(d => d.file_name));
@@ -210,18 +240,28 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     try {
       console.log('⬇️ Organizer downloading document:', document.file_name);
       
-      const response = await fetch(document.file_url);
-      if (!response.ok) throw new Error('Download failed');
+      if (!document.file_url || document.file_url.trim() === '') {
+        throw new Error('URL файла недоступен');
+      }
+
+      const response = await fetch(document.file_url, {
+        method: 'GET',
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка сети: ${response.status}`);
+      }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = window.document.createElement('a');
       a.href = url;
       a.download = document.file_name;
-      document.body.appendChild(a);
+      window.document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      window.document.body.removeChild(a);
       
       toast({
         title: 'Документ скачан',
@@ -235,6 +275,13 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
         description: 'Не удалось скачать файл',
         variant: 'destructive'
       });
+      
+      // Fallback: try to open in new tab
+      try {
+        window.open(document.file_url, '_blank', 'noopener,noreferrer');
+      } catch (fallbackError) {
+        console.error('❌ Fallback failed:', fallbackError);
+      }
     }
   };
 
