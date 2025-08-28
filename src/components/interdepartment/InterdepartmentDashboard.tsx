@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { FileTransfersTable } from './FileTransfersTable';
+import { FileTransferContainer } from './FileTransferContainer';
 import { getCurrentDepartmentFromPath } from './utils/departmentUtils';
 
 export const InterdepartmentDashboard: React.FC = () => {
-  // ИСПРАВЛЕНО: получаем отдел из текущего URL пути
+  // Получаем отдел из текущего URL пути
   const currentDepartment = getCurrentDepartmentFromPath();
 
   console.log('🏢 InterdepartmentDashboard: Текущий отдел определен как:', currentDepartment);
@@ -18,7 +18,7 @@ export const InterdepartmentDashboard: React.FC = () => {
         </p>
       </div>
 
-      <FileTransfersTable department={currentDepartment} />
+      <FileTransferContainer department={currentDepartment} />
     </div>
   );
 };

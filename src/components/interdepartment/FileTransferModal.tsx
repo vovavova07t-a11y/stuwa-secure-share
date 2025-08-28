@@ -6,17 +6,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useInterdepartmentTransfers } from '@/hooks/useInterdepartmentTransfers';
+import { useFileTransfers } from '@/hooks/useFileTransfers';
 import { 
   Send, 
   FileText, 
   Building2, 
   MessageSquare, 
   ArrowRight,
-  Calendar,
   AlertCircle
 } from 'lucide-react';
-import { formatFileSize } from '@/utils/fileUtils';
 
 interface FileTransferModalProps {
   isOpen: boolean;
@@ -40,13 +38,6 @@ const DEPARTMENTS = {
   office: 'Офис-менеджер'
 };
 
-const PRIORITY_OPTIONS = {
-  low: { label: 'Низкий', color: 'bg-gray-100 text-gray-800' },
-  normal: { label: 'Обычный', color: 'bg-blue-100 text-blue-800' },
-  high: { label: 'Высокий', color: 'bg-orange-100 text-orange-800' },
-  urgent: { label: 'Срочно', color: 'bg-red-100 text-red-800' }
-};
-
 export const FileTransferModal: React.FC<FileTransferModalProps> = ({
   isOpen,
   onClose,
@@ -54,18 +45,22 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
   currentDepartment,
   onSuccess
 }) => {
-  const [receiverDepartment, setReceiverDepartment] = useState('');
-  const [message, setMessage] = useState('');
-  const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
-  const [deadline, setDeadline] = useState('');
+  const [recipientDepartment, setRecipientDepartment] = useState('');
+  const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { toast } = useToast();
-  const { createTransfer } = useInterdepartmentTransfers(currentDepartment);
+  const { createTransfer } = useFileTransfers(currentDepartment);
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТПРАВКИ ФАЙЛА
+  const formatFileSize = (bytes: number) => {
+    const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];
+    if (bytes === 0) return '0 Б';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
   const handleSubmit = async () => {
-    if (!receiverDepartment) {
+    if (!recipientDepartment) {
       toast({
         title: 'Ошибка',
         description: 'Выберите отдел получателя',
@@ -74,7 +69,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
       return;
     }
 
-    if (receiverDepartment === currentDepartment) {
+    if (recipientDepartment === currentDepartment) {
       toast({
         title: 'Ошибка', 
         description: 'Нельзя отправить файл в тот же отдел',
@@ -88,25 +83,21 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
       console.log('📤 Отправка файла между отделами:', {
         file: file.name,
         from: currentDepartment,
-        to: receiverDepartment,
-        priority,
-        message
+        to: recipientDepartment,
+        comment
       });
 
-      // СОЗДАЕМ ЗАПИСЬ О ПЕРЕДАЧЕ ФАЙЛА
+      // Создаем запись о передаче файла в Supabase
       const transferData = {
+        file_id: file.id,
         file_name: file.name,
         file_url: file.url,
         file_size: file.size,
-        file_type: file.type,
         sender_department: currentDepartment,
-        receiver_department: receiverDepartment,
-        priority,
+        recipient_department: recipientDepartment,
+        comment: comment.trim() || undefined,
         status: 'sent',
-        message: message.trim() || undefined,
-        deadline: deadline ? new Date(deadline).toISOString() : undefined,
-        is_group_send: false,
-        transfer_chain: []
+        is_read: false
       };
 
       await createTransfer(transferData);
@@ -115,7 +106,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
       
       toast({
         title: 'Файл отправлен',
-        description: `Файл "${file.name}" отправлен в отдел "${DEPARTMENTS[receiverDepartment as keyof typeof DEPARTMENTS]}"`
+        description: `Файл "${file.name}" отправлен в отдел "${DEPARTMENTS[recipientDepartment as keyof typeof DEPARTMENTS]}"`
       });
 
       onSuccess?.();
@@ -173,7 +164,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-green-600" />
               <span className="font-medium text-green-800">
-                {receiverDepartment ? DEPARTMENTS[receiverDepartment as keyof typeof DEPARTMENTS] : 'Выберите отдел'}
+                {recipientDepartment ? DEPARTMENTS[recipientDepartment as keyof typeof DEPARTMENTS] : 'Выберите отдел'}
               </span>
             </div>
           </div>
@@ -181,7 +172,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
           {/* Выбор получателя */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Отдел получатель *</label>
-            <Select value={receiverDepartment} onValueChange={setReceiverDepartment}>
+            <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
               <SelectTrigger>
                 <SelectValue placeholder="Выберите отдел для отправки файла" />
               </SelectTrigger>
@@ -198,54 +189,20 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
             </Select>
           </div>
 
-          {/* Приоритет */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Приоритет</label>
-            <Select value={priority} onValueChange={(value: any) => setPriority(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PRIORITY_OPTIONS).map(([key, { label, color }]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      <Badge className={color}>{label}</Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Срок выполнения */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Срок выполнения (опционально)
-            </label>
-            <input
-              type="datetime-local"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="w-full p-2 border rounded-md"
-              min={new Date().toISOString().slice(0, 16)}
-            />
-          </div>
-
-          {/* Сообщение */}
+          {/* Комментарий */}
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
-              Сообщение (опционально)
+              Комментарий (опционально)
             </label>
             <Textarea
               placeholder="Добавьте комментарий к передаче файла..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               rows={3}
               maxLength={500}
             />
-            <p className="text-xs text-gray-500">{message.length}/500 символов</p>
+            <p className="text-xs text-gray-500">{comment.length}/500 символов</p>
           </div>
 
           {/* Предупреждение */}
@@ -253,7 +210,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
             <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
             <div className="text-sm text-amber-800">
               <p className="font-medium">Внимание!</p>
-              <p>Файл будет отправлен в отдел "{DEPARTMENTS[receiverDepartment as keyof typeof DEPARTMENTS] || '...'}" и появится у них во входящих файлах.</p>
+              <p>Файл будет отправлен в отдел "{DEPARTMENTS[recipientDepartment as keyof typeof DEPARTMENTS] || '...'}" и появится у них во входящих файлах.</p>
             </div>
           </div>
 
@@ -269,7 +226,7 @@ export const FileTransferModal: React.FC<FileTransferModalProps> = ({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!receiverDepartment || isSubmitting}
+              disabled={!recipientDepartment || isSubmitting}
               className="flex-1"
             >
               {isSubmitting ? (

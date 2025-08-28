@@ -3,28 +3,28 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Download, Eye, Trash2, Clock, CheckCircle } from 'lucide-react';
-import { InterdepartmentTransfer } from '@/hooks/useInterdepartmentTransfers';
+import { Download, Eye, Trash2 } from 'lucide-react';
+import { FileTransfer } from '@/hooks/useFileTransfers';
 
 interface FileTransfersTableProps {
-  transfers: InterdepartmentTransfer[];
+  transfers: FileTransfer[];
   type: 'incoming' | 'outgoing';
   onDelete: (id: string) => void;
-  onStatusUpdate: (id: string, status: string) => void;
-  onView: (transfer: InterdepartmentTransfer) => void;
+  onReadStatusChange: (id: string, isRead: boolean) => void;
+  onView: (transfer: FileTransfer) => void;
 }
 
 export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({
   transfers,
   type,
   onDelete,
-  onStatusUpdate,
+  onReadStatusChange,
   onView
 }) => {
   const getPriorityBadge = (priority: string) => {
     const colors = {
       urgent: 'bg-red-500 text-white',
-      high: 'bg-orange-500 text-white',
+      high: 'bg-orange-500 text-white', 
       normal: 'bg-blue-500 text-white',
       low: 'bg-gray-500 text-white'
     };
@@ -34,21 +34,15 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({
   const getStatusBadge = (status: string) => {
     const colors = {
       sent: 'bg-blue-500 text-white',
-      delivered: 'bg-green-500 text-white',
-      viewed: 'bg-purple-500 text-white',
-      processed: 'bg-emerald-500 text-white',
-      recalled: 'bg-gray-500 text-white'
+      received: 'bg-green-500 text-white',
+      deleted: 'bg-gray-500 text-white'
     };
     return colors[status as keyof typeof colors] || colors.sent;
   };
 
-  const handleViewedChange = (transferId: string, checked: boolean) => {
-    console.log('📋 Изменение статуса просмотра:', { transferId, checked });
-    if (checked) {
-      onStatusUpdate(transferId, 'viewed');
-    } else {
-      onStatusUpdate(transferId, 'delivered');
-    }
+  const handleReadStatusChange = (transferId: string, checked: boolean) => {
+    console.log('📋 Изменение статуса прочтения:', { transferId, checked });
+    onReadStatusChange(transferId, checked);
   };
 
   const formatDate = (dateString: string) => {
@@ -66,6 +60,17 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({
     if (bytes === 0) return '0 Б';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getDepartmentName = (department: string) => {
+    const departments = {
+      financial: 'Финансовая дирекция',
+      technical: 'Техническая дирекция',
+      logistics: 'Управление логистики', 
+      commercial: 'Коммерческая дирекция',
+      office: 'Офис-менеджер'
+    };
+    return departments[department as keyof typeof departments] || department;
   };
 
   if (transfers.length === 0) {
@@ -93,11 +98,10 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({
             <th className="text-left p-3 font-medium text-gray-700">
               {type === 'incoming' ? 'От отдела' : 'В отдел'}
             </th>
-            <th className="text-left p-3 font-medium text-gray-700">Приоритет</th>
             <th className="text-left p-3 font-medium text-gray-700">Статус</th>
             <th className="text-left p-3 font-medium text-gray-700">Дата</th>
             {type === 'incoming' && (
-              <th className="text-left p-3 font-medium text-gray-700">Просмотрено</th>
+              <th className="text-left p-3 font-medium text-gray-700">Прочитано</th>
             )}
             <th className="text-left p-3 font-medium text-gray-700">Действия</th>
           </tr>
@@ -111,41 +115,47 @@ export const FileTransfersTable: React.FC<FileTransfersTableProps> = ({
                     {transfer.file_name}
                   </span>
                   <span className="text-sm text-gray-500">
-                    {formatFileSize(transfer.file_size)} • {transfer.file_type.toUpperCase()}
+                    {formatFileSize(transfer.file_size)}
                   </span>
+                  {transfer.comment && (
+                    <span className="text-xs text-gray-400 mt-1">
+                      {transfer.comment}
+                    </span>
+                  )}
                 </div>
               </td>
               <td className="p-3">
                 <span className="text-sm text-gray-700">
-                  {type === 'incoming' ? transfer.sender_department : transfer.receiver_department}
+                  {type === 'incoming' 
+                    ? getDepartmentName(transfer.sender_department)
+                    : getDepartmentName(transfer.recipient_department)
+                  }
                 </span>
-              </td>
-              <td className="p-3">
-                <Badge className={`text-xs ${getPriorityBadge(transfer.priority)}`}>
-                  {transfer.priority === 'urgent' ? 'Срочно' :
-                   transfer.priority === 'high' ? 'Высокий' :
-                   transfer.priority === 'normal' ? 'Обычный' : 'Низкий'}
-                </Badge>
               </td>
               <td className="p-3">
                 <Badge className={`text-xs ${getStatusBadge(transfer.status)}`}>
                   {transfer.status === 'sent' ? 'Отправлено' :
-                   transfer.status === 'delivered' ? 'Доставлено' :
-                   transfer.status === 'viewed' ? 'Просмотрено' :
-                   transfer.status === 'processed' ? 'Обработано' : 'Отозвано'}
+                   transfer.status === 'received' ? 'Получено' : 'Удалено'}
                 </Badge>
+                {transfer.is_read && type === 'incoming' && (
+                  <div className="mt-1">
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                      Прочитано
+                    </Badge>
+                  </div>
+                )}
               </td>
               <td className="p-3">
                 <span className="text-sm text-gray-600">
-                  {formatDate(transfer.created_at)}
+                  {formatDate(transfer.sent_date)}
                 </span>
               </td>
               {type === 'incoming' && (
                 <td className="p-3">
                   <Checkbox
-                    checked={transfer.status === 'viewed' || transfer.status === 'processed'}
+                    checked={transfer.is_read}
                     onCheckedChange={(checked) => 
-                      handleViewedChange(transfer.id, checked as boolean)
+                      handleReadStatusChange(transfer.id, checked as boolean)
                     }
                     className="w-5 h-5"
                   />
