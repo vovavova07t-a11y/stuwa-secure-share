@@ -2,7 +2,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { Building2, Calculator, Truck, Cog, Phone, Users } from 'lucide-react';
 
 export const Navigation = () => {
@@ -19,10 +18,6 @@ export const Navigation = () => {
               />
               <span className="font-bold text-xl text-primary">STUWA</span>
             </Link>
-          </div>
-
-          <div className="hidden md:flex items-center space-x-1">
-            <ThemeToggle />
           </div>
         </div>
       </div>
