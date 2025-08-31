@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OrganizerFileSection } from '@/components/OrganizerFileSection';
-import { OrganizerStats } from '@/components/OrganizerStats';
+import { OrganizerRealStats } from '@/components/OrganizerRealStats';
 import { OrganizerViewBanner } from '@/components/OrganizerViewBanner';
 import { OrganizerBreadcrumbs } from '@/components/OrganizerBreadcrumbs';
 import { 
@@ -143,8 +143,8 @@ export const OrganizerDashboard: React.FC = () => {
               </Badge>
             </div>
             
-            {/* Statistics */}
-            <OrganizerStats />
+            {/* Real Statistics */}
+            <OrganizerRealStats />
           </div>
 
           {/* Departments Grid */}
