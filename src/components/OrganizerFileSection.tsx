@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,13 +60,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   };
 
   const handleFilePreview = (document: any) => {
-    setSelectedFile({
-      id: document.id,
-      name: document.title || document.file_name,
-      url: document.file_url,
-      type: document.file_type,
-      size: document.file_size
-    });
+    setSelectedFile(document);
     setShowPreview(true);
   };
 
@@ -209,11 +202,14 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
       {/* File Preview Modal */}
       {showPreview && selectedFile && (
         <FilePreviewModal
-          file={selectedFile}
+          isOpen={showPreview}
           onClose={() => {
             setShowPreview(false);
             setSelectedFile(null);
           }}
+          fileUrl={selectedFile.file_url}
+          fileName={selectedFile.file_name}
+          fileSize={selectedFile.file_size}
         />
       )}
     </>
