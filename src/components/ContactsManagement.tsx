@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,40 +8,34 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'office_contacts', 
-    name: 'Контакты и адресная книга', 
-    icon: Users,
-    description: 'База контактов клиентов, партнеров и поставщиков'
-  },
-  { 
-    id: 'office_correspondence', 
-    name: 'Деловая переписка', 
-    icon: Mail,
-    description: 'Официальная корреспонденция и деловые письма'
-  },
-  { 
-    id: 'office_meetings', 
-    name: 'Протоколы встреч', 
-    icon: Calendar,
-    description: 'Протоколы совещаний, встреч и переговоров'
-  },
-  { 
-    id: 'office_phone_logs', 
-    name: 'Телефонные переговоры', 
-    icon: Phone,
-    description: 'Записи телефонных переговоров и звонков'
-  },
-  { 
-    id: 'office_documents', 
-    name: 'Административные документы', 
-    icon: FileText,
-    description: 'Внутренние приказы, распоряжения и служебные записки'
-  },
-  { 
-    id: 'office_facilities', 
-    name: 'Управление офисом', 
+    id: 'cont_company_resume', 
+    name: 'Резюме Компании', 
     icon: Building,
-    description: 'Документы по содержанию и управлению офисными помещениями'
+    description: 'Краткое резюме и презентационные материалы компании'
+  },
+  { 
+    id: 'cont_incoming_correspondence', 
+    name: 'Входящая корреспонденция', 
+    icon: Mail,
+    description: 'Входящие письма, запросы и официальная корреспонденция'
+  },
+  { 
+    id: 'cont_outgoing_correspondence', 
+    name: 'Исходящая корреспонденция', 
+    icon: FileText,
+    description: 'Исходящие письма и официальные ответы'
+  },
+  { 
+    id: 'cont_supplier_contacts', 
+    name: 'Контакты поставщиков ТРУ', 
+    icon: Users,
+    description: 'Контактная информация поставщиков товаров, работ и услуг'
+  },
+  { 
+    id: 'cont_supplier_contracts', 
+    name: 'Договора с поставщиками', 
+    icon: Calendar,
+    description: 'Договоры и соглашения с поставщиками'
   }
 ];
 
@@ -111,7 +104,7 @@ export const ContactsManagement: React.FC = () => {
             
             {/* Межотдельский обмен карточка */}
             <Card 
-              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7 border-2 border-primary/20"
+              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-6 border-2 border-primary/20"
               onClick={() => setShowInterdepartment(true)}
             >
               <CardHeader className="text-center">

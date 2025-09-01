@@ -8,40 +8,34 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'logistics_contracts', 
-    name: 'Договоры и контракты', 
+    id: 'log_current_issues', 
+    name: 'Текущие вопросы (Германия)', 
     icon: ClipboardList,
-    description: 'Договоры на поставку, контракты с поставщиками и логистическими компаниями'
+    description: 'Актуальные вопросы и задачи по работе с Германией'
   },
   { 
-    id: 'logistics_suppliers', 
-    name: 'Поставщики', 
-    icon: Building2,
-    description: 'База данных поставщиков и документооборот с ними'
-  },
-  { 
-    id: 'logistics_inventory', 
-    name: 'Складские операции', 
-    icon: Package,
-    description: 'Документы по складским операциям и управлению запасами'
-  },
-  { 
-    id: 'logistics_transportation', 
-    name: 'Транспортировка', 
-    icon: Truck,
-    description: 'Документы по доставке, транспортные накладные и логистические отчеты'
-  },
-  { 
-    id: 'logistics_clients', 
-    name: 'Клиенты', 
-    icon: Users,
-    description: 'База клиентов и документооборот с заказчиками'
-  },
-  { 
-    id: 'logistics_reports', 
-    name: 'Отчеты по логистике', 
+    id: 'log_sales_reports', 
+    name: 'Отчет по реализации', 
     icon: FileBarChart,
-    description: 'Аналитические отчеты по логистическим операциям'
+    description: 'Аналитические отчеты по продажам и реализации'
+  },
+  { 
+    id: 'log_contract_progress', 
+    name: 'Отчет по освоению Договоров', 
+    icon: Building2,
+    description: 'Отчеты по выполнению и освоению договоров'
+  },
+  { 
+    id: 'log_procurement_overview', 
+    name: 'Обзор объявлений о закупе', 
+    icon: Package,
+    description: 'Обзор тендеров и объявлений о закупках'
+  },
+  { 
+    id: 'log_sales_contracts', 
+    name: 'Договора на реализацию', 
+    icon: Users,
+    description: 'Договоры с клиентами на реализацию продукции'
   }
 ];
 
@@ -110,7 +104,7 @@ export const LogisticsDashboard: React.FC = () => {
             
             {/* Межотдельский обмен карточка */}
             <Card 
-              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7 border-2 border-primary/20"
+              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-6 border-2 border-primary/20"
               onClick={() => setShowInterdepartment(true)}
             >
               <CardHeader className="text-center">

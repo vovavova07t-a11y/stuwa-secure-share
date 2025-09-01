@@ -9,40 +9,46 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'technical_specifications', 
-    name: 'Технические спецификации', 
+    id: 'tech_development', 
+    name: 'Программа развития', 
     icon: FileText,
-    description: 'Технические характеристики продукции и оборудования'
+    description: 'Стратегические планы технического развития'
   },
   { 
-    id: 'technical_documentation', 
-    name: 'Техническая документация', 
+    id: 'tech_product_overview', 
+    name: 'Обзор продукции', 
     icon: BookOpen,
-    description: 'Чертежи, схемы и техническая документация'
+    description: 'Техническое описание продуктов и услуг'
   },
   { 
-    id: 'technical_equipment', 
-    name: 'Оборудование и инструменты', 
+    id: 'tech_specifications', 
+    name: 'Спецификация продукции', 
     icon: Cog,
-    description: 'Документация по оборудованию и техническому оснащению'
+    description: 'Технические спецификации и требования'
   },
   { 
-    id: 'technical_maintenance', 
-    name: 'Обслуживание и ремонт', 
+    id: 'tech_presentations', 
+    name: 'Презентация деятельности', 
     icon: Wrench,
-    description: 'Планы обслуживания, ремонтные работы и техподдержка'
+    description: 'Презентационные материалы о деятельности'
   },
   { 
-    id: 'technical_safety', 
-    name: 'Техника безопасности', 
+    id: 'tech_business_plans', 
+    name: 'Бизнес-планы и Проекты', 
     icon: Shield,
-    description: 'Инструкции по безопасности и охране труда'
+    description: 'Бизнес планы и проектная документация'
   },
   { 
-    id: 'technical_settings', 
-    name: 'Настройки и конфигурации', 
+    id: 'tech_catalog', 
+    name: 'Каталог Компании', 
     icon: Settings,
-    description: 'Конфигурационные файлы и системные настройки'
+    description: 'Каталог товаров и услуг компании'
+  },
+  { 
+    id: 'tech_certificates', 
+    name: 'Сертификаты на продукцию', 
+    icon: Shield,
+    description: 'Сертификаты качества и compliance документы'
   }
 ];
 
@@ -111,7 +117,7 @@ export const TechnicalDashboard: React.FC = () => {
             
             {/* Межотдельский обмен карточка */}
             <Card 
-              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-7 border-2 border-primary/20"
+              className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer group animate-slide-up animate-stagger-8 border-2 border-primary/20"
               onClick={() => setShowInterdepartment(true)}
             >
               <CardHeader className="text-center">

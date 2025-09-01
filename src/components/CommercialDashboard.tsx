@@ -9,40 +9,40 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'commercial_partnerships', 
-    name: 'Партнерские соглашения', 
-    icon: Handshake,
-    description: 'Договоры о партнерстве и совместной деятельности'
-  },
-  { 
-    id: 'commercial_client_requests', 
-    name: 'Заявки клиентов', 
+    id: 'com_client_requests', 
+    name: 'Отчет по запросам клиентов', 
     icon: FileText,
-    description: 'Входящие заявки от клиентов и их обработка'
+    description: 'Аналитика и отчеты по входящим запросам клиентов'
   },
   { 
-    id: 'commercial_quotations', 
-    name: 'Коммерческие предложения', 
-    icon: Target,
-    description: 'Активные коммерческие предложения и тендеры'
+    id: 'com_client_list', 
+    name: 'Список клиентов', 
+    icon: Users,
+    description: 'База данных клиентов и потенциальных заказчиков'
   },
   { 
-    id: 'commercial_price_lists', 
+    id: 'com_product_promotion', 
+    name: 'Перечень продукции для продвижения продаж', 
+    icon: TrendingUp,
+    description: 'Каталоги продукции для активного продвижения'
+  },
+  { 
+    id: 'com_price_lists', 
     name: 'Прайс-листы', 
     icon: PieChart,
     description: 'Актуальные прайс-листы и ценовые предложения'
   },
   { 
-    id: 'commercial_clients', 
-    name: 'База клиентов', 
-    icon: Users,
-    description: 'База данных клиентов и потенциальных заказчиков'
+    id: 'com_quotations', 
+    name: 'Актуальные КП', 
+    icon: Target,
+    description: 'Активные коммерческие предложения и тендеры'
   },
   { 
-    id: 'commercial_catalog', 
-    name: 'Каталог продукции', 
-    icon: TrendingUp,
-    description: 'Каталоги продукции и технические спецификации'
+    id: 'com_partnerships', 
+    name: 'Меморандумы и Соглашения о сотрудничестве', 
+    icon: Handshake,
+    description: 'Меморандумы о взаимопонимании и партнерские соглашения'
   }
 ];
 

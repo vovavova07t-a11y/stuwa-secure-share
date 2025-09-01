@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,37 +30,35 @@ const departmentCategories = {
     { id: 'fin_protocols', title: 'Протоколы НС', description: 'Протоколы наблюдательного совета' }
   ],
   technical: [
-    { id: 'tech_development', title: 'Программы развития', description: 'Стратегические планы технического развития' },
+    { id: 'tech_development', title: 'Программа развития', description: 'Стратегические планы технического развития' },
     { id: 'tech_product_overview', title: 'Обзор продукции', description: 'Техническое описание продуктов и услуг' },
-    { id: 'tech_specifications', title: 'Спецификации', description: 'Технические спецификации и требования' },
-    { id: 'tech_presentations', title: 'Презентации', description: 'Презентационные материалы о деятельности' },
-    { id: 'tech_business_plans', title: 'Бизнес планы', description: 'Бизнес планы и проектная документация' },
-    { id: 'tech_catalog', title: 'Каталог продукции', description: 'Каталог товаров и услуг компании' },
-    { id: 'tech_certificates', title: 'Сертификаты', description: 'Сертификаты качества и compliance документы' }
+    { id: 'tech_specifications', title: 'Спецификация продукции', description: 'Технические спецификации и требования' },
+    { id: 'tech_presentations', title: 'Презентация деятельности', description: 'Презентационные материалы о деятельности' },
+    { id: 'tech_business_plans', title: 'Бизнес-планы и Проекты', description: 'Бизнес планы и проектная документация' },
+    { id: 'tech_catalog', title: 'Каталог Компании', description: 'Каталог товаров и услуг компании' },
+    { id: 'tech_certificates', title: 'Сертификаты на продукцию', description: 'Сертификаты качества и compliance документы' }
   ],
   logistics: [
-    { id: 'log_client_base', title: 'База клиентов', description: 'Реестр клиентов и контрагентов' },
-    { id: 'log_contracts', title: 'Договоры', description: 'Договоры с клиентами и поставщиками' },
-    { id: 'log_sales_reports', title: 'Отчеты по продажам', description: 'Аналитика продаж и КПД' },
-    { id: 'log_communications', title: 'Коммуникации', description: 'Корреспонденция с клиентами' },
-    { id: 'log_delivery', title: 'Логистика', description: 'Документы по доставке и логистике' },
-    { id: 'log_regions', title: 'Региональные представительства', description: 'Документы региональных офисов' }
+    { id: 'log_current_issues', title: 'Текущие вопросы (Германия)', description: 'Актуальные вопросы и задачи по работе с Германией' },
+    { id: 'log_sales_reports', title: 'Отчет по реализации', description: 'Аналитические отчеты по продажам и реализации' },
+    { id: 'log_contract_progress', title: 'Отчет по освоению Договоров', description: 'Отчеты по выполнению и освоению договоров' },
+    { id: 'log_procurement_overview', title: 'Обзор объявлений о закупе', description: 'Обзор тендеров и объявлений о закупках' },
+    { id: 'log_sales_contracts', title: 'Договора на реализацию', description: 'Договоры с клиентами на реализацию продукции' }
   ],
   commercial: [
-    { id: 'com_partnerships', title: 'Партнерства', description: 'Соглашения о партнерстве и альянсах' },
-    { id: 'com_price_lists', title: 'Прайс-листы', description: 'Актуальные прайс-листы и тарифы' },
-    { id: 'com_quotations', title: 'Коммерческие предложения', description: 'КП и тендерная документация' },
-    { id: 'com_analytics', title: 'Аналитика', description: 'Маркетинговые исследования и аналитика' },
-    { id: 'com_strategies', title: 'Стратегии развития', description: 'Стратегические планы развития бизнеса' },
-    { id: 'com_investments', title: 'Инвестиционные проекты', description: 'Инвестиционные предложения и проекты' }
+    { id: 'com_client_requests', title: 'Отчет по запросам клиентов', description: 'Аналитика и отчеты по входящим запросам клиентов' },
+    { id: 'com_client_list', title: 'Список клиентов', description: 'База данных клиентов и потенциальных заказчиков' },
+    { id: 'com_product_promotion', title: 'Перечень продукции для продвижения продаж', description: 'Каталоги продукции для активного продвижения' },
+    { id: 'com_price_lists', title: 'Прайс-листы', description: 'Актуальные прайс-листы и ценовые предложения' },
+    { id: 'com_quotations', title: 'Актуальные КП', description: 'Активные коммерческие предложения и тендеры' },
+    { id: 'com_partnerships', title: 'Меморандумы и Соглашения о сотрудничестве', description: 'Меморандумы о взаимопонимании и партнерские соглашения' }
   ],
   office: [
-    { id: 'cont_contacts', title: 'Контакты', description: 'Контактная информация сотрудников и партнеров' },
-    { id: 'cont_schedules', title: 'Расписания', description: 'Графики работы и календарь мероприятий' },
-    { id: 'cont_events', title: 'Мероприятия', description: 'Планы мероприятий и встреч' },
-    { id: 'cont_coordination', title: 'Координация', description: 'Координационные документы' },
-    { id: 'cont_visitors', title: 'Посетители', description: 'Журнал регистрации посетителей' },
-    { id: 'cont_facilities', title: 'Управление офисом', description: 'Документы по управлению офисными помещениями' }
+    { id: 'cont_company_resume', title: 'Резюме Компании', description: 'Краткое резюме и презентационные материалы компании' },
+    { id: 'cont_incoming_correspondence', title: 'Входящая корреспонденция', description: 'Входящие письма, запросы и официальная корреспонденция' },
+    { id: 'cont_outgoing_correspondence', title: 'Исходящая корреспонденция', description: 'Исходящие письма и официальные ответы' },
+    { id: 'cont_supplier_contacts', title: 'Контакты поставщиков ТРУ', description: 'Контактная информация поставщиков товаров, работ и услуг' },
+    { id: 'cont_supplier_contracts', title: 'Договора с поставщиками', description: 'Договоры и соглашения с поставщиками' }
   ]
 };
 
