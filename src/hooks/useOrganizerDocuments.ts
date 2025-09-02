@@ -54,7 +54,7 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
       console.log(`🔄 Загрузка документов для отдела: ${department}, категория: ${categoryId}, таблица: ${tableName}`);
       
-      // Загружаем документы из специализированной таблицы
+      // Загружаем документы из специализированной таблицы с правильным categoryId
       const documentsData = await loadDocumentsFromTable(tableName, categoryId);
       
       console.log(`📋 Загружено документов из ${tableName}: ${documentsData.length}`);

@@ -37,6 +37,7 @@ export const loadDocumentsFromTable = async (
 
     console.log(`✅ Таблица ${tableName} существует`);
     
+    // Загружаем документы по categoryId - это должно совпадать с тем, как сохраняются документы
     const { data, error } = await (supabase as any)
       .from(tableName)
       .select('*')
@@ -51,7 +52,8 @@ export const loadDocumentsFromTable = async (
     console.log(`✅ Загружено ${data?.length || 0} документов из ${tableName} для категории ${categoryId}`);
     
     if (data && data.length > 0) {
-      console.log('📋 Первый документ:', data[0]);
+      console.log('📋 Первый документ из результатов:', data[0]);
+      console.log('📋 Все категории в результатах:', data.map(d => d.category));
     }
     
     return data || [];

@@ -30,6 +30,8 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
   department,
   isViewOnly = false
 }) => {
+  console.log(`🔍 OrganizerFileSection: отдел=${department}, категория=${categoryId}`);
+  
   const { documents, isLoading } = useOrganizerDocuments(department, categoryId);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -63,6 +65,8 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     setSelectedFile(document);
     setShowPreview(true);
   };
+
+  console.log(`📊 OrganizerFileSection: найдено ${documents.length} документов, после фильтра: ${filteredDocuments.length}`);
 
   if (isLoading) {
     return (
@@ -124,6 +128,9 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                   ? `Документы по запросу "${searchTerm}" не найдены`
                   : 'В этой категории пока нет документов'
                 }
+              </p>
+              <p className="text-xs mt-2 text-muted-foreground">
+                Отдел: {department}, Категория: {categoryId}
               </p>
             </div>
           ) : (
