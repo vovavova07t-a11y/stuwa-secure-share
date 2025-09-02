@@ -24,8 +24,8 @@ export const loadDocumentsFromTable = async (
   try {
     console.log(`🔄 Загрузка из таблицы: ${tableName}, категория: ${categoryId}`);
     
-    // Проверяем что таблица существует
-    const { data: tableExists, error: tableCheckError } = await (supabase as any)
+    // Проверяем что таблица существует с помощью простого запроса
+    const { data: tableCheck, error: tableCheckError } = await supabase
       .from(tableName)
       .select('count', { count: 'exact', head: true })
       .limit(1);
@@ -37,8 +37,8 @@ export const loadDocumentsFromTable = async (
 
     console.log(`✅ Таблица ${tableName} существует`);
     
-    // Загружаем документы по categoryId - это должно совпадать с тем, как сохраняются документы
-    const { data, error } = await (supabase as any)
+    // Загружаем документы по categoryId - должно совпадать с тем, как сохраняются документы
+    const { data, error } = await supabase
       .from(tableName)
       .select('*')
       .eq('category', categoryId)
@@ -54,6 +54,18 @@ export const loadDocumentsFromTable = async (
     if (data && data.length > 0) {
       console.log('📋 Первый документ из результатов:', data[0]);
       console.log('📋 Все категории в результатах:', data.map(d => d.category));
+    } else {
+      console.log(`ℹ️ В таблице ${tableName} для категории ${categoryId} документов не найдено`);
+      
+      // Дополнительная проверка - посмотрим все категории в таблице
+      const { data: allDocs, error: allError } = await supabase
+        .from(tableName)
+        .select('category')
+        .limit(10);
+        
+      if (!allError && allDocs) {
+        console.log(`🔍 Доступные категории в ${tableName}:`, [...new Set(allDocs.map(d => d.category))]);
+      }
     }
     
     return data || [];
@@ -70,7 +82,7 @@ export const countDocumentsInTable = async (
   try {
     console.log(`🔢 Подсчет документов в ${tableName}${categoryId ? ` для категории ${categoryId}` : ''}`);
     
-    let query = (supabase as any)
+    let query = supabase
       .from(tableName)
       .select('*', { count: 'exact', head: true });
 

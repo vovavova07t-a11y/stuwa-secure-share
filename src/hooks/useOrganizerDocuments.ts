@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { loadDocumentsFromTable, countDocumentsInTable, type DocumentData } from '@/utils/documentLoader';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface OrganizerDocument {
   id: string;
@@ -19,7 +19,7 @@ export interface OrganizerDocument {
   download_count?: number;
 }
 
-// ОБНОВЛЕННОЕ сопоставление отделов с таблицами - включены ВСЕ отделы
+// ПОЛНОЕ сопоставление отделов с таблицами - все реальные таблицы из Supabase
 const DEPARTMENT_TABLE_MAP = {
   financial: 'financial_documents',
   technical: 'technical_documents', 
@@ -54,14 +54,35 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
       console.log(`🔄 Загрузка документов для отдела: ${department}, категория: ${categoryId}, таблица: ${tableName}`);
       
-      // Загружаем документы из специализированной таблицы с правильным categoryId
-      const documentsData = await loadDocumentsFromTable(tableName, categoryId);
+      // Загружаем документы напрямую из Supabase с правильной таблицей
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('category', categoryId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(`❌ Ошибка загрузки из ${tableName}:`, error);
+        setDocuments([]);
+        toast({
+          title: 'Ошибка',
+          description: `Не удалось загрузить документы из ${tableName}`,
+          variant: 'destructive'
+        });
+        return;
+      }
       
-      console.log(`📋 Загружено документов из ${tableName}: ${documentsData.length}`);
-      console.log('📋 Документы:', documentsData.map(d => d.title || d.file_name));
+      console.log(`📋 Загружено документов из ${tableName}: ${data?.length || 0}`);
+      console.log('📋 Документы:', data?.map(d => d.title || d.file_name) || []);
+      
+      // Проверяем первый документ для отладки
+      if (data && data.length > 0) {
+        console.log('📋 Первый документ из результатов:', data[0]);
+        console.log('📋 Все категории в результатах:', data.map(d => d.category));
+      }
       
       // Преобразуем в формат OrganizerDocument
-      const organizerDocs: OrganizerDocument[] = documentsData.map((doc: DocumentData) => ({
+      const organizerDocs: OrganizerDocument[] = (data || []).map((doc: any) => ({
         id: doc.id,
         title: doc.title || doc.file_name,
         file_name: doc.file_name,
@@ -105,9 +126,18 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
       }
 
       console.log(`🔢 Подсчет документов в таблице: ${tableName}`);
-      const count = await countDocumentsInTable(tableName);
-      console.log(`📊 Всего документов в ${tableName}: ${count}`);
-      return count;
+      
+      const { count, error } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error(`❌ Ошибка подсчета в ${tableName}:`, error);
+        return 0;
+      }
+
+      console.log(`📊 Всего документов в ${tableName}: ${count || 0}`);
+      return count || 0;
     } catch (error) {
       console.error('❌ Ошибка при подсчете документов:', error);
       return 0;
@@ -124,9 +154,19 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
       }
 
       console.log(`🔢 Подсчет документов в категории ${categoryId}, таблица: ${tableName}`);
-      const count = await countDocumentsInTable(tableName, categoryId);
-      console.log(`📊 Документов в категории ${categoryId}: ${count}`);
-      return count;
+      
+      const { count, error } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true })
+        .eq('category', categoryId);
+
+      if (error) {
+        console.error(`❌ Ошибка подсчета документов категории:`, error);
+        return 0;
+      }
+
+      console.log(`📊 Документов в категории ${categoryId}: ${count || 0}`);
+      return count || 0;
     } catch (error) {
       console.error('❌ Ошибка при подсчете документов категории:', error);
       return 0;
