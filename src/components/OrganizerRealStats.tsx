@@ -72,7 +72,7 @@ export const OrganizerRealStats: React.FC = () => {
       try {
         console.log(`📊 Подсчет документов в таблице: ${dept.table}`);
         
-        const { count, error } = await supabase
+        const { count, error } = await (supabase as any)
           .from(dept.table)
           .select('*', { count: 'exact', head: true });
 

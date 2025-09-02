@@ -26,7 +26,10 @@ const DEPARTMENT_TABLE_MAP = {
   logistics: 'logistics_documents',
   commercial: 'commercial_documents',
   office: 'office_documents'
-};
+} as const;
+
+type DepartmentKey = keyof typeof DEPARTMENT_TABLE_MAP;
+type TableName = typeof DEPARTMENT_TABLE_MAP[DepartmentKey];
 
 export const useOrganizerDocuments = (department: string, categoryId: string) => {
   const [documents, setDocuments] = useState<OrganizerDocument[]>([]);
@@ -44,7 +47,7 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
       setIsLoading(true);
       
       // Получаем название таблицы для отдела
-      const tableName = DEPARTMENT_TABLE_MAP[department as keyof typeof DEPARTMENT_TABLE_MAP];
+      const tableName = DEPARTMENT_TABLE_MAP[department as DepartmentKey];
       
       if (!tableName) {
         console.warn(`❌ Таблица для отдела ${department} не найдена в DEPARTMENT_TABLE_MAP`);
@@ -55,7 +58,7 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
       console.log(`🔄 Загрузка документов для отдела: ${department}, категория: ${categoryId}, таблица: ${tableName}`);
       
       // Загружаем документы напрямую из Supabase с правильной таблицей
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from(tableName)
         .select('*')
         .eq('category', categoryId)
@@ -73,12 +76,12 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
       }
       
       console.log(`📋 Загружено документов из ${tableName}: ${data?.length || 0}`);
-      console.log('📋 Документы:', data?.map(d => d.title || d.file_name) || []);
+      console.log('📋 Документы:', data?.map((d: any) => d.title || d.file_name) || []);
       
       // Проверяем первый документ для отладки
       if (data && data.length > 0) {
         console.log('📋 Первый документ из результатов:', data[0]);
-        console.log('📋 Все категории в результатах:', data.map(d => d.category));
+        console.log('📋 Все категории в результатах:', data.map((d: any) => d.category));
       }
       
       // Преобразуем в формат OrganizerDocument
@@ -118,7 +121,7 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
   const getTotalDocumentsCount = async (department: string): Promise<number> => {
     try {
-      const tableName = DEPARTMENT_TABLE_MAP[department as keyof typeof DEPARTMENT_TABLE_MAP];
+      const tableName = DEPARTMENT_TABLE_MAP[department as DepartmentKey];
       
       if (!tableName) {
         console.warn(`❌ Таблица для отдела ${department} не найдена при подсчете`);
@@ -127,7 +130,7 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
       console.log(`🔢 Подсчет документов в таблице: ${tableName}`);
       
-      const { count, error } = await supabase
+      const { count, error } = await (supabase as any)
         .from(tableName)
         .select('*', { count: 'exact', head: true });
 
@@ -146,7 +149,7 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
   const getCategoryDocumentsCount = async (department: string, categoryId: string): Promise<number> => {
     try {
-      const tableName = DEPARTMENT_TABLE_MAP[department as keyof typeof DEPARTMENT_TABLE_MAP];
+      const tableName = DEPARTMENT_TABLE_MAP[department as DepartmentKey];
       
       if (!tableName) {
         console.warn(`❌ Таблица для отдела ${department} не найдена при подсчете категории`);
@@ -155,7 +158,7 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
       console.log(`🔢 Подсчет документов в категории ${categoryId}, таблица: ${tableName}`);
       
-      const { count, error } = await supabase
+      const { count, error } = await (supabase as any)
         .from(tableName)
         .select('*', { count: 'exact', head: true })
         .eq('category', categoryId);
