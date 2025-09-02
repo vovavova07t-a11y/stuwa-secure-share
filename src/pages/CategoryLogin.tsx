@@ -55,6 +55,12 @@ const CategoryLogin = () => {
       password: 'InterStuwa2024!',
       route: '/interdepartment',
       name: 'Межотдельское взаимодействие'
+    },
+    {
+      username: 'organizer_admin',
+      password: 'OrganizerStuwa2024!',
+      route: '/organizer-dashboard',
+      name: 'Панель организатора'
     }
   ];
 
