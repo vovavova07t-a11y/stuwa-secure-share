@@ -14,7 +14,7 @@ import {
   FileType,
   HardDrive
 } from 'lucide-react';
-import { useOrganizerDocuments } from '@/hooks/useOrganizerDocuments';
+import { useSupabaseFiles } from '@/hooks/useSupabaseFiles';
 import { FilePreviewModal } from './FilePreviewModal';
 
 interface OrganizerFileSectionProps {
@@ -32,15 +32,13 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
 }) => {
   console.log(`🔍 OrganizerFileSection: отдел=${department}, категория=${categoryId}`);
   
-  const { documents, isLoading } = useOrganizerDocuments(department, categoryId);
+  const { files, isLoading } = useSupabaseFiles(department, categoryId);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (doc.description && doc.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredDocuments = files.filter(doc =>
+    doc.file_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatFileSize = (bytes: number): string => {
@@ -66,7 +64,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
     setShowPreview(true);
   };
 
-  console.log(`📊 OrganizerFileSection: найдено ${documents.length} документов, после фильтра: ${filteredDocuments.length}`);
+  console.log(`📊 OrganizerFileSection: найдено ${files.length} документов, после фильтра: ${filteredDocuments.length}`);
 
   if (isLoading) {
     return (
@@ -143,7 +141,7 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                         <div className="flex items-center gap-2 mb-2">
                           <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                           <h3 className="font-semibold text-sm truncate">
-                            {document.title || document.file_name}
+                            {document.file_name}
                           </h3>
                           <Badge 
                             variant="outline" 
@@ -153,11 +151,6 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                           </Badge>
                         </div>
                         
-                        {document.description && (
-                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                            {document.description}
-                          </p>
-                        )}
                         
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
@@ -166,14 +159,8 @@ export const OrganizerFileSection: React.FC<OrganizerFileSectionProps> = ({
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {formatDate(document.created_at)}
+                            {formatDate(document.uploaded_at)}
                           </div>
-                          {document.download_count !== undefined && (
-                            <div className="flex items-center gap-1">
-                              <Download className="w-3 h-3" />
-                              {document.download_count} скачиваний
-                            </div>
-                          )}
                         </div>
                       </div>
                       

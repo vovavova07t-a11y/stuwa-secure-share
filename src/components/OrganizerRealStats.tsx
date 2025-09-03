@@ -70,18 +70,19 @@ export const OrganizerRealStats: React.FC = () => {
 
     for (const dept of departments) {
       try {
-        console.log(`📊 Подсчет документов в таблице: ${dept.table}`);
+        console.log(`📊 Подсчет документов для отдела: ${dept.table}`);
         
         const { count, error } = await (supabase as any)
-          .from(dept.table)
-          .select('*', { count: 'exact', head: true });
+          .from('files')
+          .select('*', { count: 'exact', head: true })
+          .eq('department', dept.table.replace('_documents', ''));
 
         if (error) {
-          console.error(`❌ Ошибка подсчета в ${dept.table}:`, error);
+          console.error(`❌ Ошибка подсчета для ${dept.table}:`, error);
           updatedStats.push({ ...dept, count: 0 });
         } else {
           const docCount = count || 0;
-          console.log(`✅ Документов в ${dept.table}: ${docCount}`);
+          console.log(`✅ Документов для ${dept.table.replace('_documents', '')}: ${docCount}`);
           updatedStats.push({ ...dept, count: docCount });
           total += docCount;
         }
