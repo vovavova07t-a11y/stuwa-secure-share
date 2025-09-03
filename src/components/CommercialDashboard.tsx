@@ -9,40 +9,28 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'com_client_requests', 
-    name: 'Отчет по запросам клиентов', 
-    icon: FileText,
-    description: 'Аналитика и отчеты по входящим запросам клиентов'
-  },
-  { 
-    id: 'com_client_list', 
-    name: 'Список клиентов', 
-    icon: Users,
-    description: 'База данных клиентов и потенциальных заказчиков'
-  },
-  { 
-    id: 'com_product_promotion', 
-    name: 'Перечень продукции для продвижения продаж', 
-    icon: TrendingUp,
-    description: 'Каталоги продукции для активного продвижения'
-  },
-  { 
-    id: 'com_price_lists', 
-    name: 'Прайс-листы', 
+    id: 'com_analytics', 
+    name: 'Аналитика', 
     icon: PieChart,
-    description: 'Актуальные прайс-листы и ценовые предложения'
+    description: 'Коммерческая аналитика и отчеты'
   },
   { 
-    id: 'com_quotations', 
-    name: 'Актуальные КП', 
+    id: 'com_investments', 
+    name: 'Инвестиции', 
+    icon: TrendingUp,
+    description: 'Инвестиционные проекты и предложения'
+  },
+  { 
+    id: 'com_strategies', 
+    name: 'Стратегии', 
     icon: Target,
-    description: 'Активные коммерческие предложения и тендеры'
+    description: 'Коммерческие стратегии и планы'
   },
   { 
-    id: 'com_partnerships', 
-    name: 'Меморандумы и Соглашения о сотрудничестве', 
+    id: 'commercial_partnerships', 
+    name: 'Партнерства', 
     icon: Handshake,
-    description: 'Меморандумы о взаимопонимании и партнерские соглашения'
+    description: 'Партнерские соглашения и меморандумы'
   }
 ];
 

@@ -9,43 +9,43 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'about_debt_reports', 
+    id: 'fin_debt_reports', 
     name: 'Отчеты по задолженностям', 
     icon: FileBarChart,
     description: 'Отчеты и аналитика по дебиторской и кредиторской задолженности'
   },
   { 
-    id: 'about_monthly_finance', 
+    id: 'fin_monthly_reports', 
     name: 'Финансовый отчет за месяц', 
     icon: TrendingUp,
     description: 'Ежемесячные финансовые отчеты и сводки'
   },
   { 
-    id: 'about_quarterly_tax', 
+    id: 'fin_quarterly_tax', 
     name: 'Налоговый отчет за квартал', 
     icon: FileText,
     description: 'Квартальные налоговые декларации и отчеты'
   },
   { 
-    id: 'about_annual_finance', 
+    id: 'fin_yearly_reports', 
     name: 'Финансовая отчетность за год', 
     icon: FileBarChart,
     description: 'Годовая финансовая отчетность и баланс'
   },
   { 
-    id: 'about_founding_docs', 
+    id: 'fin_founding_docs', 
     name: 'Учредительные документы', 
     icon: ScrollText,
     description: 'Устав, учредительный договор и регистрационные документы'
   },
   { 
-    id: 'about_org_structure', 
+    id: 'fin_org_structure', 
     name: 'Оргструктура и штатное расписание', 
     icon: Users,
     description: 'Организационная структура компании и штатное расписание'
   },
   { 
-    id: 'about_protocols', 
+    id: 'fin_protocols', 
     name: 'Протоколы НС', 
     icon: Building,
     description: 'Протоколы заседаний наблюдательного совета'

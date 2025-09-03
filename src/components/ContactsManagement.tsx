@@ -14,28 +14,58 @@ const categories = [
     description: 'Краткое резюме и презентационные материалы компании'
   },
   { 
-    id: 'cont_incoming_correspondence', 
-    name: 'Входящая корреспонденция', 
-    icon: Mail,
-    description: 'Входящие письма, запросы и официальная корреспонденция'
+    id: 'cont_contacts', 
+    name: 'Контакты', 
+    icon: Users,
+    description: 'Контактная информация и справочники'
+  },
+  { 
+    id: 'cont_coordination', 
+    name: 'Координация', 
+    icon: Calendar,
+    description: 'Документы по координации деятельности'
+  },
+  { 
+    id: 'cont_events', 
+    name: 'Мероприятия', 
+    icon: Calendar,
+    description: 'Планы и отчеты по мероприятиям'
+  },
+  { 
+    id: 'cont_facilities', 
+    name: 'Помещения', 
+    icon: Building,
+    description: 'Документы по управлению помещениями'
   },
   { 
     id: 'cont_outgoing_correspondence', 
     name: 'Исходящая корреспонденция', 
-    icon: FileText,
+    icon: Mail,
     description: 'Исходящие письма и официальные ответы'
   },
   { 
-    id: 'cont_supplier_contacts', 
-    name: 'Контакты поставщиков ТРУ', 
-    icon: Users,
-    description: 'Контактная информация поставщиков товаров, работ и услуг'
+    id: 'cont_schedules', 
+    name: 'Расписания', 
+    icon: Calendar,
+    description: 'Расписания и планы работы'
   },
   { 
-    id: 'cont_supplier_contracts', 
-    name: 'Договора с поставщиками', 
-    icon: Calendar,
-    description: 'Договоры и соглашения с поставщиками'
+    id: 'cont_visitors', 
+    name: 'Посетители', 
+    icon: Users,
+    description: 'Регистрация и учет посетителей'
+  },
+  { 
+    id: 'office_contacts', 
+    name: 'Офисные контакты', 
+    icon: Phone,
+    description: 'Внутренние офисные контакты'
+  },
+  { 
+    id: 'office_correspondence', 
+    name: 'Офисная корреспонденция', 
+    icon: FileText,
+    description: 'Внутренняя офисная переписка'
   }
 ];
 
