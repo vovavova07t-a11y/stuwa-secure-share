@@ -9,10 +9,46 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'technical_specifications', 
-    name: 'Технические спецификации', 
+    id: 'tech_development_program', 
+    name: 'Программа развития', 
+    icon: BookOpen,
+    description: 'Программы развития и стратегические планы'
+  },
+  { 
+    id: 'tech_product_overview', 
+    name: 'Обзор продукции', 
+    icon: FileText,
+    description: 'Общий обзор и характеристики продукции'
+  },
+  { 
+    id: 'tech_product_specs', 
+    name: 'Спецификация продукции', 
     icon: Cog,
-    description: 'Технические спецификации и требования'
+    description: 'Детальные технические спецификации продукции'
+  },
+  { 
+    id: 'tech_activity_presentation', 
+    name: 'Презентация деятельности', 
+    icon: Settings,
+    description: 'Презентационные материалы деятельности компании'
+  },
+  { 
+    id: 'tech_business_plans', 
+    name: 'Бизнес-планы и Проекты', 
+    icon: Wrench,
+    description: 'Бизнес-планы и проектная документация'
+  },
+  { 
+    id: 'tech_company_catalog', 
+    name: 'Каталог Компании', 
+    icon: BookOpen,
+    description: 'Каталог продукции и услуг компании'
+  },
+  { 
+    id: 'tech_product_certificates', 
+    name: 'Сертификаты на продукцию', 
+    icon: Shield,
+    description: 'Сертификаты качества и соответствия продукции'
   }
 ];
 
