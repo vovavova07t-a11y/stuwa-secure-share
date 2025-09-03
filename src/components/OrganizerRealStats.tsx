@@ -70,7 +70,7 @@ export const OrganizerRealStats: React.FC = () => {
 
     for (const dept of departments) {
       try {
-        console.log(`📊 Подсчет документов в департаменте: ${dept.table}`);
+        console.log(`📊 Подсчет РЕАЛЬНЫХ документов в департаменте: ${dept.table}`);
         
         // Используем универсальную таблицу files с фильтром по department
         const { count, error } = await (supabase as any)
@@ -83,7 +83,7 @@ export const OrganizerRealStats: React.FC = () => {
           updatedStats.push({ ...dept, count: 0 });
         } else {
           const docCount = count || 0;
-          console.log(`✅ Документов в департаменте ${dept.table}: ${docCount}`);
+          console.log(`✅ РЕАЛЬНЫХ документов в департаменте ${dept.table}: ${docCount}`);
           updatedStats.push({ ...dept, count: docCount });
           total += docCount;
         }
@@ -97,7 +97,7 @@ export const OrganizerRealStats: React.FC = () => {
     setTotalDocuments(total);
     setIsLoading(false);
 
-    console.log(`📈 Общая статистика загружена. Всего документов: ${total}`);
+    console.log(`📈 Статистика РЕАЛЬНЫХ документов загружена. Всего документов: ${total}`);
   };
 
   useEffect(() => {
