@@ -8,64 +8,34 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'cont_company_resume', 
+    id: 'office_company_resume', 
     name: 'Резюме Компании', 
     icon: Building,
     description: 'Краткое резюме и презентационные материалы компании'
   },
   { 
-    id: 'cont_contacts', 
-    name: 'Контакты', 
-    icon: Users,
-    description: 'Контактная информация и справочники'
+    id: 'office_incoming_correspondence', 
+    name: 'Входящая корреспонденция', 
+    icon: Mail,
+    description: 'Входящие письма и официальная корреспонденция'
   },
   { 
-    id: 'cont_coordination', 
-    name: 'Координация', 
-    icon: Calendar,
-    description: 'Документы по координации деятельности'
-  },
-  { 
-    id: 'cont_events', 
-    name: 'Мероприятия', 
-    icon: Calendar,
-    description: 'Планы и отчеты по мероприятиям'
-  },
-  { 
-    id: 'cont_facilities', 
-    name: 'Помещения', 
-    icon: Building,
-    description: 'Документы по управлению помещениями'
-  },
-  { 
-    id: 'cont_outgoing_correspondence', 
+    id: 'office_outgoing_correspondence', 
     name: 'Исходящая корреспонденция', 
     icon: Mail,
     description: 'Исходящие письма и официальные ответы'
   },
   { 
-    id: 'cont_schedules', 
-    name: 'Расписания', 
-    icon: Calendar,
-    description: 'Расписания и планы работы'
-  },
-  { 
-    id: 'cont_visitors', 
-    name: 'Посетители', 
+    id: 'office_supplier_contacts', 
+    name: 'Контакты поставщиков ТРУ', 
     icon: Users,
-    description: 'Регистрация и учет посетителей'
+    description: 'Контактная информация поставщиков товаров, работ и услуг'
   },
   { 
-    id: 'office_contacts', 
-    name: 'Офисные контакты', 
-    icon: Phone,
-    description: 'Внутренние офисные контакты'
-  },
-  { 
-    id: 'office_correspondence', 
-    name: 'Офисная корреспонденция', 
+    id: 'office_supplier_contracts', 
+    name: 'Договора с поставщиками', 
     icon: FileText,
-    description: 'Внутренняя офисная переписка'
+    description: 'Договоры и соглашения с поставщиками'
   }
 ];
 
