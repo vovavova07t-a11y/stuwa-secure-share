@@ -19,17 +19,8 @@ export interface OrganizerDocument {
   download_count?: number;
 }
 
-// ПОЛНОЕ сопоставление отделов с таблицами - все реальные таблицы из Supabase
-const DEPARTMENT_TABLE_MAP = {
-  financial: 'financial_documents',
-  technical: 'technical_documents', 
-  logistics: 'logistics_documents',
-  commercial: 'commercial_documents',
-  office: 'office_documents'
-} as const;
-
-type DepartmentKey = keyof typeof DEPARTMENT_TABLE_MAP;
-type TableName = typeof DEPARTMENT_TABLE_MAP[DepartmentKey];
+// Используем универсальную таблицу files для всех документов
+const FILES_TABLE = 'files';
 
 export const useOrganizerDocuments = (department: string, categoryId: string) => {
   const [documents, setDocuments] = useState<OrganizerDocument[]>([]);
@@ -46,59 +37,51 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
     try {
       setIsLoading(true);
       
-      // Получаем название таблицы для отдела
-      const tableName = DEPARTMENT_TABLE_MAP[department as DepartmentKey];
+      console.log(`🔄 Загрузка документов для отдела: ${department}, категория: ${categoryId}, таблица: ${FILES_TABLE}`);
       
-      if (!tableName) {
-        console.warn(`❌ Таблица для отдела ${department} не найдена в DEPARTMENT_TABLE_MAP`);
-        setDocuments([]);
-        return;
-      }
-
-      console.log(`🔄 Загрузка документов для отдела: ${department}, категория: ${categoryId}, таблица: ${tableName}`);
-      
-      // Загружаем документы напрямую из Supabase с правильной таблицей
+      // Загружаем документы из универсальной таблицы files
       const { data, error } = await (supabase as any)
-        .from(tableName)
+        .from(FILES_TABLE)
         .select('*')
-        .eq('category', categoryId)
+        .eq('department', department)
+        .eq('category_id', categoryId)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error(`❌ Ошибка загрузки из ${tableName}:`, error);
+        console.error(`❌ Ошибка загрузки из ${FILES_TABLE}:`, error);
         setDocuments([]);
         toast({
           title: 'Ошибка',
-          description: `Не удалось загрузить документы из ${tableName}`,
+          description: `Не удалось загрузить документы из ${FILES_TABLE}`,
           variant: 'destructive'
         });
         return;
       }
       
-      console.log(`📋 Загружено документов из ${tableName}: ${data?.length || 0}`);
-      console.log('📋 Документы:', data?.map((d: any) => d.title || d.file_name) || []);
+      console.log(`📋 Загружено документов из ${FILES_TABLE}: ${data?.length || 0}`);
+      console.log('📋 Документы:', data?.map((d: any) => d.file_name) || []);
       
       // Проверяем первый документ для отладки
       if (data && data.length > 0) {
         console.log('📋 Первый документ из результатов:', data[0]);
-        console.log('📋 Все категории в результатах:', data.map((d: any) => d.category));
+        console.log('📋 Все категории в результатах:', data.map((d: any) => d.category_id));
       }
       
       // Преобразуем в формат OrganizerDocument
       const organizerDocs: OrganizerDocument[] = (data || []).map((doc: any) => ({
         id: doc.id,
-        title: doc.title || doc.file_name,
+        title: doc.file_name, // В таблице files нет поля title, используем file_name
         file_name: doc.file_name,
         file_url: doc.file_url,
         file_type: doc.file_type,
         file_size: doc.file_size,
-        category: doc.category,
+        category: doc.category_id, // В таблице files это поле называется category_id
         subcategory: doc.subcategory,
-        status: doc.status || 'active',
+        status: 'active', // В таблице files нет поля status
         created_at: doc.created_at,
         uploaded_by: doc.uploaded_by,
         description: doc.description,
-        download_count: doc.download_count || 0
+        download_count: 0 // В таблице files нет поля download_count
       }));
       
       setDocuments(organizerDocs);
@@ -121,25 +104,19 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
   const getTotalDocumentsCount = async (department: string): Promise<number> => {
     try {
-      const tableName = DEPARTMENT_TABLE_MAP[department as DepartmentKey];
-      
-      if (!tableName) {
-        console.warn(`❌ Таблица для отдела ${department} не найдена при подсчете`);
-        return 0;
-      }
-
-      console.log(`🔢 Подсчет документов в таблице: ${tableName}`);
+      console.log(`🔢 Подсчет документов в таблице: ${FILES_TABLE} для отдела: ${department}`);
       
       const { count, error } = await (supabase as any)
-        .from(tableName)
-        .select('*', { count: 'exact', head: true });
+        .from(FILES_TABLE)
+        .select('*', { count: 'exact', head: true })
+        .eq('department', department);
 
       if (error) {
-        console.error(`❌ Ошибка подсчета в ${tableName}:`, error);
+        console.error(`❌ Ошибка подсчета в ${FILES_TABLE}:`, error);
         return 0;
       }
 
-      console.log(`📊 Всего документов в ${tableName}: ${count || 0}`);
+      console.log(`📊 Всего документов в отделе ${department}: ${count || 0}`);
       return count || 0;
     } catch (error) {
       console.error('❌ Ошибка при подсчете документов:', error);
@@ -149,26 +126,20 @@ export const useOrganizerDocuments = (department: string, categoryId: string) =>
 
   const getCategoryDocumentsCount = async (department: string, categoryId: string): Promise<number> => {
     try {
-      const tableName = DEPARTMENT_TABLE_MAP[department as DepartmentKey];
-      
-      if (!tableName) {
-        console.warn(`❌ Таблица для отдела ${department} не найдена при подсчете категории`);
-        return 0;
-      }
-
-      console.log(`🔢 Подсчет документов в категории ${categoryId}, таблица: ${tableName}`);
+      console.log(`🔢 Подсчет документов в категории ${categoryId}, отдел: ${department}, таблица: ${FILES_TABLE}`);
       
       const { count, error } = await (supabase as any)
-        .from(tableName)
+        .from(FILES_TABLE)
         .select('*', { count: 'exact', head: true })
-        .eq('category', categoryId);
+        .eq('department', department)
+        .eq('category_id', categoryId);
 
       if (error) {
         console.error(`❌ Ошибка подсчета документов категории:`, error);
         return 0;
       }
 
-      console.log(`📊 Документов в категории ${categoryId}: ${count || 0}`);
+      console.log(`📊 Документов в категории ${categoryId} отдела ${department}: ${count || 0}`);
       return count || 0;
     } catch (error) {
       console.error('❌ Ошибка при подсчете документов категории:', error);

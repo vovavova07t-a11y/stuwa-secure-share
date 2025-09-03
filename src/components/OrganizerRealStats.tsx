@@ -28,35 +28,35 @@ export const OrganizerRealStats: React.FC = () => {
   const departments = [
     { 
       name: 'Финансы', 
-      table: 'financial_documents', 
+      table: 'financial', 
       icon: Building2, 
       color: 'bg-blue-500',
       count: 0 
     },
     { 
       name: 'Техническая', 
-      table: 'technical_documents', 
+      table: 'technical', 
       icon: FileText, 
       color: 'bg-green-500',
       count: 0 
     },
     { 
       name: 'Логистика', 
-      table: 'logistics_documents', 
+      table: 'logistics', 
       icon: Users, 
       color: 'bg-purple-500',
       count: 0 
     },
     { 
       name: 'Коммерция', 
-      table: 'commercial_documents', 
+      table: 'commercial', 
       icon: TrendingUp, 
       color: 'bg-orange-500',
       count: 0 
     },
     { 
       name: 'Офис-менеджер', 
-      table: 'office_documents', 
+      table: 'office', 
       icon: Phone, 
       color: 'bg-pink-500',
       count: 0 
@@ -70,23 +70,25 @@ export const OrganizerRealStats: React.FC = () => {
 
     for (const dept of departments) {
       try {
-        console.log(`📊 Подсчет документов в таблице: ${dept.table}`);
+        console.log(`📊 Подсчет документов в департаменте: ${dept.table}`);
         
+        // Используем универсальную таблицу files с фильтром по department
         const { count, error } = await (supabase as any)
-          .from(dept.table)
-          .select('*', { count: 'exact', head: true });
+          .from('files')
+          .select('*', { count: 'exact', head: true })
+          .eq('department', dept.table);
 
         if (error) {
-          console.error(`❌ Ошибка подсчета в ${dept.table}:`, error);
+          console.error(`❌ Ошибка подсчета в департаменте ${dept.table}:`, error);
           updatedStats.push({ ...dept, count: 0 });
         } else {
           const docCount = count || 0;
-          console.log(`✅ Документов в ${dept.table}: ${docCount}`);
+          console.log(`✅ Документов в департаменте ${dept.table}: ${docCount}`);
           updatedStats.push({ ...dept, count: docCount });
           total += docCount;
         }
       } catch (error) {
-        console.error(`💥 Критическая ошибка для ${dept.table}:`, error);
+        console.error(`💥 Критическая ошибка для департамента ${dept.table}:`, error);
         updatedStats.push({ ...dept, count: 0 });
       }
     }
