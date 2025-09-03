@@ -8,40 +8,34 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 
 const categories = [
   { 
-    id: 'logistics_transportation', 
-    name: 'Транспортировка', 
-    icon: Truck,
-    description: 'Документы по транспортировке и логистике'
-  },
-  { 
-    id: 'log_client_base', 
-    name: 'Клиентская база', 
-    icon: Users,
-    description: 'База данных клиентов логистики'
-  },
-  { 
-    id: 'log_communications', 
-    name: 'Коммуникации', 
-    icon: ClipboardList,
-    description: 'Коммуникационные документы отдела логистики'
-  },
-  { 
-    id: 'log_contracts', 
-    name: 'Договоры', 
-    icon: FileBarChart,
-    description: 'Договоры и контракты по логистике'
-  },
-  { 
-    id: 'log_delivery', 
-    name: 'Доставка', 
-    icon: Package,
-    description: 'Документы по доставке и распределению'
-  },
-  { 
-    id: 'log_regions', 
-    name: 'Регионы', 
+    id: 'log_current_issues_germany', 
+    name: 'Текущие вопросы (Германия)', 
     icon: Building2,
-    description: 'Региональная документация по логистике'
+    description: 'Текущие вопросы по работе с Германией'
+  },
+  { 
+    id: 'log_sales_report', 
+    name: 'Отчет по реализации', 
+    icon: FileBarChart,
+    description: 'Отчеты по реализации продукции и услуг'
+  },
+  { 
+    id: 'log_contract_development', 
+    name: 'Отчет по освоению Договоров', 
+    icon: ClipboardList,
+    description: 'Отчеты по освоению и выполнению договоров'
+  },
+  { 
+    id: 'log_procurement_announcements', 
+    name: 'Обзор объявлений о закупе', 
+    icon: Package,
+    description: 'Обзор и анализ объявлений о закупках'
+  },
+  { 
+    id: 'log_sales_contracts', 
+    name: 'Договора на реализацию', 
+    icon: Truck,
+    description: 'Договоры на реализацию продукции'
   }
 ];
 
