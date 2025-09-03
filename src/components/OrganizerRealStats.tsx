@@ -68,21 +68,34 @@ export const OrganizerRealStats: React.FC = () => {
     let total = 0;
     const updatedStats: DepartmentStats[] = [];
 
+    // Define current valid categories for each department
+    const validCategories = {
+      financial: ['fin_debt_reports', 'fin_monthly_reports', 'fin_quarterly_tax', 'fin_yearly_reports', 'fin_founding_docs', 'fin_org_structure', 'fin_protocols'],
+      technical: ['tech_development_program', 'tech_product_overview', 'tech_product_specs', 'tech_activity_presentation', 'tech_business_plans', 'tech_company_catalog', 'tech_product_certificates'],
+      logistics: ['log_current_issues_germany', 'log_sales_report', 'log_contract_development', 'log_procurement_announcements', 'log_sales_contracts'],
+      commercial: ['com_client_requests', 'com_client_list', 'com_product_promotion', 'com_price_lists', 'com_quotations', 'com_partnerships_mou'],
+      office: ['office_company_resume', 'office_incoming_correspondence', 'office_outgoing_correspondence', 'office_supplier_contacts', 'office_supplier_contracts']
+    };
+
     for (const dept of departments) {
       try {
         console.log(`📊 Подсчет документов для отдела: ${dept.table}`);
         
+        const departmentKey = dept.table.replace('_documents', '') as keyof typeof validCategories;
+        const categories = validCategories[departmentKey] || [];
+        
         const { count, error } = await (supabase as any)
           .from('files')
           .select('*', { count: 'exact', head: true })
-          .eq('department', dept.table.replace('_documents', ''));
+          .eq('department', departmentKey)
+          .in('category_id', categories);
 
         if (error) {
           console.error(`❌ Ошибка подсчета для ${dept.table}:`, error);
           updatedStats.push({ ...dept, count: 0 });
         } else {
           const docCount = count || 0;
-          console.log(`✅ Документов для ${dept.table.replace('_documents', '')}: ${docCount}`);
+          console.log(`✅ Документов для ${departmentKey} (только актуальные категории): ${docCount}`);
           updatedStats.push({ ...dept, count: docCount });
           total += docCount;
         }
