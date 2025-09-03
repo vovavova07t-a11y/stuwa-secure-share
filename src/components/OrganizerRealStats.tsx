@@ -28,35 +28,35 @@ export const OrganizerRealStats: React.FC = () => {
   const departments = [
     { 
       name: 'Финансы', 
-      table: 'financial', 
+      table: 'financial_documents', 
       icon: Building2, 
       color: 'bg-blue-500',
       count: 0 
     },
     { 
       name: 'Техническая', 
-      table: 'technical', 
+      table: 'technical_documents', 
       icon: FileText, 
       color: 'bg-green-500',
       count: 0 
     },
     { 
       name: 'Логистика', 
-      table: 'logistics', 
+      table: 'logistics_documents', 
       icon: Users, 
       color: 'bg-purple-500',
       count: 0 
     },
     { 
       name: 'Коммерция', 
-      table: 'commercial', 
+      table: 'commercial_documents', 
       icon: TrendingUp, 
       color: 'bg-orange-500',
       count: 0 
     },
     { 
       name: 'Офис-менеджер', 
-      table: 'office', 
+      table: 'office_documents', 
       icon: Phone, 
       color: 'bg-pink-500',
       count: 0 
@@ -70,25 +70,23 @@ export const OrganizerRealStats: React.FC = () => {
 
     for (const dept of departments) {
       try {
-        console.log(`📊 Подсчет РЕАЛЬНЫХ документов в департаменте: ${dept.table}`);
+        console.log(`📊 Подсчет документов в таблице: ${dept.table}`);
         
-        // Используем универсальную таблицу files с фильтром по department
         const { count, error } = await (supabase as any)
-          .from('files')
-          .select('*', { count: 'exact', head: true })
-          .eq('department', dept.table);
+          .from(dept.table)
+          .select('*', { count: 'exact', head: true });
 
         if (error) {
-          console.error(`❌ Ошибка подсчета в департаменте ${dept.table}:`, error);
+          console.error(`❌ Ошибка подсчета в ${dept.table}:`, error);
           updatedStats.push({ ...dept, count: 0 });
         } else {
           const docCount = count || 0;
-          console.log(`✅ РЕАЛЬНЫХ документов в департаменте ${dept.table}: ${docCount}`);
+          console.log(`✅ Документов в ${dept.table}: ${docCount}`);
           updatedStats.push({ ...dept, count: docCount });
           total += docCount;
         }
       } catch (error) {
-        console.error(`💥 Критическая ошибка для департамента ${dept.table}:`, error);
+        console.error(`💥 Критическая ошибка для ${dept.table}:`, error);
         updatedStats.push({ ...dept, count: 0 });
       }
     }
@@ -97,7 +95,7 @@ export const OrganizerRealStats: React.FC = () => {
     setTotalDocuments(total);
     setIsLoading(false);
 
-    console.log(`📈 Статистика РЕАЛЬНЫХ документов загружена. Всего документов: ${total}`);
+    console.log(`📈 Общая статистика загружена. Всего документов: ${total}`);
   };
 
   useEffect(() => {
