@@ -21,7 +21,6 @@ import {
 // РЕАЛЬНЫЕ категории для каждого отдела из базы данных
 const departmentCategories = {
   financial: [
-    { id: 'about_debt_reports', title: 'Отчеты по задолженностям (О)', description: 'Дополнительные отчеты по задолженности' },
     { id: 'fin_debt_reports', title: 'Отчеты по задолженностям', description: 'Финансовые отчеты и анализ задолженности клиентов' },
     { id: 'fin_founding_docs', title: 'Учредительные документы', description: 'Уставные документы и регистрационные материалы' },
     { id: 'fin_monthly_reports', title: 'Месячные отчеты', description: 'Ежемесячная финансовая отчетность компании' },
