@@ -21,13 +21,13 @@ import {
 // РЕАЛЬНЫЕ категории для каждого отдела из базы данных
 const departmentCategories = {
   financial: [
-    { id: 'fin_debt_reports', title: 'Отчеты по задолженностям', description: 'Финансовые отчеты и анализ задолженности клиентов' },
-    { id: 'fin_founding_docs', title: 'Учредительные документы', description: 'Уставные документы и регистрационные материалы' },
-    { id: 'fin_monthly_reports', title: 'Месячные отчеты', description: 'Ежемесячная финансовая отчетность компании' },
-    { id: 'fin_org_structure', title: 'Организационная структура', description: 'Штатное расписание и структура компании' },
-    { id: 'fin_protocols', title: 'Протоколы НС', description: 'Протоколы наблюдательного совета' },
-    { id: 'fin_quarterly_tax', title: 'Налоговые отчеты', description: 'Квартальные налоговые декларации и отчеты' },
-    { id: 'fin_yearly_reports', title: 'Годовые отчеты', description: 'Годовая финансовая отчетность и анализ' }
+    { id: 'fin_debt_reports', title: 'Отчет по задолженностям', description: 'Отчеты и аналитика по дебиторской и кредиторской задолженности' },
+    { id: 'fin_monthly_reports', title: 'Финансовый отчет за месяц', description: 'Ежемесячные финансовые отчеты и сводки' },
+    { id: 'fin_quarterly_tax', title: 'Налоговый отчет за квартал', description: 'Квартальные налоговые декларации и отчеты' },
+    { id: 'fin_yearly_reports', title: 'Финансовая отчетность за год', description: 'Годовая финансовая отчетность и баланс' },
+    { id: 'fin_founding_docs', title: 'Учредительные документы', description: 'Устав, учредительный договор и регистрационные документы' },
+    { id: 'fin_org_structure', title: 'Оргструктура и штатное расписание', description: 'Организационная структура компании и штатное расписание' },
+    { id: 'fin_protocols', title: 'Протокол НС', description: 'Протоколы заседаний наблюдательного совета' }
   ],
   technical: [
     { id: 'tech_development_program', title: 'Программа развития', description: 'Программы развития и стратегические планы' },

@@ -10,7 +10,7 @@ import { InterdepartmentDashboard } from '@/components/interdepartment/Interdepa
 const categories = [
   { 
     id: 'fin_debt_reports', 
-    name: 'Отчеты по задолженностям', 
+    name: 'Отчет по задолженностям', 
     icon: FileBarChart,
     description: 'Отчеты и аналитика по дебиторской и кредиторской задолженности'
   },
@@ -46,7 +46,7 @@ const categories = [
   },
   { 
     id: 'fin_protocols', 
-    name: 'Протоколы НС', 
+    name: 'Протокол НС', 
     icon: Building,
     description: 'Протоколы заседаний наблюдательного совета'
   }
