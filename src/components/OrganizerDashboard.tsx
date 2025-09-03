@@ -30,33 +30,35 @@ const departmentCategories = {
     { id: 'fin_yearly_reports', title: 'Годовые отчеты', description: 'Годовая финансовая отчетность и анализ' }
   ],
   technical: [
-    { id: 'technical_specifications', title: 'Технические спецификации', description: 'Технические спецификации и документация' }
+    { id: 'tech_development_program', title: 'Программа развития', description: 'Программы развития и стратегические планы' },
+    { id: 'tech_product_overview', title: 'Обзор продукции', description: 'Общий обзор и характеристики продукции' },
+    { id: 'tech_product_specs', title: 'Спецификация продукции', description: 'Детальные технические спецификации продукции' },
+    { id: 'tech_activity_presentation', title: 'Презентация деятельности', description: 'Презентационные материалы деятельности компании' },
+    { id: 'tech_business_plans', title: 'Бизнес-планы и Проекты', description: 'Бизнес-планы и проектная документация' },
+    { id: 'tech_company_catalog', title: 'Каталог Компании', description: 'Каталог продукции и услуг компании' },
+    { id: 'tech_product_certificates', title: 'Сертификаты на продукцию', description: 'Сертификаты качества и соответствия продукции' }
   ],
   logistics: [
-    { id: 'logistics_transportation', title: 'Транспортировка', description: 'Документы по транспортировке и логистике' },
-    { id: 'log_client_base', title: 'Клиентская база', description: 'База данных клиентов логистики' },
-    { id: 'log_communications', title: 'Коммуникации', description: 'Коммуникационные документы отдела логистики' },
-    { id: 'log_contracts', title: 'Договоры', description: 'Договоры и контракты по логистике' },
-    { id: 'log_delivery', title: 'Доставка', description: 'Документы по доставке и распределению' },
-    { id: 'log_regions', title: 'Регионы', description: 'Региональная документация по логистике' }
+    { id: 'log_current_issues_germany', title: 'Текущие вопросы (Германия)', description: 'Текущие вопросы по работе с Германией' },
+    { id: 'log_sales_report', title: 'Отчет по реализации', description: 'Отчеты по реализации продукции и услуг' },
+    { id: 'log_contract_development', title: 'Отчет по освоению Договоров', description: 'Отчеты по освоению и выполнению договоров' },
+    { id: 'log_procurement_announcements', title: 'Обзор объявлений о закупе', description: 'Обзор и анализ объявлений о закупках' },
+    { id: 'log_sales_contracts', title: 'Договора на реализацию', description: 'Договоры на реализацию продукции' }
   ],
   commercial: [
-    { id: 'com_analytics', title: 'Аналитика', description: 'Коммерческая аналитика и отчеты' },
-    { id: 'com_investments', title: 'Инвестиции', description: 'Инвестиционные проекты и предложения' },
-    { id: 'com_strategies', title: 'Стратегии', description: 'Коммерческие стратегии и планы' },
-    { id: 'commercial_partnerships', title: 'Партнерства', description: 'Партнерские соглашения и меморандумы' }
+    { id: 'com_client_requests', title: 'Отчет по запросам клиентов', description: 'Отчеты по запросам и требованиям клиентов' },
+    { id: 'com_client_list', title: 'Список клиентов', description: 'База данных и список всех клиентов' },
+    { id: 'com_product_promotion', title: 'Перечень продукции для продвижения продаж', description: 'Список продукции для активного продвижения' },
+    { id: 'com_price_lists', title: 'Прайс-листы', description: 'Актуальные прайс-листы на продукцию и услуги' },
+    { id: 'com_quotations', title: 'Актуальные КП', description: 'Актуальные коммерческие предложения' },
+    { id: 'com_partnerships_mou', title: 'Меморандумы и Соглашения о сотрудничестве', description: 'Меморандумы и партнерские соглашения' }
   ],
   office: [
-    { id: 'cont_company_resume', title: 'Резюме Компании', description: 'Краткое резюме и презентационные материалы компании' },
-    { id: 'cont_contacts', title: 'Контакты', description: 'Контактная информация и справочники' },
-    { id: 'cont_coordination', title: 'Координация', description: 'Документы по координации деятельности' },
-    { id: 'cont_events', title: 'Мероприятия', description: 'Планы и отчеты по мероприятиям' },
-    { id: 'cont_facilities', title: 'Помещения', description: 'Документы по управлению помещениями' },
-    { id: 'cont_outgoing_correspondence', title: 'Исходящая корреспонденция', description: 'Исходящие письма и официальные ответы' },
-    { id: 'cont_schedules', title: 'Расписания', description: 'Расписания и планы работы' },
-    { id: 'cont_visitors', title: 'Посетители', description: 'Регистрация и учет посетителей' },
-    { id: 'office_contacts', title: 'Офисные контакты', description: 'Внутренние офисные контакты' },
-    { id: 'office_correspondence', title: 'Офисная корреспонденция', description: 'Внутренняя офисная переписка' }
+    { id: 'office_company_resume', title: 'Резюме Компании', description: 'Краткое резюме и презентационные материалы компании' },
+    { id: 'office_incoming_correspondence', title: 'Входящая корреспонденция', description: 'Входящие письма и официальная корреспонденция' },
+    { id: 'office_outgoing_correspondence', title: 'Исходящая корреспонденция', description: 'Исходящие письма и официальные ответы' },
+    { id: 'office_supplier_contacts', title: 'Контакты поставщиков ТРУ', description: 'Контактная информация поставщиков товаров, работ и услуг' },
+    { id: 'office_supplier_contracts', title: 'Договора с поставщиками', description: 'Договоры и соглашения с поставщиками' }
   ]
 };
 
