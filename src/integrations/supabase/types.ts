@@ -79,6 +79,86 @@ export type Database = {
         }
         Relationships: []
       }
+      accountant_chats: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          status: string
+          unread_count: number | null
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          status?: string
+          unread_count?: number | null
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          status?: string
+          unread_count?: number | null
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
+      accountant_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_read: boolean | null
+          sender_id: string | null
+          sender_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          chat_id: string
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_read?: boolean | null
+          sender_id?: string | null
+          sender_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_read?: boolean | null
+          sender_id?: string | null
+          sender_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountant_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "accountant_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admins: {
         Row: {
           created_at: string | null
@@ -156,6 +236,62 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      ai_chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_insights: {
         Row: {
@@ -321,6 +457,38 @@ export type Database = {
           },
         ]
       }
+      article_reactions: {
+        Row: {
+          article_id: string
+          created_at: string
+          emoji: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          emoji: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_reactions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_reads: {
         Row: {
           article_id: string
@@ -432,6 +600,163 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      bank_imports: {
+        Row: {
+          account_number: string | null
+          bank_name: string | null
+          categorized_count: number | null
+          created_at: string | null
+          duplicate_count: number | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          matched_records: number | null
+          needs_review_count: number | null
+          new_records: number | null
+          period_id: string | null
+          processed_at: string | null
+          processed_records: number | null
+          processing_errors: Json | null
+          processing_status: string | null
+          profile_id: string
+          statement_end: string | null
+          statement_start: string | null
+          total_expense: number | null
+          total_income: number | null
+          total_records: number | null
+        }
+        Insert: {
+          account_number?: string | null
+          bank_name?: string | null
+          categorized_count?: number | null
+          created_at?: string | null
+          duplicate_count?: number | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          matched_records?: number | null
+          needs_review_count?: number | null
+          new_records?: number | null
+          period_id?: string | null
+          processed_at?: string | null
+          processed_records?: number | null
+          processing_errors?: Json | null
+          processing_status?: string | null
+          profile_id: string
+          statement_end?: string | null
+          statement_start?: string | null
+          total_expense?: number | null
+          total_income?: number | null
+          total_records?: number | null
+        }
+        Update: {
+          account_number?: string | null
+          bank_name?: string | null
+          categorized_count?: number | null
+          created_at?: string | null
+          duplicate_count?: number | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          matched_records?: number | null
+          needs_review_count?: number | null
+          new_records?: number | null
+          period_id?: string | null
+          processed_at?: string | null
+          processed_records?: number | null
+          processing_errors?: Json | null
+          processing_status?: string | null
+          profile_id?: string
+          statement_end?: string | null
+          statement_start?: string | null
+          total_expense?: number | null
+          total_income?: number | null
+          total_records?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_imports_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookmarks: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_feedback: {
+        Row: {
+          answer_text: string | null
+          chat_id: string | null
+          chat_type: string
+          comment: string | null
+          created_at: string
+          id: string
+          is_helpful: boolean
+          message_id: string | null
+          question_text: string | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answer_text?: string | null
+          chat_id?: string | null
+          chat_type: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_helpful: boolean
+          message_id?: string | null
+          question_text?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answer_text?: string | null
+          chat_id?: string | null
+          chat_type?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_helpful?: boolean
+          message_id?: string | null
+          question_text?: string | null
+          reason?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -591,6 +916,90 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_issues: {
+        Row: {
+          action_type: string | null
+          action_url: string | null
+          auto_resolved: boolean | null
+          created_at: string | null
+          description: string | null
+          how_to_fix: string | null
+          id: string
+          is_auto_detected: boolean | null
+          issue_category: string | null
+          issue_type: string
+          legal_reference: string | null
+          period_id: string | null
+          potential_fine_max: number | null
+          potential_fine_min: number | null
+          profile_id: string
+          related_amount: number | null
+          related_counterparty: string | null
+          related_date: string | null
+          related_document_id: string | null
+          related_record_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          risk_level: string
+          status: string | null
+          title: string
+        }
+        Insert: {
+          action_type?: string | null
+          action_url?: string | null
+          auto_resolved?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          how_to_fix?: string | null
+          id?: string
+          is_auto_detected?: boolean | null
+          issue_category?: string | null
+          issue_type: string
+          legal_reference?: string | null
+          period_id?: string | null
+          potential_fine_max?: number | null
+          potential_fine_min?: number | null
+          profile_id: string
+          related_amount?: number | null
+          related_counterparty?: string | null
+          related_date?: string | null
+          related_document_id?: string | null
+          related_record_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          risk_level: string
+          status?: string | null
+          title: string
+        }
+        Update: {
+          action_type?: string | null
+          action_url?: string | null
+          auto_resolved?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          how_to_fix?: string | null
+          id?: string
+          is_auto_detected?: boolean | null
+          issue_category?: string | null
+          issue_type?: string
+          legal_reference?: string | null
+          period_id?: string | null
+          potential_fine_max?: number | null
+          potential_fine_min?: number | null
+          profile_id?: string
+          related_amount?: number | null
+          related_counterparty?: string | null
+          related_date?: string | null
+          related_document_id?: string | null
+          related_record_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          risk_level?: string
+          status?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       content_interactions: {
         Row: {
           content_id: string
@@ -653,6 +1062,54 @@ export type Database = {
           id?: string
           session_id?: string
           source_page?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cookie_consents: {
+        Row: {
+          analytics_consent: boolean
+          consent_given: boolean
+          consent_version: string | null
+          created_at: string
+          functional_consent: boolean
+          id: string
+          ip_hash: string | null
+          marketing_consent: boolean
+          revoked_at: string | null
+          session_id: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analytics_consent?: boolean
+          consent_given?: boolean
+          consent_version?: string | null
+          created_at?: string
+          functional_consent?: boolean
+          id?: string
+          ip_hash?: string | null
+          marketing_consent?: boolean
+          revoked_at?: string | null
+          session_id: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analytics_consent?: boolean
+          consent_given?: boolean
+          consent_version?: string | null
+          created_at?: string
+          functional_consent?: boolean
+          id?: string
+          ip_hash?: string | null
+          marketing_consent?: boolean
+          revoked_at?: string | null
+          session_id?: string
+          updated_at?: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -768,6 +1225,57 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "technical_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_operation_links: {
+        Row: {
+          confidence_score: number | null
+          confirmed_at: string | null
+          created_at: string | null
+          document_id: string
+          id: string
+          is_confirmed: boolean | null
+          link_type: string | null
+          matched_fields: Json | null
+          operation_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          document_id: string
+          id?: string
+          is_confirmed?: boolean | null
+          link_type?: string | null
+          matched_fields?: Json | null
+          operation_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          is_confirmed?: boolean | null
+          link_type?: string | null
+          matched_fields?: Json | null
+          operation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_operation_links_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "tax_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_operation_links_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "income_expense_records"
             referencedColumns: ["id"]
           },
         ]
@@ -1303,6 +1811,117 @@ export type Database = {
           text_size?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      income_expense_records: {
+        Row: {
+          ai_category_suggestion: string | null
+          ai_confidence: number | null
+          ai_flags: string[] | null
+          amount: number
+          category: string | null
+          counterparty_bin: string | null
+          counterparty_name: string | null
+          counterparty_type: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          has_invoice: boolean | null
+          has_payment_document: boolean | null
+          has_primary_document: boolean | null
+          id: string
+          is_recurring: boolean | null
+          linked_document_ids: string[] | null
+          notes: string | null
+          operation_date: string
+          original_data: Json | null
+          period_id: string | null
+          profile_id: string
+          purpose_of_payment: string | null
+          record_type: string
+          source_document_id: string | null
+          source_type: string | null
+          subcategory: string | null
+          tags: string[] | null
+          tax_relevant: boolean | null
+          updated_at: string | null
+          vat_amount: number | null
+          vat_included: boolean | null
+          verification_issues: string[] | null
+          verification_status: string | null
+        }
+        Insert: {
+          ai_category_suggestion?: string | null
+          ai_confidence?: number | null
+          ai_flags?: string[] | null
+          amount: number
+          category?: string | null
+          counterparty_bin?: string | null
+          counterparty_name?: string | null
+          counterparty_type?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          has_invoice?: boolean | null
+          has_payment_document?: boolean | null
+          has_primary_document?: boolean | null
+          id?: string
+          is_recurring?: boolean | null
+          linked_document_ids?: string[] | null
+          notes?: string | null
+          operation_date: string
+          original_data?: Json | null
+          period_id?: string | null
+          profile_id: string
+          purpose_of_payment?: string | null
+          record_type: string
+          source_document_id?: string | null
+          source_type?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          tax_relevant?: boolean | null
+          updated_at?: string | null
+          vat_amount?: number | null
+          vat_included?: boolean | null
+          verification_issues?: string[] | null
+          verification_status?: string | null
+        }
+        Update: {
+          ai_category_suggestion?: string | null
+          ai_confidence?: number | null
+          ai_flags?: string[] | null
+          amount?: number
+          category?: string | null
+          counterparty_bin?: string | null
+          counterparty_name?: string | null
+          counterparty_type?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          has_invoice?: boolean | null
+          has_payment_document?: boolean | null
+          has_primary_document?: boolean | null
+          id?: string
+          is_recurring?: boolean | null
+          linked_document_ids?: string[] | null
+          notes?: string | null
+          operation_date?: string
+          original_data?: Json | null
+          period_id?: string | null
+          profile_id?: string
+          purpose_of_payment?: string | null
+          record_type?: string
+          source_document_id?: string | null
+          source_type?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          tax_relevant?: boolean | null
+          updated_at?: string | null
+          vat_amount?: number | null
+          vat_included?: boolean | null
+          verification_issues?: string[] | null
+          verification_status?: string | null
         }
         Relationships: []
       }
@@ -2125,6 +2744,102 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_checkins: {
+        Row: {
+          bank_statement_uploaded: boolean | null
+          checkin_month: number
+          checkin_year: number
+          closed_at: string | null
+          created_at: string
+          fired_employees: number | null
+          had_unusual_operations: boolean | null
+          hired_employees: number | null
+          id: string
+          income_source: string | null
+          is_closed: boolean | null
+          notes: string | null
+          paid_salaries: boolean | null
+          paid_social: boolean | null
+          paid_taxes: boolean | null
+          period_id: string | null
+          profile_id: string
+          salary_amount: number | null
+          social_amount: number | null
+          tax_amount: number | null
+          total_expenses: number
+          total_income: number
+          unusual_operations_note: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_statement_uploaded?: boolean | null
+          checkin_month: number
+          checkin_year: number
+          closed_at?: string | null
+          created_at?: string
+          fired_employees?: number | null
+          had_unusual_operations?: boolean | null
+          hired_employees?: number | null
+          id?: string
+          income_source?: string | null
+          is_closed?: boolean | null
+          notes?: string | null
+          paid_salaries?: boolean | null
+          paid_social?: boolean | null
+          paid_taxes?: boolean | null
+          period_id?: string | null
+          profile_id: string
+          salary_amount?: number | null
+          social_amount?: number | null
+          tax_amount?: number | null
+          total_expenses?: number
+          total_income?: number
+          unusual_operations_note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_statement_uploaded?: boolean | null
+          checkin_month?: number
+          checkin_year?: number
+          closed_at?: string | null
+          created_at?: string
+          fired_employees?: number | null
+          had_unusual_operations?: boolean | null
+          hired_employees?: number | null
+          id?: string
+          income_source?: string | null
+          is_closed?: boolean | null
+          notes?: string | null
+          paid_salaries?: boolean | null
+          paid_social?: boolean | null
+          paid_taxes?: boolean | null
+          period_id?: string | null
+          profile_id?: string
+          salary_amount?: number | null
+          social_amount?: number | null
+          tax_amount?: number | null
+          total_expenses?: number
+          total_income?: number
+          unusual_operations_note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_checkins_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_checkins_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       new_community_experts: {
         Row: {
           category: string
@@ -2430,6 +3145,57 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_tracking: {
+        Row: {
+          amount: number | null
+          created_at: string
+          deadline_id: string
+          due_date: string
+          id: string
+          is_paid: boolean
+          notes: string | null
+          paid_at: string | null
+          payment_document_id: string | null
+          payment_document_url: string | null
+          period_id: string | null
+          profile_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          deadline_id: string
+          due_date: string
+          id?: string
+          is_paid?: boolean
+          notes?: string | null
+          paid_at?: string | null
+          payment_document_id?: string | null
+          payment_document_url?: string | null
+          period_id?: string | null
+          profile_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          deadline_id?: string
+          due_date?: string
+          id?: string
+          is_paid?: boolean
+          notes?: string | null
+          paid_at?: string | null
+          payment_document_id?: string | null
+          payment_document_url?: string | null
+          period_id?: string | null
+          profile_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       people: {
         Row: {
           certificates: string[] | null
@@ -2580,6 +3346,44 @@ export type Database = {
         }
         Relationships: []
       }
+      record_document_links: {
+        Row: {
+          created_at: string | null
+          document_id: string
+          id: string
+          is_confirmed: boolean | null
+          link_type: string
+          match_confidence: number | null
+          record_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_id: string
+          id?: string
+          is_confirmed?: boolean | null
+          link_type: string
+          match_confidence?: number | null
+          record_id: string
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          is_confirmed?: boolean | null
+          link_type?: string
+          match_confidence?: number | null
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "record_document_links_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "income_expense_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registrations_shymkent: {
         Row: {
           city: string | null
@@ -2607,6 +3411,87 @@ export type Database = {
           full_name?: string | null
           id?: string | null
           phone?: string | null
+        }
+        Relationships: []
+      }
+      report_drafts: {
+        Row: {
+          attached_documents: string[] | null
+          blocking_issues: string[] | null
+          calculated_expenses: number | null
+          calculated_income: number | null
+          calculated_tax: number | null
+          created_at: string | null
+          expense_breakdown: Json | null
+          export_data: Json | null
+          filing_instructions: Json | null
+          id: string
+          income_breakdown: Json | null
+          missing_data: string[] | null
+          pdf_preview_url: string | null
+          period_id: string | null
+          profile_id: string
+          readiness_score: number | null
+          report_period: string
+          report_type: string
+          required_documents: Json | null
+          status: string | null
+          submitted_at: string | null
+          tax_base: number | null
+          updated_at: string | null
+          warnings: string[] | null
+        }
+        Insert: {
+          attached_documents?: string[] | null
+          blocking_issues?: string[] | null
+          calculated_expenses?: number | null
+          calculated_income?: number | null
+          calculated_tax?: number | null
+          created_at?: string | null
+          expense_breakdown?: Json | null
+          export_data?: Json | null
+          filing_instructions?: Json | null
+          id?: string
+          income_breakdown?: Json | null
+          missing_data?: string[] | null
+          pdf_preview_url?: string | null
+          period_id?: string | null
+          profile_id: string
+          readiness_score?: number | null
+          report_period: string
+          report_type: string
+          required_documents?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          tax_base?: number | null
+          updated_at?: string | null
+          warnings?: string[] | null
+        }
+        Update: {
+          attached_documents?: string[] | null
+          blocking_issues?: string[] | null
+          calculated_expenses?: number | null
+          calculated_income?: number | null
+          calculated_tax?: number | null
+          created_at?: string | null
+          expense_breakdown?: Json | null
+          export_data?: Json | null
+          filing_instructions?: Json | null
+          id?: string
+          income_breakdown?: Json | null
+          missing_data?: string[] | null
+          pdf_preview_url?: string | null
+          period_id?: string | null
+          profile_id?: string
+          readiness_score?: number | null
+          report_period?: string
+          report_type?: string
+          required_documents?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          tax_base?: number | null
+          updated_at?: string | null
+          warnings?: string[] | null
         }
         Relationships: []
       }
@@ -2670,6 +3555,45 @@ export type Database = {
         }
         Relationships: []
       }
+      site_feedback: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          name: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          name?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          name?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       social_shares: {
         Row: {
           article_id: string
@@ -2696,6 +3620,965 @@ export type Database = {
           share_count?: number | null
         }
         Relationships: []
+      }
+      tax_alerts: {
+        Row: {
+          action_required: string | null
+          action_url: string | null
+          ai_confidence: number | null
+          alert_type: string
+          created_at: string
+          id: string
+          is_dismissed: boolean | null
+          is_read: boolean | null
+          is_resolved: boolean | null
+          message: string
+          period_id: string | null
+          profile_id: string | null
+          related_data: Json | null
+          resolved_at: string | null
+          severity: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_required?: string | null
+          action_url?: string | null
+          ai_confidence?: number | null
+          alert_type: string
+          created_at?: string
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          message: string
+          period_id?: string | null
+          profile_id?: string | null
+          related_data?: Json | null
+          resolved_at?: string | null
+          severity?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_required?: string | null
+          action_url?: string | null
+          ai_confidence?: number | null
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          message?: string
+          period_id?: string | null
+          profile_id?: string | null
+          related_data?: Json | null
+          resolved_at?: string | null
+          severity?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_alerts_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_alerts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_check_results: {
+        Row: {
+          action_plan: Json | null
+          check_type: string
+          checked_at: string | null
+          confidence_score: number | null
+          critical_count: number | null
+          discrepancies: Json | null
+          documents_analyzed: number | null
+          id: string
+          issues: Json
+          issues_count: number | null
+          overall_status: string
+          period_id: string
+          processing_time_ms: number | null
+          profile_id: string
+          recommendations: Json | null
+          warnings_count: number | null
+        }
+        Insert: {
+          action_plan?: Json | null
+          check_type: string
+          checked_at?: string | null
+          confidence_score?: number | null
+          critical_count?: number | null
+          discrepancies?: Json | null
+          documents_analyzed?: number | null
+          id?: string
+          issues?: Json
+          issues_count?: number | null
+          overall_status: string
+          period_id: string
+          processing_time_ms?: number | null
+          profile_id: string
+          recommendations?: Json | null
+          warnings_count?: number | null
+        }
+        Update: {
+          action_plan?: Json | null
+          check_type?: string
+          checked_at?: string | null
+          confidence_score?: number | null
+          critical_count?: number | null
+          discrepancies?: Json | null
+          documents_analyzed?: number | null
+          id?: string
+          issues?: Json
+          issues_count?: number | null
+          overall_status?: string
+          period_id?: string
+          processing_time_ms?: number | null
+          profile_id?: string
+          recommendations?: Json | null
+          warnings_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_check_results_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_check_results_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_deadline_events: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          days_until: number | null
+          description: string | null
+          due_date: string
+          event_type: string
+          id: string
+          is_recurring: boolean | null
+          legal_reference: string | null
+          period_id: string | null
+          priority: string | null
+          profile_id: string
+          recurrence_pattern: string | null
+          related_task_id: string | null
+          reminder_date: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          days_until?: number | null
+          description?: string | null
+          due_date: string
+          event_type: string
+          id?: string
+          is_recurring?: boolean | null
+          legal_reference?: string | null
+          period_id?: string | null
+          priority?: string | null
+          profile_id: string
+          recurrence_pattern?: string | null
+          related_task_id?: string | null
+          reminder_date?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          days_until?: number | null
+          description?: string | null
+          due_date?: string
+          event_type?: string
+          id?: string
+          is_recurring?: boolean | null
+          legal_reference?: string | null
+          period_id?: string | null
+          priority?: string | null
+          profile_id?: string
+          recurrence_pattern?: string | null
+          related_task_id?: string | null
+          reminder_date?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_deadline_events_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_deadline_events_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_deadline_events_related_task_id_fkey"
+            columns: ["related_task_id"]
+            isOneToOne: false
+            referencedRelation: "tax_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_documents: {
+        Row: {
+          ai_warnings: Json | null
+          ai_weak_spots: Json | null
+          amount: number | null
+          audit_risk_score: number | null
+          document_category: string
+          document_date: string | null
+          document_period: string | null
+          document_type: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          notes: string | null
+          period_id: string
+          processed_at: string | null
+          profile_id: string
+          recognition_confidence: number | null
+          recognition_status: string | null
+          recognized_data: Json | null
+          uploaded_at: string | null
+          user_confirmed: boolean | null
+          user_corrections: Json | null
+          validation_issues: Json | null
+          validation_status: string | null
+        }
+        Insert: {
+          ai_warnings?: Json | null
+          ai_weak_spots?: Json | null
+          amount?: number | null
+          audit_risk_score?: number | null
+          document_category: string
+          document_date?: string | null
+          document_period?: string | null
+          document_type: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          notes?: string | null
+          period_id: string
+          processed_at?: string | null
+          profile_id: string
+          recognition_confidence?: number | null
+          recognition_status?: string | null
+          recognized_data?: Json | null
+          uploaded_at?: string | null
+          user_confirmed?: boolean | null
+          user_corrections?: Json | null
+          validation_issues?: Json | null
+          validation_status?: string | null
+        }
+        Update: {
+          ai_warnings?: Json | null
+          ai_weak_spots?: Json | null
+          amount?: number | null
+          audit_risk_score?: number | null
+          document_category?: string
+          document_date?: string | null
+          document_period?: string | null
+          document_type?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          notes?: string | null
+          period_id?: string
+          processed_at?: string | null
+          profile_id?: string
+          recognition_confidence?: number | null
+          recognition_status?: string | null
+          recognized_data?: Json | null
+          uploaded_at?: string | null
+          user_confirmed?: boolean | null
+          user_corrections?: Json | null
+          validation_issues?: Json | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_documents_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_documents_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_entries: {
+        Row: {
+          amount: number
+          category: string | null
+          counterparty: string | null
+          created_at: string
+          description: string | null
+          document_id: string | null
+          entry_date: string
+          entry_type: string
+          id: string
+          is_verified: boolean | null
+          period_id: string | null
+          profile_id: string | null
+          source: string | null
+          updated_at: string
+          user_id: string
+          verification_notes: string | null
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          counterparty?: string | null
+          created_at?: string
+          description?: string | null
+          document_id?: string | null
+          entry_date?: string
+          entry_type: string
+          id?: string
+          is_verified?: boolean | null
+          period_id?: string | null
+          profile_id?: string | null
+          source?: string | null
+          updated_at?: string
+          user_id: string
+          verification_notes?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          counterparty?: string | null
+          created_at?: string
+          description?: string | null
+          document_id?: string | null
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          is_verified?: boolean | null
+          period_id?: string | null
+          profile_id?: string | null
+          source?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_entries_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "tax_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_entries_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_entries_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_evidence_packages: {
+        Row: {
+          completeness_score: number | null
+          created_at: string | null
+          documents_count: number | null
+          documents_included: string[] | null
+          id: string
+          last_generated_at: string | null
+          missing_documents: Json | null
+          pdf_report_url: string | null
+          period_id: string
+          profile_id: string
+          updated_at: string | null
+          weak_points: Json | null
+          zip_package_url: string | null
+        }
+        Insert: {
+          completeness_score?: number | null
+          created_at?: string | null
+          documents_count?: number | null
+          documents_included?: string[] | null
+          id?: string
+          last_generated_at?: string | null
+          missing_documents?: Json | null
+          pdf_report_url?: string | null
+          period_id: string
+          profile_id: string
+          updated_at?: string | null
+          weak_points?: Json | null
+          zip_package_url?: string | null
+        }
+        Update: {
+          completeness_score?: number | null
+          created_at?: string | null
+          documents_count?: number | null
+          documents_included?: string[] | null
+          id?: string
+          last_generated_at?: string | null
+          missing_documents?: Json | null
+          pdf_report_url?: string | null
+          period_id?: string
+          profile_id?: string
+          updated_at?: string | null
+          weak_points?: Json | null
+          zip_package_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_evidence_packages_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_evidence_packages_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_health_snapshots: {
+        Row: {
+          compliance_score: number | null
+          created_at: string
+          documentation_score: number | null
+          id: string
+          limit_score: number | null
+          open_risks: number | null
+          overall_score: number | null
+          payment_score: number | null
+          profile_id: string | null
+          resolved_risks: number | null
+          risk_details: Json | null
+          risk_level: string | null
+          snapshot_date: string
+          status_phrase: string | null
+          status_phrase_detail: string | null
+          top_actions: Json | null
+          user_id: string
+          ytd_income: number | null
+          ytd_limit_usage_percent: number | null
+          ytd_tax_paid: number | null
+        }
+        Insert: {
+          compliance_score?: number | null
+          created_at?: string
+          documentation_score?: number | null
+          id?: string
+          limit_score?: number | null
+          open_risks?: number | null
+          overall_score?: number | null
+          payment_score?: number | null
+          profile_id?: string | null
+          resolved_risks?: number | null
+          risk_details?: Json | null
+          risk_level?: string | null
+          snapshot_date?: string
+          status_phrase?: string | null
+          status_phrase_detail?: string | null
+          top_actions?: Json | null
+          user_id: string
+          ytd_income?: number | null
+          ytd_limit_usage_percent?: number | null
+          ytd_tax_paid?: number | null
+        }
+        Update: {
+          compliance_score?: number | null
+          created_at?: string
+          documentation_score?: number | null
+          id?: string
+          limit_score?: number | null
+          open_risks?: number | null
+          overall_score?: number | null
+          payment_score?: number | null
+          profile_id?: string | null
+          resolved_risks?: number | null
+          risk_details?: Json | null
+          risk_level?: string | null
+          snapshot_date?: string
+          status_phrase?: string | null
+          status_phrase_detail?: string | null
+          top_actions?: Json | null
+          user_id?: string
+          ytd_income?: number | null
+          ytd_limit_usage_percent?: number | null
+          ytd_tax_paid?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_health_snapshots_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_knowledge_base: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          keywords: string[] | null
+          section_number: string | null
+          section_title: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          keywords?: string[] | null
+          section_number?: string | null
+          section_title: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          keywords?: string[] | null
+          section_number?: string | null
+          section_title?: string
+        }
+        Relationships: []
+      }
+      tax_notifications: {
+        Row: {
+          ai_explanation: string | null
+          ai_summary: string | null
+          deadline: string | null
+          draft_response: string | null
+          id: string
+          notification_type: string | null
+          original_document_id: string | null
+          profile_id: string
+          received_at: string | null
+          required_actions: Json | null
+          required_documents: Json | null
+          resolved_at: string | null
+          responded_at: string | null
+          response_document_id: string | null
+          status: string | null
+          subject: string | null
+          urgency: string | null
+        }
+        Insert: {
+          ai_explanation?: string | null
+          ai_summary?: string | null
+          deadline?: string | null
+          draft_response?: string | null
+          id?: string
+          notification_type?: string | null
+          original_document_id?: string | null
+          profile_id: string
+          received_at?: string | null
+          required_actions?: Json | null
+          required_documents?: Json | null
+          resolved_at?: string | null
+          responded_at?: string | null
+          response_document_id?: string | null
+          status?: string | null
+          subject?: string | null
+          urgency?: string | null
+        }
+        Update: {
+          ai_explanation?: string | null
+          ai_summary?: string | null
+          deadline?: string | null
+          draft_response?: string | null
+          id?: string
+          notification_type?: string | null
+          original_document_id?: string | null
+          profile_id?: string
+          received_at?: string | null
+          required_actions?: Json | null
+          required_documents?: Json | null
+          resolved_at?: string | null
+          responded_at?: string | null
+          response_document_id?: string | null
+          status?: string | null
+          subject?: string | null
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_notifications_original_document_id_fkey"
+            columns: ["original_document_id"]
+            isOneToOne: false
+            referencedRelation: "tax_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_notifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_notifications_response_document_id_fkey"
+            columns: ["response_document_id"]
+            isOneToOne: false
+            referencedRelation: "tax_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_periods: {
+        Row: {
+          audit_readiness_phrase: string | null
+          check_result: Json | null
+          closed_at: string | null
+          created_at: string | null
+          documents_required: number | null
+          documents_uploaded: number | null
+          end_date: string
+          health_score: number | null
+          id: string
+          income_change_percent: number | null
+          issues_count: number | null
+          last_check_at: string | null
+          period_label: string
+          period_number: number
+          period_type: string
+          period_year: number
+          prev_period_income: number | null
+          prev_period_taxes: number | null
+          profile_id: string
+          start_date: string
+          status: string
+          status_color: string | null
+          tasks_completed: number | null
+          tasks_total: number | null
+          taxes_change_percent: number | null
+          taxes_due: number | null
+          taxes_paid: number | null
+          total_expenses: number | null
+          total_income: number | null
+          turnover_limit: number | null
+          turnover_percentage: number | null
+          turnover_used: number | null
+          updated_at: string | null
+          warnings_count: number | null
+        }
+        Insert: {
+          audit_readiness_phrase?: string | null
+          check_result?: Json | null
+          closed_at?: string | null
+          created_at?: string | null
+          documents_required?: number | null
+          documents_uploaded?: number | null
+          end_date: string
+          health_score?: number | null
+          id?: string
+          income_change_percent?: number | null
+          issues_count?: number | null
+          last_check_at?: string | null
+          period_label: string
+          period_number: number
+          period_type: string
+          period_year: number
+          prev_period_income?: number | null
+          prev_period_taxes?: number | null
+          profile_id: string
+          start_date: string
+          status?: string
+          status_color?: string | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          taxes_change_percent?: number | null
+          taxes_due?: number | null
+          taxes_paid?: number | null
+          total_expenses?: number | null
+          total_income?: number | null
+          turnover_limit?: number | null
+          turnover_percentage?: number | null
+          turnover_used?: number | null
+          updated_at?: string | null
+          warnings_count?: number | null
+        }
+        Update: {
+          audit_readiness_phrase?: string | null
+          check_result?: Json | null
+          closed_at?: string | null
+          created_at?: string | null
+          documents_required?: number | null
+          documents_uploaded?: number | null
+          end_date?: string
+          health_score?: number | null
+          id?: string
+          income_change_percent?: number | null
+          issues_count?: number | null
+          last_check_at?: string | null
+          period_label?: string
+          period_number?: number
+          period_type?: string
+          period_year?: number
+          prev_period_income?: number | null
+          prev_period_taxes?: number | null
+          profile_id?: string
+          start_date?: string
+          status?: string
+          status_color?: string | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          taxes_change_percent?: number | null
+          taxes_due?: number | null
+          taxes_paid?: number | null
+          total_expenses?: number | null
+          total_income?: number | null
+          turnover_limit?: number | null
+          turnover_percentage?: number | null
+          turnover_used?: number | null
+          updated_at?: string | null
+          warnings_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_periods_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_profiles: {
+        Row: {
+          activity_description: string | null
+          activity_type: string | null
+          bin_iin: string | null
+          business_type: string
+          client_type: string | null
+          company_name: string | null
+          created_at: string | null
+          employee_count: number | null
+          has_contractors: boolean | null
+          has_employees: boolean | null
+          has_ved: boolean | null
+          id: string
+          last_updated_at: string | null
+          monthly_payroll_range: string | null
+          monthly_turnover_range: string | null
+          okeds: string[] | null
+          payment_methods: string[] | null
+          profile_completeness: number | null
+          regime_confirmed: boolean | null
+          region: string | null
+          registration_date: string | null
+          risk_factors: string[] | null
+          tax_regime: string | null
+          trade_points_count: number | null
+          user_id: string
+          vat_registration_date: string | null
+          vat_status: string | null
+          yearly_turnover_estimate: number | null
+        }
+        Insert: {
+          activity_description?: string | null
+          activity_type?: string | null
+          bin_iin?: string | null
+          business_type: string
+          client_type?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          employee_count?: number | null
+          has_contractors?: boolean | null
+          has_employees?: boolean | null
+          has_ved?: boolean | null
+          id?: string
+          last_updated_at?: string | null
+          monthly_payroll_range?: string | null
+          monthly_turnover_range?: string | null
+          okeds?: string[] | null
+          payment_methods?: string[] | null
+          profile_completeness?: number | null
+          regime_confirmed?: boolean | null
+          region?: string | null
+          registration_date?: string | null
+          risk_factors?: string[] | null
+          tax_regime?: string | null
+          trade_points_count?: number | null
+          user_id: string
+          vat_registration_date?: string | null
+          vat_status?: string | null
+          yearly_turnover_estimate?: number | null
+        }
+        Update: {
+          activity_description?: string | null
+          activity_type?: string | null
+          bin_iin?: string | null
+          business_type?: string
+          client_type?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          employee_count?: number | null
+          has_contractors?: boolean | null
+          has_employees?: boolean | null
+          has_ved?: boolean | null
+          id?: string
+          last_updated_at?: string | null
+          monthly_payroll_range?: string | null
+          monthly_turnover_range?: string | null
+          okeds?: string[] | null
+          payment_methods?: string[] | null
+          profile_completeness?: number | null
+          regime_confirmed?: boolean | null
+          region?: string | null
+          registration_date?: string | null
+          risk_factors?: string[] | null
+          tax_regime?: string | null
+          trade_points_count?: number | null
+          user_id?: string
+          vat_registration_date?: string | null
+          vat_status?: string | null
+          yearly_turnover_estimate?: number | null
+        }
+        Relationships: []
+      }
+      tax_tasks: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          days_until_due: number | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_auto_generated: boolean | null
+          is_overdue: boolean | null
+          order_index: number | null
+          period_id: string
+          priority: string | null
+          profile_id: string
+          related_document_id: string | null
+          related_document_type: string | null
+          status: string | null
+          task_type: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          days_until_due?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_auto_generated?: boolean | null
+          is_overdue?: boolean | null
+          order_index?: number | null
+          period_id: string
+          priority?: string | null
+          profile_id: string
+          related_document_id?: string | null
+          related_document_type?: string | null
+          status?: string | null
+          task_type: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          days_until_due?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_auto_generated?: boolean | null
+          is_overdue?: boolean | null
+          order_index?: number | null
+          period_id?: string
+          priority?: string | null
+          profile_id?: string
+          related_document_id?: string | null
+          related_document_type?: string | null
+          status?: string | null
+          task_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_tasks_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tax_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_tasks_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_tasks_related_document_id_fkey"
+            columns: ["related_document_id"]
+            isOneToOne: false
+            referencedRelation: "tax_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       technical_documents: {
         Row: {
@@ -2813,6 +4696,69 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      transaction_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_system: boolean | null
+          is_taxable: boolean | null
+          keywords: string[] | null
+          name: string
+          parent_id: string | null
+          profile_id: string | null
+          tax_logic: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          is_taxable?: boolean | null
+          keywords?: string[] | null
+          name: string
+          parent_id?: string | null
+          profile_id?: string | null
+          tax_logic?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          is_taxable?: boolean | null
+          keywords?: string[] | null
+          name?: string
+          parent_id?: string | null
+          profile_id?: string | null
+          tax_logic?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_categories_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tax_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       updated_community_experts: {
         Row: {
@@ -3221,6 +5167,10 @@ export type Database = {
     }
     Functions: {
       cleanup_analytics_data: { Args: never; Returns: undefined }
+      create_initial_tax_periods: {
+        Args: { p_profile_id: string }
+        Returns: undefined
+      }
       create_profile: {
         Args: {
           user_full_name: string
@@ -3253,11 +5203,17 @@ export type Database = {
         Args: { end_date?: string; start_date?: string }
         Returns: Json
       }
+      get_consent_analytics: { Args: never; Returns: Json }
       get_conversion_analytics: { Args: never; Returns: Json }
       get_device_browser_stats: {
         Args: { end_date?: string; start_date?: string }
         Returns: Json
       }
+      get_enhanced_dashboard_analytics: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: Json
+      }
+      get_full_user_analytics: { Args: { p_limit?: number }; Returns: Json }
       get_geography_stats: {
         Args: { end_date?: string; start_date?: string }
         Returns: Json
@@ -3290,6 +5246,62 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_admin_by_email: { Args: never; Returns: boolean }
       is_organizer: { Args: never; Returns: boolean }
+      search_articles_fts: {
+        Args: { result_limit?: number; search_query: string }
+        Returns: {
+          category: string
+          cover_image_url: string
+          excerpt: string
+          id: string
+          published_at: string
+          rank: number
+          slug: string
+          tags: string[]
+          title: string
+        }[]
+      }
+      search_tax_knowledge: {
+        Args: { result_limit?: number; search_query: string }
+        Returns: {
+          category: string
+          content: string
+          id: string
+          relevance: number
+          section_number: string
+          section_title: string
+        }[]
+      }
+      search_tax_knowledge_hybrid: {
+        Args: {
+          query_embedding: string
+          result_limit?: number
+          search_text: string
+          semantic_weight?: number
+        }
+        Returns: {
+          category: string
+          combined_score: number
+          content: string
+          id: string
+          section_number: string
+          section_title: string
+        }[]
+      }
+      search_tax_knowledge_semantic: {
+        Args: {
+          query_embedding: string
+          result_limit?: number
+          similarity_threshold?: number
+        }
+        Returns: {
+          category: string
+          content: string
+          id: string
+          section_number: string
+          section_title: string
+          similarity: number
+        }[]
+      }
       user_has_role: {
         Args: { _role: string; _user_id: string }
         Returns: boolean
