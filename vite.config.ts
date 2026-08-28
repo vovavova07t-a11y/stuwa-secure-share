@@ -11,8 +11,19 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
+    // In production builds, swap the editor-preview auth bridge for plain
+    // localStorage so no preview-host strings end up in the shipped bundle.
+    mode !== 'development' && {
+      name: 'strip-preview-auth-bridge',
+      enforce: 'pre' as const,
+      resolveId(source: string, importer?: string) {
+        if (/previewAuthStorage(\.ts)?$/.test(source) && !source.includes('.prod')) {
+          return path.resolve(__dirname, './src/integrations/supabase/previewAuthStorage.prod.ts');
+        }
+        return null;
+      },
+    },
   ].filter(Boolean),
   resolve: {
     alias: {
