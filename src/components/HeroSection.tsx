@@ -23,7 +23,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
           <div className="animate-fade-in">
             <div className="flex justify-center mb-8">
               <img 
-                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                src="/assets/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
                 alt="STUWA Logo" 
                 className="h-20 w-auto animate-float"
               />
@@ -96,7 +96,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
           <div className="glass-card p-8 rounded-3xl animate-slide-up animate-stagger-5">
             <div className="flex justify-center mb-4">
               <img 
-                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                src="/assets/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
                 alt="STUWA Logo" 
                 className="h-16 w-auto"
               />

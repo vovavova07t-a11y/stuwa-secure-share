@@ -68,7 +68,7 @@ export const TechnicalDashboard: React.FC = () => {
           <div className="text-center mb-12">
             <div className="flex justify-center mb-6">
               <img 
-                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                src="/assets/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
                 alt="STUWA Logo" 
                 className="h-16 w-auto"
               />

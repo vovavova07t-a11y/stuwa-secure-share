@@ -12,7 +12,7 @@ export const Navigation = () => {
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center space-x-2">
               <img 
-                src="/lovable-uploads/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
+                src="/assets/731a20c8-27b9-473f-90cc-ce84f4ebac8c.png" 
                 alt="STUWA Logo" 
                 className="h-8 w-auto"
               />

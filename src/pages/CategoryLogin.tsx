@@ -203,7 +203,7 @@ const CategoryLogin = () => {
           <div className="h-full flex items-center justify-center p-8">
             <div className="text-center max-w-md">
               <img 
-                src="/lovable-uploads/698744ac-7417-4d19-9501-fd0e44ca548e.png" 
+                src="/assets/698744ac-7417-4d19-9501-fd0e44ca548e.png" 
                 alt="STUWA Logo" 
                 className="max-w-full max-h-96 object-contain mx-auto animate-float"
               />
