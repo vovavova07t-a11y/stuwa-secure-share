@@ -17,6 +17,14 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // In production builds, swap the editor-preview auth bridge for plain
+      // localStorage so no preview-host strings end up in the shipped bundle.
+      ...(mode === 'development'
+        ? {}
+        : {
+            [path.resolve(__dirname, "./src/integrations/supabase/previewAuthStorage.ts")]:
+              path.resolve(__dirname, "./src/integrations/supabase/previewAuthStorage.prod.ts"),
+          }),
     },
   },
 }));
