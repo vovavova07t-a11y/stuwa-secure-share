@@ -76,33 +76,19 @@ export const SendDocumentModal: React.FC<SendDocumentModalProps> = ({
   };
 
   const uploadFile = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `interdepartment/${fileName}`;
+
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `interdepartment/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        // Для демо-режима вернем заглушку URL
-        return `https://demo-stuwa.com/files/${fileName}`;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(filePath);
-
+      const { publicUrl } = await uploadStorageFile('documents', filePath, file);
       return publicUrl;
     } catch (error) {
       console.error('Error uploading file:', error);
-      // Для демо-режима вернем заглушку URL
-      const fileName = `${Date.now()}-${file.name}`;
-      return `https://demo-stuwa.com/files/${fileName}`;
+      return getStoragePublicUrl('documents', filePath);
     }
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
