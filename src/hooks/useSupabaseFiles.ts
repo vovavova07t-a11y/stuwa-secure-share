@@ -78,31 +78,14 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       const sanitizedFileName = sanitizeFileName(file.name);
       const fileName = `${department}/${categoryId}/${fileId}_${sanitizedFileName}`;
       
-      console.log('📤 Загружаем файл в Supabase Storage:', fileName);
+      console.log('📤 Загружаем файл в хранилище:', fileName);
       console.log('📋 Оригинальное имя:', file.name);
       console.log('📋 Очищенное имя:', sanitizedFileName);
 
-      // Загружаем файл в Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('files')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      // Загружаем файл в хранилище (сервер или бакет — по VITE_STORAGE_MODE)
+      const { path: storedPath, publicUrl } = await uploadStorageFile(FILES_BUCKET, fileName, file);
 
-      if (uploadError) {
-        console.error('Ошибка загрузки в Storage:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('✅ Файл загружен в Storage:', uploadData);
-
-      // Получаем публичный URL
-      const { data: urlData } = supabase.storage
-        .from('files')
-        .getPublicUrl(fileName);
-
-      console.log('🔗 Публичный URL получен:', urlData.publicUrl);
+      console.log('🔗 Публичный URL получен:', publicUrl);
 
       // Сохраняем информацию о файле в базу данных
       const fileData = {
@@ -112,8 +95,8 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         file_type: file.type,
         category_id: categoryId,
         department: department,
-        file_url: urlData.publicUrl,
-        storage_path: fileName,
+        file_url: publicUrl,
+        storage_path: storedPath,
         uploaded_by: (await supabase.auth.getUser()).data.user?.id
       };
 
@@ -125,10 +108,11 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
       if (insertError) {
         console.error('Ошибка сохранения в базу данных:', insertError);
-        // Удаляем файл из Storage в случае ошибки
-        await supabase.storage.from('files').remove([fileName]);
+        // Удаляем файл из хранилища в случае ошибки
+        await removeStorageFile(FILES_BUCKET, storedPath).catch(() => undefined);
         throw insertError;
       }
+
 
       console.log('✅ Файл успешно сохранен в базу данных:', insertData);
       
