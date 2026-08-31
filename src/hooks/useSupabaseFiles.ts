@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sanitizeFileName, generateFileId } from '@/utils/fileUtils';
+import { uploadFile as uploadStorageFile, removeFile as removeStorageFile, getPublicUrl } from '@/lib/storage';
 
 export interface FileData {
   id: string;
@@ -17,7 +18,7 @@ export interface FileData {
   storage_path?: string;
 }
 
-const SUPABASE_URL = "https://cevdbplhmncqbyuzchhj.supabase.co";
+const FILES_BUCKET = 'files';
 
 export const useSupabaseFiles = (department: string, categoryId: string) => {
   const [files, setFiles] = useState<FileData[]>([]);
@@ -47,7 +48,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       const filesWithUrls: FileData[] = (data || []).map((file: any) => ({
         id: file.id,
         file_name: file.file_name,
-        file_url: file.file_url || `${SUPABASE_URL}/storage/v1/object/public/files/${file.storage_path}`,
+        file_url: file.file_url || getPublicUrl(FILES_BUCKET, file.storage_path),
         file_type: file.file_type,
         file_size: file.file_size,
         category_id: file.category_id,
@@ -77,31 +78,14 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       const sanitizedFileName = sanitizeFileName(file.name);
       const fileName = `${department}/${categoryId}/${fileId}_${sanitizedFileName}`;
       
-      console.log('📤 Загружаем файл в Supabase Storage:', fileName);
+      console.log('📤 Загружаем файл в хранилище:', fileName);
       console.log('📋 Оригинальное имя:', file.name);
       console.log('📋 Очищенное имя:', sanitizedFileName);
 
-      // Загружаем файл в Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('files')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      // Загружаем файл в хранилище (сервер или бакет — по VITE_STORAGE_MODE)
+      const { path: storedPath, publicUrl } = await uploadStorageFile(FILES_BUCKET, fileName, file);
 
-      if (uploadError) {
-        console.error('Ошибка загрузки в Storage:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('✅ Файл загружен в Storage:', uploadData);
-
-      // Получаем публичный URL
-      const { data: urlData } = supabase.storage
-        .from('files')
-        .getPublicUrl(fileName);
-
-      console.log('🔗 Публичный URL получен:', urlData.publicUrl);
+      console.log('🔗 Публичный URL получен:', publicUrl);
 
       // Сохраняем информацию о файле в базу данных
       const fileData = {
@@ -111,8 +95,8 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
         file_type: file.type,
         category_id: categoryId,
         department: department,
-        file_url: urlData.publicUrl,
-        storage_path: fileName,
+        file_url: publicUrl,
+        storage_path: storedPath,
         uploaded_by: (await supabase.auth.getUser()).data.user?.id
       };
 
@@ -124,10 +108,11 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
 
       if (insertError) {
         console.error('Ошибка сохранения в базу данных:', insertError);
-        // Удаляем файл из Storage в случае ошибки
-        await supabase.storage.from('files').remove([fileName]);
+        // Удаляем файл из хранилища в случае ошибки
+        await removeStorageFile(FILES_BUCKET, storedPath).catch(() => undefined);
         throw insertError;
       }
+
 
       console.log('✅ Файл успешно сохранен в базу данных:', insertData);
       
@@ -169,16 +154,14 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       console.log('🗑️ Удаление файла:', fileToDelete.file_name);
 
       if (fileToDelete.storage_path) {
-        const { error: storageError } = await supabase.storage
-          .from('files')
-          .remove([fileToDelete.storage_path]);
-
-        if (storageError) {
-          console.error('Ошибка удаления из Storage:', storageError);
-        } else {
-          console.log('✅ Файл удален из Storage');
+        try {
+          await removeStorageFile(FILES_BUCKET, fileToDelete.storage_path);
+          console.log('✅ Файл удален из хранилища');
+        } catch (storageError) {
+          console.error('Ошибка удаления из хранилища:', storageError);
         }
       }
+
 
       const { error: deleteError } = await (supabase as any)
         .from('files')
