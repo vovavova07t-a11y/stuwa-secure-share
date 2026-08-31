@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sanitizeFileName, generateFileId } from '@/utils/fileUtils';
+import { uploadFile as uploadStorageFile, removeFile as removeStorageFile, getPublicUrl } from '@/lib/storage';
 
 export interface FileData {
   id: string;
@@ -17,7 +18,7 @@ export interface FileData {
   storage_path?: string;
 }
 
-const SUPABASE_URL = "https://cevdbplhmncqbyuzchhj.supabase.co";
+const FILES_BUCKET = 'files';
 
 export const useSupabaseFiles = (department: string, categoryId: string) => {
   const [files, setFiles] = useState<FileData[]>([]);
@@ -47,7 +48,7 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       const filesWithUrls: FileData[] = (data || []).map((file: any) => ({
         id: file.id,
         file_name: file.file_name,
-        file_url: file.file_url || `${SUPABASE_URL}/storage/v1/object/public/files/${file.storage_path}`,
+        file_url: file.file_url || getPublicUrl(FILES_BUCKET, file.storage_path),
         file_type: file.file_type,
         file_size: file.file_size,
         category_id: file.category_id,
