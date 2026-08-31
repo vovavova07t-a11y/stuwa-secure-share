@@ -154,16 +154,14 @@ export const useSupabaseFiles = (department: string, categoryId: string) => {
       console.log('🗑️ Удаление файла:', fileToDelete.file_name);
 
       if (fileToDelete.storage_path) {
-        const { error: storageError } = await supabase.storage
-          .from('files')
-          .remove([fileToDelete.storage_path]);
-
-        if (storageError) {
-          console.error('Ошибка удаления из Storage:', storageError);
-        } else {
-          console.log('✅ Файл удален из Storage');
+        try {
+          await removeStorageFile(FILES_BUCKET, fileToDelete.storage_path);
+          console.log('✅ Файл удален из хранилища');
+        } catch (storageError) {
+          console.error('Ошибка удаления из хранилища:', storageError);
         }
       }
+
 
       const { error: deleteError } = await (supabase as any)
         .from('files')
