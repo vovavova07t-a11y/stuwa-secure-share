@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadFile as uploadStorageFile, getPublicUrl as getStoragePublicUrl } from '@/lib/storage';
 import { useToast } from '@/components/ui/use-toast';
 import { Upload, X } from 'lucide-react';
 import { getCurrentDepartmentFromPath, getDemoUserForDepartment, DEPARTMENT_OPTIONS } from './utils/departmentUtils';
