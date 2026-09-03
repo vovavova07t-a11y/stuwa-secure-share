@@ -6,11 +6,11 @@ const env = import.meta.env as Record<string, string | undefined>;
 
 /** Базовый URL API/БД (Supabase-совместимый бэкенд или self-hosted инстанс). */
 export const API_URL: string =
-  env.VITE_API_URL || env.VITE_DB_URL || env.VITE_SUPABASE_URL || '';
+  env.VITE_SUPABASE_URL || env.VITE_API_URL || env.VITE_DB_URL || '';
 
 /** Публичный (anon) ключ API. Пустая строка допустима для собственного бэкенда без JWT-ключа. */
 export const API_KEY: string =
-  env.VITE_API_KEY || env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_API_KEY || '';
 
 /**
  * Режим хранения файлов:
